@@ -1,6 +1,6 @@
 # Where each mineral appears, and how rare it is
 
-Proposal, 2026-11-09, for the Better Stone + Better Resources pack with the composite minerals of `MODPACK_COMPOSITES.md`. Planet shares are **estimates** of the share of each mineral in the ore pixels of a planet, computed with the tool's own rule (share ~ abundance^0.25 within the planet's ore list, times a per-body factor); Ice is a fixed share. Nothing is built yet.
+Proposal, 2026-11-09, for the Better Stone + Better Resources pack with the composite minerals of `MODPACK_COMPOSITES.md`. Planet shares are **estimates** of the share of each mineral in the ore pixels of a planet, computed with the tool's own rule (share ~ abundance^0.25 within the planet's ore list, times a per-body factor); Ice is a fixed share. **Gold, silver, platinum and uranium are scaled to Better Stone's ingot rate per ore (section 8); everything else follows realism.** Nothing is built yet.
 
 ## 1. Principles
 
@@ -35,39 +35,39 @@ Everything forms here (wet crust, hydrothermal and sedimentary systems, pegmatit
 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
-| Quartz | `Quartz_01` | 15.01 | Abundant | Si |
-| Hematite (Iron) | `Iron_01` | 11.40 | Abundant | Fe, Ti |
-| Bauxite | `Aluminium_01` | 10.61 | Abundant | Al, Ti, Ga |
-| Dolomite | `Dolomite_01` | 9.59 | Abundant | Mg, C |
-| Magnetite (Dense Iron) | `Iron_02` | 9.07 | Abundant | Fe, Ti |
-| Ilmenite | `Magnesium_01` | 5.97 | Common | Fe, Ti |
-| Olivine | `Olivine_01` | 5.31 | Common | Si, Mg, Fe |
-| Pyrite | `Pyrite_01` | 4.53 | Common | Fe, S |
-| Rutile | `Titanium_01` | 3.61 | Common | Ti, Nb |
+| Quartz | `Quartz_01` | 12.33 | Abundant | Si |
+| Hematite (Iron) | `Iron_01` | 9.37 | Abundant | Fe, Ti |
+| Bauxite | `Aluminium_01` | 8.72 | Abundant | Al, Ti, Ga |
+| Dolomite | `Dolomite_01` | 7.88 | Common | Mg, C |
+| Magnetite (Dense Iron) | `Iron_02` | 7.45 | Common | Fe, Ti |
+| Porphyry | `Porphyry_01` | 5.99 | Common | Au, Cu, Ag |
+| Ilmenite | `Magnesium_01` | 4.90 | Common | Fe, Ti |
+| Gold (native) | `Gold_01` | 4.77 | Common | Au |
+| Olivine | `Olivine_01` | 4.36 | Common | Si, Mg, Fe |
+| Pyrite | `Pyrite_01` | 3.73 | Common | Fe, S |
+| Silver (native) | `Silver_01` | 3.29 | Common | Ag |
 | Ice | `Ice_01 / Ice_02` | 3.00 | Common | Ice |
-| Oil shale (Petroleum) | `Petroleum_01` | 2.55 | Uncommon | C, S, Oil |
-| Sulfur (native) | `Sulfur_01` | 2.44 | Uncommon | S |
-| Sphalerite | `Nickel_01` | 2.33 | Uncommon | Zn, S, Ga |
-| Spodumene | `Silicon_01` | 1.98 | Uncommon | Li, Al, Si |
-| Native Copper | `Copper_01` | 1.89 | Uncommon | Cu, Ag |
-| Azurite | `Cobalt_01` | 1.89 | Uncommon | Cu, C |
-| Galena | `Galena_01` | 1.61 | Uncommon | Pb, Ag, Zn |
-| Lepidolite | `Lithium_01` | 1.57 | Uncommon | Li, Al, Nitre, Nb |
-| Wolframite | `Wolframite_01` | 0.96 | Rare | W, Sn, Fe, Nb |
-| Niter | `Nitre_01` | 0.94 | Rare | Nitre, N, Perchlorate |
-| Heazlewoodite | `Heazlewoodite_01` | 0.81 | Rare | Ni, S |
-| Glaucodot | `Glaucodot_01` | 0.68 | Rare | Fe, Co, S |
-| Cattierite | `Cattierite_01` | 0.45 | Rare | Co, S |
-| Silver (native) | `Silver_01` | 0.42 | Rare | Ag |
-| Porphyry | `Porphyry_01` | 0.25 | Very rare | Au, Cu, Ag |
-| Chlorargyrite | `Chlorargyrite_01` | 0.25 | Very rare | Ag, Perchlorate |
-| Gold (native) | `Gold_01` | 0.20 | Very rare | Au |
-| Electrum | `Electrum_01` | 0.17 | Very rare | Ag, Au |
-| Petzite | `Petzite_01` | 0.14 | Very rare | Ag, Au |
-| Kamacite | `Kamacite_01` | 0.14 | Very rare (trace entry) | Fe, Ni, Co |
-| Taenite | `Taenite_01` | 0.12 | Very rare (trace entry) | Fe, Ni |
-| Akimotoite | `Akimotoite_01` | 0.05 | Very rare (trace entry) | Si, Mg, Fe |
-| Wadsleyite | `Wadsleyite_01` | 0.05 | Very rare (trace entry) | Si, Mg, Fe |
+| Rutile | `Titanium_01` | 2.96 | Uncommon | Ti, Nb |
+| Oil shale (Petroleum) | `Petroleum_01` | 2.10 | Uncommon | C, S, Oil |
+| Sulfur (native) | `Sulfur_01` | 2.01 | Uncommon | S |
+| Chlorargyrite | `Chlorargyrite_01` | 1.99 | Uncommon | Ag, Perchlorate |
+| Sphalerite | `Nickel_01` | 1.92 | Uncommon | Zn, S, Ga |
+| Spodumene | `Silicon_01` | 1.62 | Uncommon | Li, Al, Si |
+| Native Copper | `Copper_01` | 1.55 | Uncommon | Cu, Ag |
+| Azurite | `Cobalt_01` | 1.55 | Uncommon | Cu, C |
+| Electrum | `Electrum_01` | 1.33 | Uncommon | Ag, Au |
+| Galena | `Galena_01` | 1.33 | Uncommon | Pb, Ag, Zn |
+| Lepidolite | `Lithium_01` | 1.29 | Uncommon | Li, Al, Nitre, Nb |
+| Petzite | `Petzite_01` | 1.12 | Uncommon | Ag, Au |
+| Wolframite | `Wolframite_01` | 0.79 | Rare | W, Sn, Fe, Nb |
+| Niter | `Nitre_01` | 0.78 | Rare | Nitre, N, Perchlorate |
+| Heazlewoodite | `Heazlewoodite_01` | 0.66 | Rare | Ni, S |
+| Glaucodot | `Glaucodot_01` | 0.56 | Rare | Fe, Co, S |
+| Cattierite | `Cattierite_01` | 0.37 | Rare | Co, S |
+| Kamacite | `Kamacite_01` | 0.11 | Very rare (trace entry) | Fe, Ni, Co |
+| Taenite | `Taenite_01` | 0.10 | Very rare (trace entry) | Fe, Ni |
+| Akimotoite | `Akimotoite_01` | 0.04 | Very rare (trace entry) | Si, Mg, Fe |
+| Wadsleyite | `Wadsleyite_01` | 0.04 | Very rare (trace entry) | Si, Mg, Fe |
 
 33 ores.
 
@@ -77,31 +77,31 @@ Basaltic crust, iron oxides (hematite) and sulfate / carbonate salts; hydrotherm
 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
-| Hematite (Iron) | `Iron_01` | 32.05 | Abundant | Fe, Ti |
-| Olivine | `Olivine_01` | 29.83 | Abundant | Si, Mg, Fe |
-| Sulfur (native) | `Sulfur_01` | 6.54 | Common | S |
+| Hematite (Iron) | `Iron_01` | 28.07 | Abundant | Fe, Ti |
+| Olivine | `Olivine_01` | 26.12 | Abundant | Si, Mg, Fe |
 | Ice | `Ice_01 / Ice_02` | 6.00 | Common | Ice |
-| Dolomite | `Dolomite_01` | 4.49 | Common | Mg, C |
-| Magnetite (Dense Iron) | `Iron_02` | 4.25 | Common | Fe, Ti |
-| Pyrite | `Pyrite_01` | 4.25 | Common | Fe, S |
-| Quartz | `Quartz_01` | 4.22 | Common (trace entry) | Si |
-| Ilmenite | `Magnesium_01` | 2.80 | Uncommon | Fe, Ti |
-| Niter | `Nitre_01` | 1.77 | Uncommon | Nitre, N, Perchlorate |
-| Sphalerite | `Nickel_01` | 0.66 | Rare (trace entry) | Zn, S, Ga |
-| Kamacite | `Kamacite_01` | 0.51 | Rare | Fe, Ni, Co |
-| Galena | `Galena_01` | 0.45 | Rare (trace entry) | Pb, Ag, Zn |
-| Taenite | `Taenite_01` | 0.45 | Rare | Fe, Ni |
-| Heazlewoodite | `Heazlewoodite_01` | 0.38 | Rare | Ni, S |
-| Native Copper | `Copper_01` | 0.35 | Rare (trace entry) | Cu, Ag |
-| Uraninite | `Uraninite_01` | 0.23 | Very rare (trace entry) | U, Pb |
-| Glaucodot | `Glaucodot_01` | 0.19 | Very rare (trace entry) | Fe, Co, S |
-| Cohenite | `Cohenite_01` | 0.17 | Very rare | Fe, Ni, Co, C |
-| Silver (native) | `Silver_01` | 0.12 | Very rare (trace entry) | Ag |
-| Carnotite | `Carnotite_01` | 0.08 | Very rare (trace entry) | U, Nitre |
-| Akimotoite | `Akimotoite_01` | 0.07 | Very rare (trace entry) | Si, Mg, Fe |
-| Wadsleyite | `Wadsleyite_01` | 0.07 | Very rare (trace entry) | Si, Mg, Fe |
-| Gold (native) | `Gold_01` | 0.06 | Very rare (trace entry) | Au |
-| Electrum | `Electrum_01` | 0.03 | Very rare (trace entry) | Ag, Au |
+| Sulfur (native) | `Sulfur_01` | 5.72 | Common | S |
+| Gold (native) | `Gold_01` | 4.56 | Common | Au |
+| Dolomite | `Dolomite_01` | 3.93 | Common | Mg, C |
+| Silver (native) | `Silver_01` | 3.90 | Common | Ag |
+| Magnetite (Dense Iron) | `Iron_02` | 3.72 | Common | Fe, Ti |
+| Pyrite | `Pyrite_01` | 3.72 | Common | Fe, S |
+| Quartz | `Quartz_01` | 3.69 | Common (trace entry) | Si |
+| Ilmenite | `Magnesium_01` | 2.45 | Uncommon | Fe, Ti |
+| Uraninite | `Uraninite_01` | 1.91 | Uncommon | U, Pb |
+| Niter | `Nitre_01` | 1.55 | Uncommon | Nitre, N, Perchlorate |
+| Electrum | `Electrum_01` | 1.05 | Uncommon | Ag, Au |
+| Carnotite | `Carnotite_01` | 0.71 | Rare | U, Nitre |
+| Sphalerite | `Nickel_01` | 0.57 | Rare (trace entry) | Zn, S, Ga |
+| Kamacite | `Kamacite_01` | 0.45 | Rare | Fe, Ni, Co |
+| Galena | `Galena_01` | 0.40 | Rare (trace entry) | Pb, Ag, Zn |
+| Taenite | `Taenite_01` | 0.39 | Rare | Fe, Ni |
+| Heazlewoodite | `Heazlewoodite_01` | 0.33 | Rare | Ni, S |
+| Native Copper | `Copper_01` | 0.31 | Rare (trace entry) | Cu, Ag |
+| Glaucodot | `Glaucodot_01` | 0.17 | Very rare (trace entry) | Fe, Co, S |
+| Cohenite | `Cohenite_01` | 0.15 | Very rare | Fe, Ni, Co, C |
+| Akimotoite | `Akimotoite_01` | 0.06 | Very rare (trace entry) | Si, Mg, Fe |
+| Wadsleyite | `Wadsleyite_01` | 0.06 | Very rare (trace entry) | Si, Mg, Fe |
 
 25 ores.
 
@@ -111,28 +111,28 @@ Anorthosite highlands and mare basalt: ilmenite is the titanium ore, olivine and
 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
-| Ilmenite | `Magnesium_01` | 34.02 | Abundant | Fe, Ti |
-| Olivine | `Olivine_01` | 30.25 | Abundant | Si, Mg, Fe |
-| Hematite (Iron) | `Iron_01` | 16.25 | Abundant | Fe, Ti |
-| Pyrite | `Pyrite_01` | 6.46 | Common | Fe, S |
+| Ilmenite | `Magnesium_01` | 27.63 | Abundant | Fe, Ti |
+| Olivine | `Olivine_01` | 24.57 | Abundant | Si, Mg, Fe |
+| Hematite (Iron) | `Iron_01` | 13.20 | Abundant | Fe, Ti |
+| Pyrite | `Pyrite_01` | 5.25 | Common | Fe, S |
 | Ice | `Ice_01 / Ice_02` | 5.00 | Common | Ice |
-| Kamacite | `Kamacite_01` | 1.93 | Uncommon | Fe, Ni, Co |
-| Taenite | `Taenite_01` | 1.70 | Uncommon | Fe, Ni |
-| Cohenite | `Cohenite_01` | 0.65 | Rare | Fe, Ni, Co, C |
-| Uraninite | `Uraninite_01` | 0.57 | Rare | U, Pb |
-| Heazlewoodite | `Heazlewoodite_01` | 0.57 | Rare | Ni, S |
-| Hapkeite | `Hapkeite_01` | 0.41 | Rare | Fe, Si |
-| Akimotoite | `Akimotoite_01` | 0.36 | Rare | Si, Mg, Fe |
-| Wadsleyite | `Wadsleyite_01` | 0.36 | Rare | Si, Mg, Fe |
-| Glaucodot | `Glaucodot_01` | 0.29 | Very rare (trace entry) | Fe, Co, S |
-| Cooperite | `Cooperite_01` | 0.24 | Very rare | Ni, Pt, S |
-| Niggliite | `Niggliite_01` | 0.20 | Very rare | Pt, Sn |
-| Silver (native) | `Silver_01` | 0.18 | Very rare (trace entry) | Ag |
-| Platinum (native) | `Platinum_01` | 0.15 | Very rare | Pt |
-| Sperrylite | `Sperrylite_01` | 0.12 | Very rare | Pt |
-| Sinoite | `Sinoite_01` | 0.10 | Very rare | Si, N |
-| Gold (native) | `Gold_01` | 0.09 | Very rare (trace entry) | Au |
-| Electrum | `Electrum_01` | 0.07 | Very rare (trace entry) | Ag, Au |
+| Silver (native) | `Silver_01` | 4.18 | Common | Ag |
+| Gold (native) | `Gold_01` | 4.11 | Common | Au |
+| Cooperite | `Cooperite_01` | 2.46 | Uncommon | Ni, Pt, S |
+| Niggliite | `Niggliite_01` | 2.06 | Uncommon | Pt, Sn |
+| Uraninite | `Uraninite_01` | 1.90 | Uncommon | U, Pb |
+| Electrum | `Electrum_01` | 1.69 | Uncommon | Ag, Au |
+| Kamacite | `Kamacite_01` | 1.57 | Uncommon | Fe, Ni, Co |
+| Platinum (native) | `Platinum_01` | 1.54 | Uncommon | Pt |
+| Taenite | `Taenite_01` | 1.38 | Uncommon | Fe, Ni |
+| Sperrylite | `Sperrylite_01` | 1.23 | Uncommon | Pt |
+| Cohenite | `Cohenite_01` | 0.52 | Rare | Fe, Ni, Co, C |
+| Heazlewoodite | `Heazlewoodite_01` | 0.47 | Rare | Ni, S |
+| Hapkeite | `Hapkeite_01` | 0.33 | Rare | Fe, Si |
+| Akimotoite | `Akimotoite_01` | 0.30 | Very rare | Si, Mg, Fe |
+| Wadsleyite | `Wadsleyite_01` | 0.30 | Very rare | Si, Mg, Fe |
+| Glaucodot | `Glaucodot_01` | 0.24 | Very rare (trace entry) | Fe, Co, S |
+| Sinoite | `Sinoite_01` | 0.08 | Very rare | Si, N |
 
 22 ores.
 
@@ -143,22 +143,22 @@ Ice shell over a silicate floor: Ice dominates (35 %), salts and sulfur compound
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
 | Ice | `Ice_01 / Ice_02` | 35.00 | Abundant | Ice |
-| Dolomite | `Dolomite_01` | 22.15 | Abundant | Mg, C |
-| Olivine | `Olivine_01` | 12.26 | Abundant | Si, Mg, Fe |
-| Sulfur (native) | `Sulfur_01` | 12.09 | Abundant | S |
-| Pyrite | `Pyrite_01` | 5.24 | Common | Fe, S |
-| Magnetite (Dense Iron) | `Iron_02` | 5.24 | Common | Fe, Ti |
-| Quartz | `Quartz_01` | 5.20 | Common (trace entry) | Si |
-| Sphalerite | `Nickel_01` | 0.81 | Rare (trace entry) | Zn, S, Ga |
-| Galena | `Galena_01` | 0.56 | Rare (trace entry) | Pb, Ag, Zn |
-| Heazlewoodite | `Heazlewoodite_01` | 0.47 | Rare | Ni, S |
-| Kamacite | `Kamacite_01` | 0.39 | Rare | Fe, Ni, Co |
-| Glaucodot | `Glaucodot_01` | 0.23 | Very rare (trace entry) | Fe, Co, S |
-| Silver (native) | `Silver_01` | 0.10 | Very rare (trace entry) | Ag |
-| Uraninite | `Uraninite_01` | 0.09 | Very rare (trace entry) | U, Pb |
-| Platinum (native) | `Platinum_01` | 0.07 | Very rare (trace entry) | Pt |
-| Cooperite | `Cooperite_01` | 0.06 | Very rare (trace entry) | Ni, Pt, S |
-| Gold (native) | `Gold_01` | 0.05 | Very rare (trace entry) | Au |
+| Dolomite | `Dolomite_01` | 16.33 | Abundant | Mg, C |
+| Olivine | `Olivine_01` | 9.04 | Abundant | Si, Mg, Fe |
+| Sulfur (native) | `Sulfur_01` | 8.91 | Abundant | S |
+| Gold (native) | `Gold_01` | 4.79 | Common | Au |
+| Silver (native) | `Silver_01` | 4.53 | Common | Ag |
+| Pyrite | `Pyrite_01` | 3.86 | Common | Fe, S |
+| Magnetite (Dense Iron) | `Iron_02` | 3.86 | Common | Fe, Ti |
+| Quartz | `Quartz_01` | 3.83 | Common (trace entry) | Si |
+| Platinum (native) | `Platinum_01` | 3.42 | Common | Pt |
+| Cooperite | `Cooperite_01` | 2.72 | Uncommon | Ni, Pt, S |
+| Uraninite | `Uraninite_01` | 1.91 | Uncommon | U, Pb |
+| Sphalerite | `Nickel_01` | 0.60 | Rare (trace entry) | Zn, S, Ga |
+| Galena | `Galena_01` | 0.41 | Rare (trace entry) | Pb, Ag, Zn |
+| Heazlewoodite | `Heazlewoodite_01` | 0.34 | Rare | Ni, S |
+| Kamacite | `Kamacite_01` | 0.29 | Very rare | Fe, Ni, Co |
+| Glaucodot | `Glaucodot_01` | 0.17 | Very rare (trace entry) | Fe, Co, S |
 
 17 ores.
 
@@ -169,20 +169,20 @@ Ice bedrock with hydrocarbon lakes and dunes: **Petroleum is the main mineral** 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
 | Ice | `Ice_01 / Ice_02` | 30.00 | Abundant | Ice |
-| Oil shale (Petroleum) | `Petroleum_01` | 28.78 | Abundant | C, S, Oil |
-| Olivine | `Olivine_01` | 9.98 | Abundant | Si, Mg, Fe |
-| Dolomite | `Dolomite_01` | 9.02 | Abundant | Mg, C |
-| Magnetite (Dense Iron) | `Iron_02` | 8.53 | Abundant | Fe, Ti |
-| Sulfur (native) | `Sulfur_01` | 6.56 | Common | S |
-| Pyrite | `Pyrite_01` | 4.27 | Common | Fe, S |
-| Sphalerite | `Nickel_01` | 0.88 | Rare (trace entry) | Zn, S, Ga |
-| Kamacite | `Kamacite_01` | 0.64 | Rare | Fe, Ni, Co |
-| Heazlewoodite | `Heazlewoodite_01` | 0.46 | Rare (trace entry) | Ni, S |
-| Glaucodot | `Glaucodot_01` | 0.38 | Rare (trace entry) | Fe, Co, S |
-| Silver (native) | `Silver_01` | 0.16 | Very rare (trace entry) | Ag |
-| Uraninite | `Uraninite_01` | 0.15 | Very rare (trace entry) | U, Pb |
-| Platinum (native) | `Platinum_01` | 0.12 | Very rare (trace entry) | Pt |
-| Gold (native) | `Gold_01` | 0.08 | Very rare (trace entry) | Au |
+| Oil shale (Petroleum) | `Petroleum_01` | 22.31 | Abundant | C, S, Oil |
+| Olivine | `Olivine_01` | 7.74 | Common | Si, Mg, Fe |
+| Dolomite | `Dolomite_01` | 6.99 | Common | Mg, C |
+| Magnetite (Dense Iron) | `Iron_02` | 6.61 | Common | Fe, Ti |
+| Sulfur (native) | `Sulfur_01` | 5.09 | Common | S |
+| Silver (native) | `Silver_01` | 4.94 | Common | Ag |
+| Gold (native) | `Gold_01` | 4.79 | Common | Au |
+| Platinum (native) | `Platinum_01` | 4.50 | Common | Pt |
+| Pyrite | `Pyrite_01` | 3.31 | Common | Fe, S |
+| Uraninite | `Uraninite_01` | 1.91 | Uncommon | U, Pb |
+| Sphalerite | `Nickel_01` | 0.68 | Rare (trace entry) | Zn, S, Ga |
+| Kamacite | `Kamacite_01` | 0.49 | Rare | Fe, Ni, Co |
+| Heazlewoodite | `Heazlewoodite_01` | 0.35 | Rare (trace entry) | Ni, S |
+| Glaucodot | `Glaucodot_01` | 0.30 | Very rare (trace entry) | Fe, Co, S |
 
 15 ores.
 
@@ -192,36 +192,36 @@ Asteroids pick their ore from **every material with `SpawnsInAsteroids` true**, 
 
 **Better Stone's own rebalance (the companion mod `3511204395`, "Better Stone - Rebalanced Asteroids" by michi84o, which must load after Better Stone):** its files change only the asteroid weights of Better Stone's minerals and re-declare `Ice_02` (weight 5). The weights of its 27 minerals go from 40 to 82 in total (Iron_01 5 to 19, Taenite and Hapkeite 2 to 6, Sinoite and Quartz 1-2 to 4, Cohenite 1 to 3...) while the vanilla gold, silver, platinum and uranium keep their weight of 1, which makes them **about half as common in share**; its description says the idea is to push players to the planets (uranium on Alien and small moons). The Steam page also shows a notice that the item was removed or is flagged incompatible (read by a web fetch, not verified), so treat it as a reference for the numbers rather than a dependency.
 
-**The weights below follow the same method:** every ordinary mineral is doubled and gold, silver, platinum, uranium and the platinum minerals (Cooperite, Niggliite, Sperrylite) are kept low, so their share is about half of the earlier proposal, while iron and silicon sources stay generous. Oil shale and sulfur are removed.
+**The weights below follow the same method:** every ordinary mineral is doubled while gold, silver, platinum, uranium and the platinum minerals stay at 2-3, so their share is about 1.3 % each (the rebalanced Better Stone gives 0.97 %, the original 1.6 %), while iron and silicon sources stay generous. Oil shale and sulfur are removed.
 
 The generator has one list for all asteroids, so the mix is global; asteroid *families* (ice, stony, metallic) would need separate generator versions, which I have not checked.
 
 | Mineral | Weight | Share % | Tier | Note |
 |---|---|---|---|---|
-| Ice | 24 | 15.9 | Abundant | Ice_02 (only ice asteroids allow it; Ice_01 and Ice_03 stay planet-only) |
-| Hematite (Iron) | 20 | 13.2 | Abundant | Iron (Fe), the main asteroid iron |
-| Kamacite | 16 | 10.6 | Abundant | Fe-Ni-Co metal |
-| Olivine | 16 | 10.6 | Abundant | stony asteroids |
-| Taenite | 14 | 9.3 | Abundant | Fe-Ni metal |
-| Pyrite | 12 | 7.9 | Common | troilite (FeS) |
-| Dolomite | 8 | 5.3 | Common | carbonates in carbonaceous asteroids |
-| Cohenite | 6 | 4.0 | Common | iron carbide |
-| Sinoite | 6 | 4.0 | Common | enstatite chondrite (Si, N) |
-| Akimotoite | 4 | 2.6 | Uncommon | shock mineral |
-| Wadsleyite | 4 | 2.6 | Uncommon | shock mineral |
-| Hapkeite | 4 | 2.6 | Uncommon | lunar / stony Fe-Si |
-| Heazlewoodite | 4 | 2.6 | Uncommon | Ni sulfide |
-| Magnetite (Dense Iron) | 4 | 2.6 | Uncommon | dense iron fragments |
-| Cooperite | 2 | 1.3 | Uncommon | PGE (halved) |
-| Niggliite | 1 | 0.7 | Rare | PGE (halved) |
-| Sperrylite | 1 | 0.7 | Rare | PGE (halved) |
-| Platinum (native) | 1 | 0.7 | Rare | native platinum alloy grains (halved) |
-| Gold (native) | 1 | 0.7 | Rare | trace (halved) |
-| Silver (native) | 1 | 0.7 | Rare | trace (halved) |
-| Uraninite | 1 | 0.7 | Rare | trace, uranium (halved) |
-| Quartz | 1 | 0.7 | Rare | trace |
+| Ice | 24 | 15.2 | Abundant | Ice_02 (only ice asteroids allow it; Ice_01 and Ice_03 stay planet-only) |
+| Hematite (Iron) | 20 | 12.7 | Abundant | Iron (Fe), the main asteroid iron |
+| Kamacite | 16 | 10.1 | Abundant | Fe-Ni-Co metal |
+| Olivine | 16 | 10.1 | Abundant | stony asteroids |
+| Taenite | 14 | 8.9 | Abundant | Fe-Ni metal |
+| Pyrite | 12 | 7.6 | Common | troilite (FeS) |
+| Dolomite | 8 | 5.1 | Common | carbonates in carbonaceous asteroids |
+| Cohenite | 6 | 3.8 | Common | iron carbide |
+| Sinoite | 6 | 3.8 | Common | enstatite chondrite (Si, N) |
+| Akimotoite | 4 | 2.5 | Uncommon | shock mineral |
+| Wadsleyite | 4 | 2.5 | Uncommon | shock mineral |
+| Hapkeite | 4 | 2.5 | Uncommon | lunar / stony Fe-Si |
+| Heazlewoodite | 4 | 2.5 | Uncommon | Ni sulfide |
+| Magnetite (Dense Iron) | 4 | 2.5 | Uncommon | dense iron fragments |
+| Cooperite | 3 | 1.9 | Uncommon | PGE |
+| Niggliite | 2 | 1.3 | Uncommon | PGE |
+| Sperrylite | 2 | 1.3 | Uncommon | PGE |
+| Platinum (native) | 2 | 1.3 | Uncommon | native platinum alloy grains |
+| Gold (native) | 2 | 1.3 | Uncommon | trace, as in the rebalanced Better Stone |
+| Silver (native) | 2 | 1.3 | Uncommon | trace |
+| Uraninite | 2 | 1.3 | Uncommon | trace, uranium |
+| Quartz | 1 | 0.6 | Rare | trace |
 
-Total weight 151. Ice is the most common single material (about 16 %), then asteroid iron (Iron (Fe) with a little Ice) and the Fe-Ni metals; the precious metals and uranium are about half as common as in the first proposal.
+Total weight 158. Ice is the most common single material (about 15 %), then asteroid iron (Iron (Fe) with a little Ice) and the Fe-Ni metals; gold, silver, platinum and uranium are about 1.3 % each.
 
 ## 5. Which ingots can be mined where
 
@@ -267,7 +267,7 @@ Metals each body gives in the plan against vanilla (and Better Stone, which adds
 | Titan | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | yes |
 | Asteroids | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | yes |
 
-Availability matches. Not the same is **how common** gold and silver are on the airless bodies: in vanilla they are ordinary ores there (6 of about 55 mappings each); in this plan they are trace entries of 0.05-0.3 %, so the ingots are obtainable but much scarcer. Raising them to about 0.5-1 % (Rare) on the Moon, Europa and Titan would keep the progression closer to vanilla.
+Availability matches, and the **rate** now matches too: gold, silver and platinum follow Better Stone's ingots per ore, uranium half of it (section 8).
 
 ## 6. Host rock, vein size and regions (the data pack values)
 
@@ -325,7 +325,7 @@ New entries (Azurite, Sphalerite, Ilmenite, Spodumene, and the renamed Bauxite, 
 
 1. **Aluminium gap:** aluminium only exists on Earth-likes. Change Spodumene (`Silicon_01`) to **Anorthite (Al, Si)**, a real mineral of the lunar highlands, of basaltic crust (Mars, Moon) and of anorthosite on Earth-likes, with a trace of Bauxite-like clay on Mars? Lithium then comes only from Lepidolite (Earth-likes), tungsten stays Earth-like-only.
 2. **Hematite / Magnetite names** for the two iron slots (Better Stone calls them Iron (Fe) and Dense Iron (Fe+)).
-3. **Precious-metal traces on airless bodies** (Moon, Europa, Titan, Mars): real only as ppb, but vanilla and Better Stone give gold and silver (and platinum on the Moon, Europa, Titan) to every one of them, so they stay at 0.05-0.3 % to keep the progression.
+3. **Precious metals follow Better Stone's rate** (section 8): decided. Their realism comes from the host rocks and from a few rich regions, not from a thin even sprinkle.
 4. **Planet-specific ore regions:** the pack values are Earth-scale; on a smaller moon (Europa, Triton) use bigger Cov % or fewer regions in the tool per planet.
 5. **Asteroid weights** are one global list; asteroid families would need extra work.
 
@@ -357,7 +357,7 @@ Measured on the real planet maps: the blue channel of the vanilla `*_mat.png` fi
 
 So in the plan gold would be 20-150 times scarcer than in vanilla and Better Stone, platinum and uranium 10-50 times. Progression is kept only on paper.
 
-**Proposal (not yet applied to the tables above):** bring gold, silver and platinum to the Better Stone rate (the progression), uranium to half of it (Better Stone adds it, you wanted less), and keep realism through the *regions* and host rocks: these ores are in a few rich regions (Glob 65-90 %, 8-17 km regions, section 6), so a miner who finds one gets a lot, instead of a thin even sprinkle. Fitted multipliers on the current body factors:
+**Decision: applied in the tables above.** Gold, silver and platinum are brought gold, silver and platinum to the Better Stone rate (the progression), uranium to half of it (Better Stone adds it, you wanted less), and keep realism through the *regions* and host rocks: these ores are in a few rich regions (Glob 65-90 %, 8-17 km regions, section 6), so a miner who finds one gets a lot, instead of a thin even sprinkle. Multipliers that were applied to the body factors:
 
 | Body | Metal groups: factor and resulting share of the ore |
 |---|---|
@@ -367,7 +367,7 @@ So in the plan gold would be 20-150 times scarcer than in vanilla and Better Sto
 | Europa | Gold x139 -> 4.8 %; Silver x63 -> 4.5 %; Platinum x62 -> 6.1 %; Uranium x28 -> 1.9 % |
 | Titan | Gold x81 -> 4.8 %; Silver x40 -> 4.9 %; Platinum x48 -> 4.5 %; Uranium x16 -> 1.9 % |
 
-The cost: the gold- and silver-bearing minerals then take about 18 % of the ore pixels on Earth-like (10.8 % and 7.7 %) and 10-20 % on the other bodies (gold, silver, platinum and uranium groups together), and the other minerals get proportionally less; Better Stone's own shares are in the table above. A middle path is half the Better Stone rate for all four metals on planets (the companion mod's idea applied to planets); say which.
+The cost: the gold- and silver-bearing minerals then take about 18 % of the ore pixels on Earth-like (10.8 % and 7.7 %) and 10-20 % on the other bodies (gold, silver, platinum and uranium groups together), and the other minerals get proportionally less; Better Stone's own shares are in the table above. 
 
-**Asteroids:** Better Stone's rebalanced list (companion mod) gives gold, silver, platinum and uranium about 1 / 103 = 0.97 % each, with the other ores summing to 82. In the plan they are 1 / 151 = 0.66 %. Raise them to weight 2 (and the platinum minerals Cooperite 3, Niggliite 2, Sperrylite 2) for about 1.3 % each, still half of the original Better Stone share of about 1.6 %.
+**Asteroids:** Better Stone's rebalanced list (companion mod) gives gold, silver, platinum and uranium about 1 / 103 = 0.97 % each, with the other ores summing to 82. In the plan they are 1 / 151 = 0.66 %. Applied: weight 2 for each (platinum minerals Cooperite 3, Niggliite 2, Sperrylite 2) for about 1.3 % each, still under the original Better Stone share of about 1.6 %.
 
