@@ -20,6 +20,7 @@ namespace SpaceEngineersOreRedistribution
         readonly double _scale;      // lattice cells per meter * planet radius: 1 / glob size on the unit sphere
         readonly double _threshold;  // field value above which a place counts as "in a glob"
         readonly double _width;      // softness of the glob edge
+        readonly double[] _sorted;   // sampled field values, for Rank()
 
         /// <param name="seed">per ore</param>
         /// <param name="planetRadius">m</param>
@@ -39,6 +40,7 @@ namespace SpaceEngineersOreRedistribution
                 samples[i] = Value(r * Math.Cos(phi), r * Math.Sin(phi), z);
             }
             Array.Sort(samples);
+            _sorted = samples;
             coverage = Math.Clamp(coverage, 0.02, 0.9);
             _threshold = samples[(int)Math.Clamp((1 - coverage) * samples.Length, 0, samples.Length - 1)];
             double mean = samples.Average();
@@ -53,6 +55,17 @@ namespace SpaceEngineersOreRedistribution
             double n1 = Noise(sx, sy, sz, _seed);
             double n2 = Noise(sx * 2 + 17.3, sy * 2 + 41.7, sz * 2 + 5.1, _seed ^ 0x9E3779B9u);
             return (n1 + 0.5 * n2) / 1.5;
+        }
+
+        /// <summary>
+        /// Where a field value stands among all places on the planet, 0..1 (evenly distributed): turns the bell shaped
+        /// noise into something that can be cut into shares, e.g. the rock types of a region.
+        /// </summary>
+        public double Rank(double fieldValue)
+        {
+            int lo = 0, hi = _sorted.Length;
+            while (lo < hi) { int mid = (lo + hi) >> 1; if (_sorted[mid] <= fieldValue) lo = mid + 1; else hi = mid; }
+            return lo / (double)_sorted.Length;
         }
 
         /// <summary>Chance (0..1) that a vein is accepted where the field has this value.</summary>

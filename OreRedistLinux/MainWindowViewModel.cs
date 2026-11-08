@@ -145,9 +145,11 @@ namespace SpaceEngineersOreRedistribution
                 {
                     _oreTypeOrder = new();
                     Water = null;
+                    LoadGeology(null);
                     return;
                 }
                 Water = WaterSettings.ForPlanet(value, _lastOpenedFile);
+                LoadGeology(value);
                 // Order of first appearance in the definition: keeps each ore's default color stable
                 _oreTypeOrder = value.OreMappings.Select(m => m.Type).Distinct().ToList();
                 //HashSet<string> types = new();
@@ -257,6 +259,7 @@ namespace SpaceEngineersOreRedistribution
                             if (token.IsCancellationRequested) return;
                             _updatingImages = false;
                             AnalyzeWater();
+                            RebuildRegions();
                             UpdateImages();
                             UpdateOverlays(true);
                         });
@@ -459,6 +462,11 @@ namespace SpaceEngineersOreRedistribution
 
             byte b = img.B[x, y];
             var mapping = SelectedPlanetDefinition?.OreMappings.FirstOrDefault(m => m.Value == b);
+            if (_regions != null)
+            {
+                int tw = img.TileWidth;
+                parts.Add("region " + GeoInfo.RegionNames[(int)_regions.At(face, x, y, tw)].ToLowerInvariant());
+            }
             parts.Add(mapping != null ? $"ore {mapping.Type}, {mapping.Start}-{mapping.Start + mapping.Depth} m deep (value {b})" : "no ore");
 
             byte g = img.G[x, y];
@@ -469,6 +477,106 @@ namespace SpaceEngineersOreRedistribution
             if (cm != null && r != 0) parts.Add($"material {r} ({cm.Name})");
             return string.Join("   |   ", parts);
         }
+
+        // ------------------------------------------------------------------ geology (rock types, regions, painter)
+        GeologySettings _geology = new();
+        /// <summary>Geology recipes of the selected planet.</summary>
+        public GeologySettings Geology => _geology;
+
+        RegionMap _regions = new();
+        /// <summary>Regions of the selected planet: automatic (seabed, uplift) plus the hand painted ones.</summary>
+        public RegionMap Regions => _regions;
+
+        internal GeologyPainter Painter { get; } = new();
+
+        bool _showRegions;
+        public bool ShowRegions
+        {
+            get => _showRegions;
+            set { if (SetProp(ref _showRegions, value)) RegionsVisibilityChanged?.Invoke(); }
+        }
+
+        /// <summary>The region overlay has to be redrawn completely (new regions).</summary>
+        public event Action RegionsChanged;
+        public event Action RegionsVisibilityChanged;
+
+        DispatcherTimer _geoSaveTimer, _regionRebuildTimer, _paintSaveTimer;
+
+        void LoadGeology(PlanetDefinition planet)
+        {
+            _geology.Changed -= OnGeologyChanged;
+            _geology = planet == null ? new GeologySettings() : GeologySettings.Load(planet.Name);
+            _geology.Changed += OnGeologyChanged;
+            _regions = new RegionMap();
+            if (planet != null) _regions.LoadPaint(Path.Combine(GeologySettings.FolderFor(planet.Name), "paint.png"));
+            Painter.ResetHistory();
+            OnPropertyChanged(nameof(Geology));
+            OnPropertyChanged(nameof(Regions));
+            RegionsChanged?.Invoke();
+        }
+
+        void OnGeologyChanged()
+        {
+            // recipes, uplift share, patch size: save and rebuild the automatic regions (after a short pause)
+            _geoSaveTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            _geoSaveTimer.Tick -= GeoSaveTick; _geoSaveTimer.Tick += GeoSaveTick;
+            _geoSaveTimer.Stop(); _geoSaveTimer.Start();
+        }
+
+        void GeoSaveTick(object sender, EventArgs e)
+        {
+            _geoSaveTimer.Stop();
+            var name = SelectedPlanetDefinition?.Name;
+            if (name != null) _geology.Save(name);
+            RebuildRegions();
+        }
+
+        /// <summary>Called after a paint stroke: the paint image is saved a moment later.</summary>
+        internal void PaintFinished()
+        {
+            _paintSaveTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+            _paintSaveTimer.Tick -= PaintSaveTick; _paintSaveTimer.Tick += PaintSaveTick;
+            _paintSaveTimer.Stop(); _paintSaveTimer.Start();
+        }
+
+        void PaintSaveTick(object sender, EventArgs e)
+        {
+            _paintSaveTimer.Stop();
+            var name = SelectedPlanetDefinition?.Name;
+            if (name != null) _regions.SavePaint(Path.Combine(GeologySettings.FolderFor(name), "paint.png"));
+        }
+
+        /// <summary>Value of the red channel that marks lakes (the "Lake areas" complex material of vanilla planets, 82).</summary>
+        int LakeValue() => SelectedPlanetDefinition?.ComplexMaterials.FirstOrDefault(c => (c.Name ?? "").Contains("lake", StringComparison.OrdinalIgnoreCase))?.Value ?? 82;
+
+        /// <summary>Recomputes seabed and uplift in the background and redraws the overlay.</summary>
+        void RebuildRegions()
+        {
+            Dictionary<CubeMapFace, ImageData> images;
+            lock (_images) images = _images.Where(kv => kv.Value != null && kv.Value.R != null).ToDictionary(kv => kv.Key, kv => kv.Value);
+            if (images.Count == 0) return;
+            var regions = _regions; var water = Water; int lake = LakeValue(); double uplift = _geology.UpliftPercent; int tw = TileWidth;
+            Task.Run(() =>
+            {
+                regions.RebuildAuto(images, water, lake, uplift, tw);
+                Dispatcher.UIThread.Post(() => { if (ReferenceEquals(regions, _regions)) RegionsChanged?.Invoke(); });
+            });
+        }
+
+        /// <summary>Geology model for a run (the regions are brought up to date first).</summary>
+        internal GeologyModel BuildGeologyModel(int seed, double planetRadius)
+        {
+            Dictionary<CubeMapFace, ImageData> images;
+            lock (_images) images = _images.Where(kv => kv.Value != null && kv.Value.R != null).ToDictionary(kv => kv.Key, kv => kv.Value);
+            _regions.RebuildAuto(images, Water, LakeValue(), _geology.UpliftPercent, TileWidth);
+            return new GeologyModel(_regions, _geology, planetRadius, TileWidth, seed);
+        }
+
+        public ICommand OpenGeologySettingsCommand => new RelayCommand(o =>
+        {
+            var win = new GeologySettingsWindow(Geology);
+            win.ShowDialogBlocking();
+        }, o => SelectedPlanetDefinition != null);
 
         // ------------------------------------------------------------------ water (Water Mod)
         WaterSettings _water;
@@ -510,6 +618,7 @@ namespace SpaceEngineersOreRedistribution
         {
             _waterTimer.Stop();
             AnalyzeWater();
+            RebuildRegions();
             if (ShowWater && !_updatingImages) UpdateImages();
         }
 
@@ -1092,6 +1201,11 @@ namespace SpaceEngineersOreRedistribution
             setup.ViewModel.TileWidth = TileWidth;
             setup.ViewModel.Water = Water;
             setup.ViewModel.PlanetName = SelectedPlanetDefinition?.Name;
+            {
+                var sh = _regions.Shares();
+                setup.ViewModel.GeologyHint = "Regions: " + string.Join(", ", Enumerable.Range(0, GeoInfo.Regions).Select(i => $"{GeoInfo.RegionNames[i].ToLowerInvariant()} {sh[i] * 100:0.#}%"))
+                    + "  (Geology menu: settings, paint regions)";
+            }
             foreach (var oredef in OreTypes)
             {
                 var info = new RedistributionSetupViewModel.OreInfo { Name = oredef.OreType, SpawnWeight = (int)(oredef.Percentage + .5) };
@@ -1167,6 +1281,8 @@ namespace SpaceEngineersOreRedistribution
                 IgnoreTiers = ignoreTiers, Water = water, UseWater = useWater,
                 GlobSize = setup.ViewModel.GlobSizeKm * 1000, GlobCoverage = setup.ViewModel.GlobCoverage / 100, PlanetRadius = setup.ViewModel.PlanetRadius,
             };
+            if (setup.ViewModel.Placement == PlacementMode.Geology)
+                ctx.Geology = BuildGeologyModel(setup.ViewModel.Seed, setup.ViewModel.PlanetRadius);
 
             // The heavy part runs in the background with a progress window; files are written at the very end,
             // so cancelling leaves the output folder untouched.
@@ -1307,7 +1423,8 @@ namespace SpaceEngineersOreRedistribution
                 done += 0.5;
             }
 
-            string reportText = WaterPlacement.BuildReport(water, useWater, report.Values, densityLine, reference != null);
+            string reportText = WaterPlacement.BuildReport(water, useWater, report.Values, densityLine, reference != null,
+                ctx.Geology != null ? WaterPlacement.GeologyReport(ctx.Geology.Map.Shares(), report.Values) : "");
             try { File.WriteAllText(Path.Combine(directory, "placement_report.txt"), reportText); } catch { }
             if (useWater)
             {

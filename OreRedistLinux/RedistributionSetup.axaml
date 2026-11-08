@@ -3,7 +3,7 @@
         xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
         x:Class="SpaceEngineersOreRedistribution.RedistributionSetup"
         Title="Redistribution Setup"
-        x:Name="SetupRoot" MaxHeight="980" Height="910" Width="1030" CanResize="True">
+        x:Name="SetupRoot" MaxHeight="990" Height="945" Width="1030" CanResize="True">
     <Grid RowDefinitions="*,Auto,Auto,Auto" Margin="4">
         <local:GroupBox Grid.Row="0" Header="Ores" MinWidth="320" MinHeight="240" >
             <Grid>
@@ -18,13 +18,14 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" RowDefinitions="Auto,*" Margin="3" MinHeight="50">
-                    <Grid ColumnDefinitions="100,70,60,70,75,75,80,55,55,150,65,60" HorizontalAlignment="Left" Margin="4,0,0,0">
+                    <Grid ColumnDefinitions="100,70,60,70,75,75,80,55,55,150,65,60,80" HorizontalAlignment="Left" Margin="4,0,0,0">
                         <TextBlock Grid.Column="0" Text="Name" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="1" Text="Weight" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Spawn weight: relative probability of this ore"/><TextBlock Grid.Column="2" Text="Size" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Typical size: ore patches per vein (0 = random 5-30)"/><TextBlock Grid.Column="3" Text="Ratio" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Expected ratio of all ore"/><TextBlock Grid.Column="4" Text="Depth min" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Typical depth min: shallowest layer this ore may use (-1 = no limit)"/><TextBlock Grid.Column="5" Text="Depth max" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Typical depth max: deepest layer this ore may use (-1 = no limit)"/><TextBlock Grid.Column="6" Text="Pref. depth" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Preferred depth: layer the veins cluster around (-1 = random)"/><TextBlock Grid.Column="7" Text="Deep" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Very deep ore: allow layer 9 (370 m and deeper)"/><TextBlock Grid.Column="8" Text="Layers" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="9" Text="Water" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="10" Text="Land %" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Land + seabed ores: share of this ore's veins that start on land. Empty = baseline of the Water window, 0 = seabed only, 100 = land only, in between = preference."/><TextBlock Grid.Column="11" Text="Glob %" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Globbing: ores tend to occur around ore of the same kind. 0 = spread evenly (default), 100 = only inside the globs (areas where this ore is common while it is rare elsewhere). The number of veins does not change, only where they are. Size and coverage of the globs: see below."/>
+                    <TextBlock Grid.Column="12" Text="Rocks" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Geology mode: which rock types this ore forms in"/>
                     </Grid>
                     <ListBox Grid.Row="1" ItemsSource="{Binding OreInfos}" SelectedItem="{Binding SelectedInfo}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="100,70,60,70,75,75,80,55,55,150,65,60">
+                                <Grid ColumnDefinitions="100,70,60,70,75,75,80,55,55,150,65,60,80">
                                     <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="0" Margin="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="1" Margin="1" Text="{Binding SpawnWeight, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="2" Margin="1" Text="{Binding TypicalSize, UpdateSourceTrigger=PropertyChanged}" />
@@ -47,7 +48,11 @@
                                              IsEnabled="{Binding LandShareEnabled}"
                                              ToolTip.Tip="Land + seabed ores: percent of this ore's veins that start on land. Empty = baseline of the Water window. 0 = seabed only, 100 = land only, in between = preference. A layer can override it again."/>
                                     <TextBox Grid.Column="11" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Margin="1" Text="{Binding Glob, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding DataContext.GlobbingMode, ElementName=SetupRoot}"
                                              ToolTip.Tip="Globbing strength in percent: 0 = spread evenly, 100 = only inside the globs."/>
+                                    <Button Grid.Column="12" Height="26" MinHeight="0" Padding="4,2" Margin="1" Content="{Binding RocksSummary}" Click="RocksButton_Click"
+                                            IsEnabled="{Binding DataContext.GeologyMode, ElementName=SetupRoot}"
+                                            ToolTip.Tip="Rock types this ore forms in (geology mode). All equal = the ore does not care."/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -147,7 +152,16 @@
                         <TextBlock Text="pixels on average (default 1000 for 120 km diameter / 60 km radius)." VerticalAlignment="Center"/>
                     </WrapPanel>
                     <TextBlock Text="{Binding SpawnInfo}" FontWeight="SemiBold"/>
-                    <WrapPanel Orientation="Horizontal" Margin="0,2,0,0">
+                    <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Ore placement: " VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox Width="150" MinHeight="0" Height="26" Padding="6,1" SelectedIndex="{Binding PlacementIndex, Mode=TwoWay}"
+                                  ToolTip.Tip="Globbing: ore forms clusters (strength per ore). Geology: ore follows simulated rock types and regions (Geology menu of the main window).">
+                            <ComboBoxItem Content="Globbing"/>
+                            <ComboBoxItem Content="Geology"/>
+                        </ComboBox>
+                        <TextBlock Text="{Binding GeologyHint}" IsVisible="{Binding GeologyMode}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                    </WrapPanel>
+                    <WrapPanel Orientation="Horizontal" Margin="0,2,0,0" IsEnabled="{Binding GlobbingMode}">
                         <TextBlock Text="Globbing: globs " VerticalAlignment="Center"/>
                         <TextBox Width="60" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="3,0,3,0" Text="{Binding GlobSizeKm, UpdateSourceTrigger=PropertyChanged}"
                                  ToolTip.Tip="Size of the globs in km (distance between the peaks and valleys of the ore fields)."/>

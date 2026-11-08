@@ -148,6 +148,23 @@ rules (the glob test is part of the site search, tried first) and the top-up. On
 goes 36 % (0) / 41 % (25) / 58 % (50) / 79 % (75) / 83 % (100), empty cells 2 % to 63 %, total ore pixels unchanged. Saved in setups. With every ore at 0 the maps
 are identical to before.
 
+## Geology (ore follows simulated rock types and regions)
+An alternative to globbing: in the redistribution window set **Ore placement** to *Geology* (globbing stays the default, all ores at 0). The tool then
+simulates where kinds of rock are found and places each ore where the rock suits it. It is not the exact rock (granite, quartz...), only the kind:
+sedimentary, metamorphic (low / high grade), igneous extrusive (volcanic surface rock) and igneous intrusive (cooled underground).
+
+* **Regions** (map): *Land*, *Seabed* (ground under the water line when the Water rules are on, otherwise under the lakes, red channel "Lake areas" value),
+  *Uplift* (the highest part of the land by height, default 15 %) and *Volcanic* (only where you paint it). Seabed, uplift and land can be painted too.
+* **Rock layers**: *Surface* = ore layers 1-3, *Layer 1* = 4-6, *Layer 2* = 7-10. Every region has a recipe (weights of the five rock types per rock layer).
+  Defaults after the geology guide: land is sedimentary on top over metamorphic rock of rising grade, the seabed is igneous, uplift shows metamorphic and
+  intrusive rock at the surface, volcanic areas are extrusive over intrusive.
+* **Per ore** the *Rocks* button (setup window) gives weights per rock type (0 = never, 100 = normal). A vein is placed where the rock of its layer suits
+  the ore, so an ore of high grade metamorphic rock is deep under plain land but near the surface in uplift regions.
+* Menu **Geology**: *Show regions* (overlay on the map), *Paint regions...* (brush, eraser, brush size, undo / redo; left mouse paints, middle mouse moves the
+  map) and *Geology settings...* (uplift share, size of the rock patches, the recipes). The hover text of the map shows the region.
+* Stored per planet in `~/.config/OreRedistLinux/Geology/<planet>/` (`geology.xml`, `paint.png`). The placement report gets a geology section.
+* Water rules, ratios and density limits still apply; veins are counted by the rock layer they start in. Output with Globbing / geology off is unchanged.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

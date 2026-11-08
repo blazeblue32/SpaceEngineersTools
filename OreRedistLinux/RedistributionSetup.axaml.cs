@@ -55,6 +55,12 @@ namespace SpaceEngineersOreRedistribution
             _lastSavedKey = key;
         }
 
+        private void RocksButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Control)?.DataContext is RedistributionSetupViewModel.OreInfo info)
+                new RockWeightsWindow(info).ShowDialogBlocking(this);
+        }
+
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             var items = new List<Control>();

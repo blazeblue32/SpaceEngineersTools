@@ -32,6 +32,8 @@ namespace SpaceEngineersOreRedistribution
         /// <summary>Pixels per layer: what the tool places without water rules (target) and what the map got.</summary>
         public long[] LayerTarget = new long[10];
         public long[] LayerAchieved = new long[10];
+        /// <summary>Veins per rock layer (surface, layer 1, layer 2).</summary>
+        public int[] TierVeins = new int[3];
         public long Pixels;
         /// <summary>Single pixels of veins that were made shallower.</summary>
         public long ClampedPixels;
@@ -42,7 +44,7 @@ namespace SpaceEngineersOreRedistribution
     /// <summary>Text of the placement report and the short shortfall list. The placement itself is in OrePlacer.</summary>
     internal static class WaterPlacement
     {
-        public static string BuildReport(WaterSettings w, bool waterUsed, IEnumerable<OreReportRow> rows, string densityLine = "", bool hasReference = false)
+        public static string BuildReport(WaterSettings w, bool waterUsed, IEnumerable<OreReportRow> rows, string densityLine = "", bool hasReference = false, string geologyText = "")
         {
             rows = rows.ToList();
             var sb = new StringBuilder();
@@ -88,6 +90,22 @@ namespace SpaceEngineersOreRedistribution
                 sb.AppendLine("Below 100% where no ground is left that is dry enough (or not full yet) for that layer: lower the water radius,");
                 sb.AppendLine("raise the density limit, or set the ore to Land + seabed so it can use the seabed.");
             }
+            if (!string.IsNullOrEmpty(geologyText)) { sb.AppendLine(); sb.Append(geologyText); }
+            return sb.ToString();
+        }
+
+        /// <summary>Geology part of the report: region shares and the rock layers the veins of each ore started in.</summary>
+        public static string GeologyReport(double[] regionShares, IEnumerable<OreReportRow> rows)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Geology placement");
+            sb.AppendLine("Regions: " + string.Join(", ", Enumerable.Range(0, GeoInfo.Regions).Select(i => $"{GeoInfo.RegionNames[i].ToLowerInvariant()} {regionShares[i] * 100:0.#}%")));
+            sb.AppendLine();
+            sb.AppendLine("Ore".PadRight(18) + string.Concat(GeoInfo.TierNames.Select(t => (t + " veins").PadLeft(16))) + "Dropped".PadLeft(9));
+            foreach (var r in rows.OrderBy(r => r.Name))
+                sb.AppendLine(r.Name.PadRight(18) + string.Concat(r.TierVeins.Select(v => v.ToString().PadLeft(16))) + r.Dropped.ToString().PadLeft(9));
+            sb.AppendLine("Veins are counted by the rock layer they start in (surface = layers 1-3, layer 1 = 4-6, layer 2 = 7-10).");
+            sb.AppendLine("Dropped: no rock of a suitable type exists for that ore (check its Rocks setting and the recipes in the Geology menu).");
             return sb.ToString();
         }
 

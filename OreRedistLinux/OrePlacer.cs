@@ -16,6 +16,8 @@ namespace SpaceEngineersOreRedistribution
         public bool UseWater;
         /// <summary>Globbing: size of the globs in meters, share of the planet inside globs (0..1) and planet radius for the noise.</summary>
         public double GlobSize = 15000, GlobCoverage = 0.2, PlanetRadius = 60000;
+        /// <summary>Geology placement (rock types per region). Null = off (globbing / evenly spread).</summary>
+        internal GeologyModel Geology;
     }
 
     /// <summary>Water related look-ups of one cube face: land pixels sorted by height, sea pixels, density bookkeeping.</summary>
@@ -218,21 +220,36 @@ namespace SpaceEngineersOreRedistribution
                     var info = setup.PickRandomOreWeighted(_rnd);
                     var mappings = _c.Mappings[info.Name];
                     Limits(info, mappings, out int minIdx, out int maxIdx);
-                    int depth = RollDepth(info, mappings, minIdx, maxIdx);
-                    if (depth == -1) continue;
-                    int spawnSize = RollSize(info);
-
                     var row = _report[info.Name];
                     var mode = ModeOf(info);
-                    ++row.Events;
 
-                    int siteX = x, siteY = y, idx = depth;
-                    _accept = AcceptFor(info, key);
-                    if (mode == OreWaterMode.Anywhere && _accept != null)
+                    int depth, spawnSize, siteX = x, siteY = y;
+                    if (_c.Geology == null)
+                    {
+                        depth = RollDepth(info, mappings, minIdx, maxIdx);
+                        if (depth == -1) continue;
+                        spawnSize = RollSize(info);
+                        ++row.Events;
+                    }
+                    else
+                    {
+                        // Geology: layer and place are chosen together from the rock that is there
+                        spawnSize = RollSize(info);
+                        ++row.Events;
+                        if (!GeoPick(info, key, mappings, minIdx, maxIdx, x, y, out siteX, out siteY, out depth))
+                        {
+                            ++row.Dropped;
+                            continue;
+                        }
+                    }
+
+                    int idx = depth;
+                    _accept = AcceptFor(info, key, depth);
+                    if (mode == OreWaterMode.Anywhere && _accept != null && _c.Geology == null)
                         GlobSite(info, key, image, x, y, out siteX, out siteY);
                     if (mode != OreWaterMode.Anywhere)
                     {
-                        if (!FindSite(fw, source, image, mode, mappings, x, y, depth, minIdx, spawnSize, ShareFor(info, mappings, depth), row, out siteX, out siteY, out idx, out bool sea))
+                        if (!FindSite(fw, source, image, mode, mappings, siteX, siteY, depth, minIdx, spawnSize, ShareFor(info, mappings, depth), row, out siteX, out siteY, out idx, out bool sea))
                         {
                             ++row.Dropped;
                             continue;
@@ -240,7 +257,8 @@ namespace SpaceEngineersOreRedistribution
                         if (sea) ++row.VeinsSea; else ++row.VeinsLand;
                     }
                     ++row.Placed;
-                    DrawVein(image, fw, source, row, mode, mappings, siteX, siteY, idx, minIdx, maxIdx, spawnSize, info.LandShare, null);
+                    ++row.TierVeins[GeoInfo.TierOf(idx)];
+                    DrawVein(image, fw, source, row, mode, mappings, siteX, siteY, idx, minIdx, maxIdx, spawnSize, info.LandShare, key, RockW(info), null);
                 }
             }
             return image;
@@ -266,9 +284,108 @@ namespace SpaceEngineersOreRedistribution
             return field.Acceptance(field.Value(p.X, p.Y, p.Z), s);
         }
 
-        /// <summary>Site test for the water rule search: null when the ore has no globbing.</summary>
-        Func<int, int, bool> AcceptFor(RedistributionSetupViewModel.OreInfo info, CubeMapFace face) =>
-            info.Glob > 0 ? (x, y) => _rnd.NextDouble() < GlobChance(info, face, x, y) : null;
+        /// <summary>
+        /// Site test for the water rule search. Geology: the rock of the layer has to suit the ore (chance = its weight / the ore's best weight).
+        /// Otherwise globbing. Null when there is nothing to test.
+        /// </summary>
+        Func<int, int, bool> AcceptFor(RedistributionSetupViewModel.OreInfo info, CubeMapFace face, int layer)
+        {
+            var geo = _c.Geology;
+            if (geo != null)
+            {
+                var rw = RockW(info); double max = rw.Max();
+                if (max <= 0 || layer < 0) return null;
+                int tier = GeoInfo.TierOf(layer);
+                return (x, y) => _rnd.NextDouble() < rw[(int)geo.RockAt(face, x, y, tier)] / max;
+            }
+            return info.Glob > 0 ? (x, y) => _rnd.NextDouble() < GlobChance(info, face, x, y) : null;
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        // Geology (see Geology.cs)
+
+        readonly Dictionary<string, double[]> _rockW = new();
+
+        /// <summary>The ore's weight for every rock type.</summary>
+        double[] RockW(RedistributionSetupViewModel.OreInfo info)
+        {
+            if (_c.Geology == null) return null;
+            if (!_rockW.TryGetValue(info.Name, out var w)) _rockW[info.Name] = w = info.Rocks.Select(r => Math.Max(0, r.Weight)).ToArray();
+            return w;
+        }
+
+        /// <summary>
+        /// Picks place and layer of a new vein together. At a place the weight of each layer is the ore's weight for the rock of that layer
+        /// (times the preferred depth, if the ore has one); places where the ore's rock occurs in more layers are accepted more often.
+        /// Tries the place the dice chose first, then random places; if none is accepted, the best one that was seen.
+        /// Returns false if the ore has no suitable rock anywhere that was looked at.
+        /// </summary>
+        bool GeoPick(RedistributionSetupViewModel.OreInfo info, CubeMapFace face, IList<OreMapping> mappings, int minIdx, int maxIdx,
+            int diceX, int diceY, out int px, out int py, out int idx)
+        {
+            var geo = _c.Geology; var rw = RockW(info); int tw = _c.TileWidth;
+            px = diceX; py = diceY; idx = -1;
+            double maxRock = rw.Max();
+            if (maxRock <= 0) return false;
+
+            // preference of the layers: switched on, inside the limits, Gaussian around the preferred depth if there is one
+            var pref = new double[10]; double prefSum = 0;
+            for (int i = Math.Max(0, minIdx); i <= Math.Min(9, maxIdx) && i < mappings.Count; ++i)
+            {
+                if (mappings[i].Value <= 0) continue;
+                double p = 1;
+                if (info.PreferredDepth > -1)
+                {
+                    double sd = Math.Max(0.1, _c.Setup.StdDevDepth);
+                    p = Math.Exp(-0.5 * Math.Pow((i - info.PreferredDepth) / sd, 2));
+                }
+                pref[i] = p; prefSum += p;
+            }
+            if (prefSum <= 0) return false;
+
+            double possible = prefSum * maxRock;
+            var w = new double[10]; var bestW = new double[10]; double best = 0; int bx = diceX, by = diceY;
+            var rock = new double[GeoInfo.Tiers];
+            for (int t = 0; t < 100; ++t)
+            {
+                int x = t == 0 ? diceX : _rnd.Next(tw), y = t == 0 ? diceY : _rnd.Next(tw);
+                for (int k = 0; k < GeoInfo.Tiers; ++k) rock[k] = rw[(int)geo.RockAt(face, x, y, k)];
+                double total = 0;
+                for (int i = 0; i < 10; ++i) { w[i] = pref[i] * rock[GeoInfo.TierOf(i)]; total += w[i]; }
+                if (total > best) { best = total; bx = x; by = y; Array.Copy(w, bestW, 10); }
+                if (total > 0 && _rnd.NextDouble() < total / possible)
+                {
+                    px = x; py = y; idx = Roulette(w, total);
+                    return true;
+                }
+            }
+            if (best <= 0) return false;
+            px = bx; py = by; idx = Roulette(bestW, best);
+            return true;
+        }
+
+        int Roulette(double[] w, double total)
+        {
+            double r = _rnd.NextDouble() * total, acc = 0;
+            for (int i = 0; i < w.Length; ++i) { acc += w[i]; if (w[i] > 0 && r <= acc) return i; }
+            for (int i = w.Length - 1; i >= 0; --i) if (w[i] > 0) return i;
+            return 0;
+        }
+
+        /// <summary>Layer at a pixel of a vein that is on its way: the wanted one if its rock suits the ore, else the nearest layer that does (-1 if none).</summary>
+        int GeoSnap(CubeMapFace face, int x, int y, int idx, double[] rw, IList<OreMapping> mappings, int minIdx, int maxIdx)
+        {
+            var geo = _c.Geology;
+            bool Ok(int i) => i >= minIdx && i <= maxIdx && i >= 0 && i < mappings.Count && mappings[i].Value > 0 &&
+                              rw[(int)geo.RockAt(face, x, y, GeoInfo.TierOf(i))] > 0;
+            if (Ok(idx)) return idx;
+            for (int d = 1; d < 10; ++d)
+            {
+                if (Ok(idx - d)) return idx - d;
+                if (Ok(idx + d)) return idx + d;
+            }
+            return -1;
+        }
 
         /// <summary>
         /// New site for a vein of an ore with globbing (no water rules): the dice pixel if it is accepted, otherwise random
@@ -557,7 +674,7 @@ namespace SpaceEngineersOreRedistribution
 
         /// <summary>Draws one vein into the image. placedPerValue (optional) counts the pixels written per value.</summary>
         void DrawVein(ImageData image, FaceWater fw, ImageData source, OreReportRow row, OreWaterMode mode, IList<OreMapping> mappings,
-            int siteX, int siteY, int defaultDepthIndex, int minDepthIndex, int maxDepthIndex, int spawnSize, double? oreShare, long[] placedPerValue)
+            int siteX, int siteY, int defaultDepthIndex, int minDepthIndex, int maxDepthIndex, int spawnSize, double? oreShare, CubeMapFace face, double[] rockW, long[] placedPerValue)
         {
             int tw = _c.TileWidth;
             bool gaps = HasGap(mappings, minDepthIndex, maxDepthIndex);
@@ -715,12 +832,20 @@ namespace SpaceEngineersOreRedistribution
                 // Layer to draw: the walk may land on a layer that is switched off, then the nearest one that is on is used
                 int drawIdx = gaps ? Snap(mappings, lastDepthIndex, defaultDepthIndex, minDepthIndex, maxDepthIndex) : lastDepthIndex;
 
+                // Geology: the vein stays in rock that suits the ore (nearest suitable layer at this pixel, else the pixel is left out)
+                bool geoBlocked = false;
+                if (rockW != null)
+                {
+                    drawIdx = GeoSnap(face, nextOreToDraw.X, nextOreToDraw.Y, drawIdx, rockW, mappings, minDepthIndex, maxDepthIndex);
+                    geoBlocked = drawIdx < 0;
+                }
+
                 // Get value for depth
-                if (mode == OreWaterMode.Anywhere || fw == null)
+                if (!geoBlocked && (mode == OreWaterMode.Anywhere || fw == null))
                     nextOreToDraw.Value = mappings[drawIdx].Value;
                 else
                 {
-                    int idxHere = PixelIndex(fw, mode, mappings, nextOreToDraw.X, nextOreToDraw.Y, drawIdx, defaultDepthIndex, minDepthIndex, oreShare);
+                    int idxHere = geoBlocked ? -1 : PixelIndex(fw, mode, mappings, nextOreToDraw.X, nextOreToDraw.Y, drawIdx, defaultDepthIndex, minDepthIndex, oreShare);
                     if (idxHere < 0)
                     {
                         nextOreToDraw.Value = -1; ++row.SkippedPixels;
@@ -836,7 +961,7 @@ namespace SpaceEngineersOreRedistribution
                 if ((e & 15) == 0) Token.ThrowIfCancellationRequested();
                 int dx = _rnd.Next(tw), dy = _rnd.Next(tw);
                 int size = RollSize(info);
-                _accept = AcceptFor(info, face);
+                _accept = AcceptFor(info, face, layer);
                 if (!FindSite(fw, source, image, mode, mappings, dx, dy, layer, minIdx, size, ShareFor(info, mappings, layer), row, out int sx, out int sy, out int idx, out bool sea))
                 {
                     if (++fails >= 12) break; // no room for this ore and layer on this face
@@ -844,7 +969,7 @@ namespace SpaceEngineersOreRedistribution
                 }
                 ++row.TopUpVeins;
                 Array.Clear(counts, 0, counts.Length);
-                DrawVein(image, fw, source, row, mode, mappings, sx, sy, idx, minIdx, maxIdx, size, info.LandShare, counts);
+                DrawVein(image, fw, source, row, mode, mappings, sx, sy, idx, minIdx, maxIdx, size, info.LandShare, face, RockW(info), counts);
                 long got = counts.Sum();
                 placed += counts[mappings[layer].Value];
                 row.TopUpPixels += got;

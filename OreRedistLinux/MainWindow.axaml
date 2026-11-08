@@ -35,6 +35,11 @@
                     <MenuItem Header="Show Water (tint underwater terrain)" ToggleType="CheckBox" IsChecked="{Binding ShowWater, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Water" Command="{Binding OpenWaterSettingsCommand}" ToolTip.Tip="Water Mod settings: keep ore out of the water" />
+                <MenuItem Header="_Geology" ToolTip.Tip="Rock types and regions for the geology placement mode">
+                    <MenuItem Header="Show regions" ToggleType="CheckBox" IsChecked="{Binding ShowRegions, Mode=TwoWay}" />
+                    <MenuItem x:Name="PaintRegionsItem" Header="Paint regions..." Click="PaintRegions_Click" />
+                    <MenuItem Header="Geology settings..." Command="{Binding OpenGeologySettingsCommand}" />
+                </MenuItem>
                 <MenuItem Header="Redistribute Ore" Command="{Binding RedistributeOreCommand}" />
                 <MenuItem Header="Rewrite Biomes" Command="{Binding RewriteBiomesCommand}" />
                 <MenuItem Header="Create Occlusion Maps" Command="{Binding CreateOcclusionMapsCommand}" />
@@ -247,6 +252,25 @@
 
         <local:GroupBox
             Grid.Row="1" Grid.Column="2" Grid.RowSpan="4" Header="Map" Margin="3">
+            <DockPanel>
+            <Border x:Name="PainterBar" DockPanel.Dock="Top" IsVisible="False" Margin="3,0,3,3" Padding="6,4" BorderBrush="#40808080" BorderThickness="1" CornerRadius="4">
+                <WrapPanel Orientation="Horizontal">
+                    <TextBlock Text="Paint:" VerticalAlignment="Center" Margin="0,0,6,0" FontWeight="SemiBold"/>
+                    <RadioButton x:Name="ToolSeabed" GroupName="PTool" Content="Seabed" Margin="0,0,6,0"/>
+                    <RadioButton x:Name="ToolUplift" GroupName="PTool" Content="Uplift" Margin="0,0,6,0"/>
+                    <RadioButton x:Name="ToolVolcanic" GroupName="PTool" Content="Volcanic" Margin="0,0,6,0"/>
+                    <RadioButton x:Name="ToolLand" GroupName="PTool" Content="Land" Margin="0,0,6,0"/>
+                    <RadioButton x:Name="ToolErase" GroupName="PTool" Content="Eraser" Margin="0,0,10,0" ToolTip.Tip="Removes paint, the automatic regions show again"/>
+                    <TextBlock Text="Brush" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <Slider x:Name="BrushSlider" Width="120" Minimum="1" Maximum="60" Value="12" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="BrushText" VerticalAlignment="Center" Width="60" Margin="4,0,8,0" FontSize="12"/>
+                    <Button x:Name="UndoButton" Content="Undo" Margin="0,0,4,0" Click="Undo_Click"/>
+                    <Button x:Name="RedoButton" Content="Redo" Margin="0,0,4,0" Click="Redo_Click"/>
+                    <Button Content="Clear all paint" Margin="0,0,4,0" Click="ClearPaint_Click"/>
+                    <Button Content="Done" Click="PaintDone_Click"/>
+                    <TextBlock Text="Left mouse paints, middle mouse moves the map, wheel zooms." FontSize="12" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </WrapPanel>
+            </Border>
             <Border Margin="3" x:Name="BorderView" ClipToBounds="True" Background="Gray">
                 <Canvas x:Name="ImageView" Width="8192" Height="6144" Background="DarkGray" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
                     <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="0" Canvas.Top="0" Source="{Binding TileUp}" />
@@ -263,9 +287,12 @@
                     <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="6144" Canvas.Top="2048" Source="{Binding TileLeftOverlay}" Opacity=".8"/>
                     <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="4096" Canvas.Top="4096" Source="{Binding TileDownOverlay}" Opacity=".8"/>
 
+                    <Image x:Name="RegionImage" RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="8192" Height="6144" Canvas.Left="0" Canvas.Top="0" IsHitTestVisible="False" IsVisible="False"/>
+                    <Ellipse x:Name="BrushCircle" Stroke="White" StrokeThickness="2" IsVisible="False" IsHitTestVisible="False"/>
                     <Rectangle x:Name="OreInspectorRect"  Stroke="Violet" StrokeThickness="1" Width="{Binding OreInspectorSize}" Height="{Binding OreInspectorSize}" IsVisible="False"/>
                 </Canvas>
             </Border>
+            </DockPanel>
         </local:GroupBox>
         <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" BorderBrush="#40808080" BorderThickness="0,1,0,0" Padding="8,3">
             <TextBlock x:Name="StatusText" FontSize="12" TextTrimming="CharacterEllipsis"/>
