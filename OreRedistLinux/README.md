@@ -204,7 +204,7 @@ Right click on the map (with the Ore Inspector on) opens the 3D view of the ore 
 relief in meters is the planet radius times the hill range of the planet definition (without hill parameters an assumed 3 % of the radius), ore boxes hang
 below the terrain surface at their own pixel (the ore *Start* and *Depth* are depths below the surface), so you see where the ore really lies under the hills.
 Scene proportions follow the pixel size on the planet (EarthLike: about 42 m per pixel), so slopes look as steep as they are. Without a height map you get the
-old flat plane. Left mouse turns the view, right mouse moves it up and down, the wheel zooms.
+old flat plane. Left mouse rotates the view, right mouse pans it (left, right, up, down), the wheel zooms, a double click resets the view.
 
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.

@@ -21,9 +21,9 @@ namespace SpaceEngineersOreRedistribution
             return Vector3D.CrossProduct(v0, v1);
         }
 
-        public static void CalculateCamera(double radius, double longitude, double latitude, double zOffset, double rectSize, out Vector3D direction, out Vector3D position)
+        public static void CalculateCamera(double radius, double longitude, double latitude, double zOffset, double rectSize, out Vector3D direction, out Vector3D position, double panX = 0, double panY = 0)
         {
-            Vector3D centerOfSphere = new Vector3D(BaseUnit * rectSize / 2, BaseUnit * rectSize / 2, zOffset);
+            Vector3D centerOfSphere = new Vector3D(BaseUnit * rectSize / 2 + panX, BaseUnit * rectSize / 2 + panY, zOffset);
             position = new Vector3D();
 
             position.Z = radius * Math.Sin(latitude * Math.PI / 180);

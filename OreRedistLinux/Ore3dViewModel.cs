@@ -73,10 +73,34 @@ namespace SpaceEngineersOreRedistribution
             }
         }
 
+        double _panX, _panY;
+        /// <summary>Sideways shift of the point the camera looks at (scene units), set by panning with the right mouse button.</summary>
+        public double PanX => _panX;
+        public double PanY => _panY;
+
+        /// <summary>Moves the point the camera looks at by this vector (scene units). The shift is limited so the scene cannot be lost.</summary>
+        public void PanBy(Vector3D delta)
+        {
+            double lim = Math.Max(200, RectSize * My3dHelper.BaseUnit * 3);
+            _panX = Math.Clamp(_panX + delta.X, -lim, lim);
+            _panY = Math.Clamp(_panY + delta.Y, -lim, lim);
+            _zOffset = Math.Clamp(_zOffset + delta.Z, -lim, lim);
+            OnPropertyChanged(nameof(ZOffset));
+            UpdateCamera();
+        }
+
+        /// <summary>Back to the centered view.</summary>
+        public void ResetPan()
+        {
+            _panX = _panY = 0; _zOffset = 0;
+            OnPropertyChanged(nameof(ZOffset));
+            UpdateCamera();
+        }
+
         void UpdateCamera()
         {
             // Assume center of spere is ground center
-            My3dHelper.CalculateCamera(Radius, Longitude, Latitude, ZOffset, RectSize, out var direction, out var position);
+            My3dHelper.CalculateCamera(Radius, Longitude, Latitude, ZOffset, RectSize, out var direction, out var position, PanX, PanY);
             CamDir = direction;
             CamPos = new Point3D(position.X, position.Y, position.Z);
         }
