@@ -1,0 +1,255 @@
+<local:DialogWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
+        x:Class="SpaceEngineersOreRedistribution.MainWindow"
+        Title="SE Ore Redistribution (Linux)" Height="450" Width="1000">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" MinWidth="202"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
+            <Menu DockPanel.Dock="Left">
+                <MenuItem Header="_File">
+                    <MenuItem Header="Open Planet Definition" Command="{Binding OpenPlanetDefinitionCommand}" />
+                </MenuItem>
+                <MenuItem Header="_Map">
+                    <MenuItem Header="Show Ore Locations" ToggleType="CheckBox" IsChecked="{Binding ShowOreLocations, Mode=TwoWay}" />
+                    <MenuItem Header="Show Gradients" ToggleType="CheckBox" IsChecked="{Binding ShowGradients, Mode=TwoWay}" />
+                    <MenuItem Header="Show Lakes (Complex Materials)" ToggleType="CheckBox" IsChecked="{Binding ShowLakes, Mode=TwoWay}" />
+                    <MenuItem Header="Show Biomes" ToggleType="CheckBox" IsChecked="{Binding ShowBiomes, Mode=TwoWay}" />
+                </MenuItem>
+                <MenuItem Header="Redistribute Ore" Command="{Binding RedistributeOreCommand}" />
+                <MenuItem Header="Rewrite Biomes" Command="{Binding RewriteBiomesCommand}" />
+                <MenuItem Header="Create Occlusion Maps" Command="{Binding CreateOcclusionMapsCommand}" />
+            </Menu>
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,0" VerticalAlignment="Center">
+                <CheckBox x:Name="OreInspectorCb" Content="Ore Inspector" IsChecked="True" VerticalAlignment="Center" />
+                <TextBlock Text="Size:" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                <TextBlock Text="{Binding OreInspectorSize}" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                <Button Content="-" Command="{Binding MinusCommand}" MinWidth="28" HorizontalContentAlignment="Center"/>
+                <Button Content="+" Command="{Binding PlusCommand}" MinWidth="28" HorizontalContentAlignment="Center"/>
+                <TextBlock Text="Tile Width:" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                <ComboBox x:Name="TileWidthCb" Width="90" ItemsSource="{Binding TileWidths}" SelectedItem="{Binding TileWidth}"/>
+                <Button x:Name="LinkButton" Content="github.com/michi84o/SpaceEngineersTools" Background="Transparent"
+                        Foreground="#FF1A5FB4" Padding="2" VerticalAlignment="Center" Cursor="Hand"/>
+            </StackPanel>
+        </DockPanel>
+        <local:GroupBox
+            Grid.Row="1" Grid.Column="0" MinWidth="150" Header="Planets" Margin="3">
+            <ListBox
+                ItemsSource="{Binding PlanetDefinitions}" DisplayMemberBinding="{Binding Name}"
+                SelectedItem="{Binding SelectedPlanetDefinition}"/>
+        </local:GroupBox>
+        <local:GroupBox
+            Grid.Row="2" Grid.Column="0" Header="Ore Types" MinWidth="150" Margin="3">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="6,3,0,0">
+                    <RadioButton Content="By Area" GroupName="Dist" Margin="0,0,5,0" IsChecked="{Binding ShowOreDistByArea}"/>
+                    <RadioButton Content="By Volume" GroupName="Dist" IsChecked="{Binding ShowOreDistByVolume}"/>
+                </StackPanel>
+                <ListBox
+                ItemsSource="{Binding OreTypes}"
+                SelectedItem="{Binding SelectedOreType}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <local:OreDistributionStatView/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            </DockPanel>
+        </local:GroupBox>
+        <Button
+            Grid.Row="2" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Right"
+            Content="Deselect" Margin="0,3,9,0" FontSize="8" Command="{Binding DeselectOreTypeCommand}"   />
+        <local:GroupBox
+            Grid.Row="3" Grid.Column="0" Header="Complex Materials" MinWidth="150" Margin="3">
+            <ListBox
+                ItemsSource="{Binding ComplexMaterials}"
+                SelectedItem="{Binding SelectedComplexMaterial}"/>
+        </local:GroupBox>
+        <local:GroupBox
+            Grid.Row="4" Grid.Column="0" Header="Environment" MinWidth="150" Margin="3">
+            <ListBox
+                ItemsSource="{Binding EnvironmentItems}"
+                SelectedItem="{Binding SelectedEnvironmentItem}"/>
+        </local:GroupBox>
+        <Button
+            Grid.Row="4" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Right"
+            Content="Deselect" Margin="0,3,9,0" FontSize="8" Command="{Binding DeselectEvironmentItemCommand}"   />
+        <Grid
+            Grid.Row="1" Grid.Column="1" Grid.RowSpan="4">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <local:GroupBox
+                Grid.Row="0" Grid.RowSpan="2"
+                Header="Selected Ore Type" MinWidth="350" Margin="3">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ListBox
+                        Grid.Row="0" ItemsSource="{Binding OreMappings}"
+                        SelectedItem="{Binding SelectedOreMapping}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="10"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Value" Grid.Column="0" HorizontalAlignment="Center" />
+                                    <TextBox IsReadOnly="True" Text="{Binding Value}" Grid.Column="1" HorizontalAlignment="Stretch" />
+                                    <TextBlock Text="Start" Grid.Column="2" HorizontalAlignment="Center" />
+                                    <TextBox IsReadOnly="True" Text="{Binding Start}" Grid.Column="3" HorizontalAlignment="Stretch" />
+                                    <TextBlock Text="Depth" Grid.Column="4" HorizontalAlignment="Center" />
+                                    <TextBox IsReadOnly="True" Text="{Binding Depth}" Grid.Column="5" HorizontalAlignment="Stretch" />
+                                    <Rectangle Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Center" Width="10" Height="10" Fill="{Binding MapBrush}" Margin="3,0,3,0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Grid
+                        Grid.Row="1">
+                        <TextBlock
+                            FontSize="10"
+                            Text="List above will not be used for ore redistribution feature!"/>
+                    </Grid>
+                </Grid>
+            </local:GroupBox>
+            <Grid
+                Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Grid.Row="0" Text="Ore detector range: (S=50, L=150)" Margin="3"
+                    Grid.Column="0" Grid.ColumnSpan="3"/>
+                <CheckBox
+                    Grid.Row="1" ToolTip.Tip="Enable" Margin="3"
+                    VerticalAlignment="Center"
+                    IsChecked="{Binding UseOreDetectorRange}"/>
+                <Slider
+                    Grid.Row="1" Grid.Column="1" Margin="3"
+                    Orientation="Horizontal"
+                    IsEnabled="{Binding UseOreDetectorRange}"
+                    Value="{Binding OreDetectorRange}"
+                    Minimum="10"
+                    Maximum="500"
+                    TickFrequency="10"
+                    IsSnapToTickEnabled="True"
+                    />
+                <TextBlock
+                    Grid.Row="1" Grid.Column="2" Margin="3"
+                    VerticalAlignment="Center" Text="{Binding OreDetectorRange}" Width="30"
+                    HorizontalAlignment="Center" TextAlignment="Center"/>
+            </Grid>
+            <local:GroupBox
+                Grid.Row="3" Header="Selected Environment Item" Margin="3">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.Row="0" Grid.Column="0" Text="Biome: " Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="0" Grid.Column="1" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.Biome}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="0" Grid.Column="2" Text="Material: " Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="0" Grid.Column="3" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.Material}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="1" Grid.Column="0" Text="Min Height:" Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="1" Grid.Column="1" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.MinHeight}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="1" Grid.Column="2" Text="Max Height:" Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="1" Grid.Column="3" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.MaxHeight}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="2" Grid.Column="0" Text="Min Latitude:" Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="2" Grid.Column="1" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.MinLatitude}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="2" Grid.Column="2" Text="Max Latitude:" Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="2" Grid.Column="3" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.MaxLatitude}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="3" Grid.Column="0" Text="Min Slope:" Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="3" Grid.Column="1" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.MinSlope}" HorizontalAlignment="Left" />
+                    <TextBlock
+                        Grid.Row="3" Grid.Column="2" Text="Max Slope:" Margin="3" HorizontalAlignment="Right"/>
+                    <TextBlock
+                        Grid.Row="3" Grid.Column="3" Margin="3"
+                        Text="{Binding SelectedEnvironmentItem.MaxSlope}" HorizontalAlignment="Left" />
+
+
+                </Grid>
+            </local:GroupBox>
+        </Grid>
+
+        <local:GroupBox
+            Grid.Row="1" Grid.Column="2" Grid.RowSpan="4" Header="Map" Margin="3">
+            <Border Margin="3" x:Name="BorderView" ClipToBounds="True" Background="Gray">
+                <Canvas x:Name="ImageView" Width="8192" Height="6144" Background="DarkGray" RenderTransformOrigin="0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="0" Canvas.Top="0" Source="{Binding TileUp}" />
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="0" Canvas.Top="2048" Source="{Binding TileFront}"/>
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="2048" Canvas.Top="2048" Source="{Binding TileRight}" />
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="4096" Canvas.Top="2048" Source="{Binding TileBack}"/>
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="6144" Canvas.Top="2048" Source="{Binding TileLeft}"/>
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="4096" Canvas.Top="4096" Source="{Binding TileDown}"/>
+
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="0" Canvas.Top="0" Source="{Binding TileUpOverlay}" Opacity=".8" />
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="0" Canvas.Top="2048" Source="{Binding TileFrontOverlay}" Opacity=".8"/>
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="2048" Canvas.Top="2048" Source="{Binding TileRightOverlay}" Opacity=".8" />
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="4096" Canvas.Top="2048" Source="{Binding TileBackOverlay}" Opacity=".8"/>
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="6144" Canvas.Top="2048" Source="{Binding TileLeftOverlay}" Opacity=".8"/>
+                    <Image RenderOptions.BitmapInterpolationMode="None" Stretch="Fill" Width="2048" Height="2048" Canvas.Left="4096" Canvas.Top="4096" Source="{Binding TileDownOverlay}" Opacity=".8"/>
+
+                    <Rectangle x:Name="OreInspectorRect"  Stroke="Violet" StrokeThickness="1" Width="{Binding OreInspectorSize}" Height="{Binding OreInspectorSize}" IsVisible="False"/>
+                </Canvas>
+            </Border>
+        </local:GroupBox>
+    </Grid>
+</local:DialogWindow>

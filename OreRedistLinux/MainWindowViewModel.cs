@@ -1,0 +1,1659 @@
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SpaceEngineersToolsShared;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using System.Xml.Linq;
+using Avalonia;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using Avalonia.Threading;
+
+// The RED channel is the voxel material placement map. -> 82=Lake 43=Desert
+// The GREEN channel is the foliage placement map (including voxel stones) -> Biome value, Material based on rules
+// The BLUE channel is the ore placement map
+
+namespace SpaceEngineersOreRedistribution
+{
+    internal class MainWindowViewModel : PropChangeNotifier
+    {
+        public List<int> TileWidths { get; } = new() { 512, 1024, 2048, 4096, 8192 };
+        int _tileWidth = 2048;
+        public int TileWidth
+        {
+            get => _tileWidth;
+            set
+            {
+                if (value == _tileWidth) return;
+
+                if (value > 2048)
+                {
+                    MessageBox.Show("Warning using tile widths above 2048 causes lighting glitches and bad server performance in SE1!", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+
+                if (PlanetDefinitions.Count > 0)
+                {
+                    var dlgRes = MessageBox.Show(
+                        "Changing the tile width will unload all planet definitions. Continue?"
+                        , "Warning", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+                    if (dlgRes != MessageBoxResult.OK)
+                    {
+                        // Reset to previous value
+                        Dispatcher.UIThread.InvokeAsync(()=>{ OnPropertyChanged(); });
+                        return;
+                    }
+                    SelectedPlanetDefinition = null;
+                    PlanetDefinitions.Clear();
+                    TileUp = null;
+                    TileFront = null;
+                    TileRight = null;
+                    TileBack = null;
+                    TileLeft = null;
+                    TileDown = null;
+                }
+                _tileWidth = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ObservableCollection<PlanetDefinition> PlanetDefinitions { get; } = new();
+
+        public ObservableCollection<OreDistributionStatViewModel> OreTypes { get; } = new();
+
+        CancellationTokenSource _imageUpdateTcs;
+        bool _updatingImages = false;
+
+        bool _progressBarVisibility = false;
+        public bool ProgressBarVisibility
+        {
+            get => _progressBarVisibility;
+            set => SetProp(ref _progressBarVisibility, value);
+        }
+
+        bool _showDistByArea = true;
+        public bool ShowOreDistByArea
+        {
+            get => _showDistByArea;
+            set
+            {
+                if (SetProp(ref _showDistByArea, value))
+                {
+                    ShowDistByVolume = !value;
+                    foreach (var item in OreTypes)
+                        item.ShowByArea = value;
+                    var list = OreTypes.ToList();
+                    list.Sort((a, b) => b.Percentage.CompareTo(a.Percentage));
+                    //if (list.Count > 0)
+                    //{
+                    //    var maxP = list.Max(x => x.Percentage);
+                    //    foreach (var x in list)
+                    //        x.ScaledPercentage = (int)(0.5 + x.Percentage * 100 / maxP);
+                    //}
+                    OreTypes.Clear();
+                    foreach (var item in list)
+                    {
+                        OreTypes.Add(item);
+                    }
+                }
+            }
+        }
+
+        bool _showDistByVolume;
+        public bool ShowDistByVolume
+        {
+            get => _showDistByVolume;
+            set
+            {
+                if (SetProp(ref _showDistByVolume, value))
+                {
+                    ShowOreDistByArea = !value;
+                }
+            }
+        }
+
+        PlanetDefinition _selectedPlanetDefinition;
+        public PlanetDefinition SelectedPlanetDefinition
+        {
+            get => _selectedPlanetDefinition;
+            set
+            {
+                if (!SetProp(ref _selectedPlanetDefinition, value)) return;
+                RelayCommand.RequestRequery(); // Redistribute etc. depend on a selected planet
+
+                if (_imageUpdateTcs != null)
+                {
+                    _imageUpdateTcs.Cancel();
+                    _imageUpdateTcs.Dispose();
+                    _imageUpdateTcs = null;
+                }
+
+                ClearImages();
+                OreTypes.Clear();
+                EnvironmentItems.Clear();
+                ComplexMaterials.Clear();
+                if (value == null)
+                {
+                    return;
+                }
+                //HashSet<string> types = new();
+                //foreach (var item in value.OreMappings)
+                //{
+                //    types.Add(item.Type);
+                //}
+                //foreach (var type in types)
+                //    OreTypes.Add(type);
+                foreach (var item in value.ComplexMaterials)
+                {
+                    ComplexMaterials.Add(item);
+                }
+                foreach (var item in value.EnvironmentItems)
+                {
+                    EnvironmentItems.Add(item);
+                }
+
+                _imageUpdateTcs = new();
+                var token = _imageUpdateTcs.Token;
+                _updatingImages = true;
+
+
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            ProgressBarVisibility = true;
+                        });
+                        Parallel.ForEach(Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>(), f =>
+                        {
+                            if (token.IsCancellationRequested) return;
+                            _images[f] = GetInfo(f, token);
+                        });
+                        if (token.IsCancellationRequested) return;
+
+                        // Update ore
+                        Dictionary<string, int> oreArea = new(); // Counts ore area
+                        Dictionary<string, int> oreVolume = new(); // Counts ore volume
+                        Parallel.ForEach(_images.Values, img =>
+                        {
+                            if (img == null) return;
+                            for (int x = 0; x < TileWidth; ++x)
+                                for (int y = 0; y < TileWidth; ++y)
+                                {
+                                    var blue = img.B[x, y];
+                                    if (blue == 255) continue; // No ore here
+                                    var mapping = value.OreMappings.FirstOrDefault(x => x.Value == blue);
+                                    if (mapping != null)
+                                    {
+                                        lock (oreArea)
+                                        {
+                                            if (!oreArea.ContainsKey(mapping.Type))
+                                            {
+                                                oreArea[mapping.Type] = 1;
+                                                oreVolume[mapping.Type] = mapping.Depth;
+                                            }
+                                            else
+                                            {
+                                                oreArea[mapping.Type] += 1;
+                                                oreVolume[mapping.Type] += mapping.Depth;
+                                            }
+                                        }
+                                    }
+                                }
+                        });
+                        int oreSumArea = oreArea.Values.Sum();
+                        int oreSumVolume = oreVolume.Values.Sum();
+                        List<OreDistributionStatViewModel> list = new();
+                        foreach (var key in oreArea.Keys)
+                        {
+                            list.Add(new OreDistributionStatViewModel(
+                                key,
+                                oreArea[key] * 100.0 / oreSumArea,
+                                oreVolume[key] * 100.0 / oreSumVolume, oreArea[key], oreVolume[key])
+                            { ShowByArea = ShowOreDistByArea });
+                        }
+                        list.Sort((a, b) => b.Percentage.CompareTo(a.Percentage));
+                        if (list.Count > 0)
+                        {
+                            var maxPArea = list.Max(x => x.PercentageArea);
+                            var maxPVolume = list.Max(x => x.PercentageVolume);
+                            foreach (var x in list)
+                            {
+                                x.ScaledPercentageArea = (int)(0.5 + x.PercentageArea * 100 / maxPArea);
+                                x.ScaledPercentageVolume = (int)(0.5 + x.PercentageVolume * 100 / maxPVolume);
+                            }
+                        }
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            foreach (var item in list)
+                            {
+                                item.ShowByArea = ShowOreDistByArea; // Update scaled percentages
+                                OreTypes.Add(item);
+                            }
+                        });
+
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            if (token.IsCancellationRequested) return;
+                            _updatingImages = false;
+                            UpdateImages();
+                            UpdateOverlays(true);
+                        });
+                    }
+                    finally
+                    {
+                        ProgressBarVisibility = false;
+                    }
+                });
+
+
+            }
+        }
+
+        List<Avalonia.Media.Color> _colors = new List<Avalonia.Media.Color>
+        {
+            Avalonia.Media.Colors.LawnGreen,
+            Avalonia.Media.Colors.DeepSkyBlue,
+            Avalonia.Media.Colors.Red,
+            Avalonia.Media.Colors.Orange,
+            Avalonia.Media.Colors.BlueViolet,
+            Avalonia.Media.Colors.Magenta,
+            Avalonia.Media.Colors.Green,
+            Avalonia.Media.Colors.Gold,
+            Avalonia.Media.Colors.MediumPurple,
+            Avalonia.Media.Colors.Blue,
+            Avalonia.Media.Colors.Firebrick,
+            Avalonia.Media.Colors.Goldenrod,
+            Avalonia.Media.Colors.MediumAquamarine,
+            Avalonia.Media.Colors.MediumVioletRed,
+            Avalonia.Media.Colors.OliveDrab,
+        };
+        Avalonia.Media.IBrush _defaultOreBrush = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Avalonia.Media.Color.FromRgb(0, 0xff, 0));
+        OreDistributionStatViewModel _selectedOreType;
+        public OreDistributionStatViewModel SelectedOreType
+        {
+            get => _selectedOreType;
+            set
+            {
+                if (!SetProp(ref _selectedOreType, value)) return;
+                OreMappings.Clear();
+                if (value == null || SelectedPlanetDefinition == null)
+                {
+                    if (ShowOreLocations && !_updatingImages)
+                        UpdateOverlays(false);
+                    return;
+                }
+
+                // Reset colors so they don't appear in ore inspector
+                foreach (var m in SelectedPlanetDefinition.OreMappings)
+                {
+                    m.MapRgbValue = new(0, 0, 64);
+                }
+
+                var mappings = SelectedPlanetDefinition.OreMappings.Where(x => x.Type == value.OreType);
+                int colorIndex = 0;
+                foreach (var mapping in mappings)
+                {
+                    if (colorIndex < _colors.Count)
+                    {
+                        var color = _colors[colorIndex++];
+                        mapping.MapRgbValue = new(color.R, color.G, color.B);
+                    }
+                    else
+                        mapping.MapRgbValue = new(0, 0, 255);
+                    OreMappings.Add(mapping);
+                }
+                if (ShowOreLocations && !_updatingImages)
+                    UpdateOverlays(false);
+            }
+        }
+
+        int _oreDetectorRange = 150;
+        public int OreDetectorRange
+        {
+            get => _oreDetectorRange;
+            set
+            {
+                if (SetProp(ref _oreDetectorRange, value))
+                    UpdateOverlays(false);
+            }
+        }
+        bool _useOreDetectorRange = true;
+        public bool UseOreDetectorRange
+        {
+            get => _useOreDetectorRange;
+            set
+            {
+                if (SetProp(ref _useOreDetectorRange, value))
+                    UpdateOverlays(false);
+            }
+        }
+
+        public ObservableCollection<OreMapping> OreMappings { get; } = new();
+        OreMapping _selectedOreMapping;
+        public OreMapping SelectedOreMapping
+        {
+            get => _selectedOreMapping;
+            set => SetProp(ref _selectedOreMapping, value);
+        }
+        bool _ignoreOreMappingsForRedestribution = true;
+        public bool IgnoreOreMappingsForRedestribution
+        {
+            get => _ignoreOreMappingsForRedestribution;
+            set => SetProp(ref _ignoreOreMappingsForRedestribution, value);
+        }
+
+        public ObservableCollection<ComplexMaterial> ComplexMaterials { get; } = new();
+        ComplexMaterial _selectedComplexMaterial;
+        int _lastComplexMaterial;
+        public ComplexMaterial SelectedComplexMaterial
+        {
+            get => _selectedComplexMaterial;
+            set
+            {
+                SetProp(ref _selectedComplexMaterial, value);
+                var number = value?.Value ?? 0;
+                if (ShowLakes && !_updatingImages && number != _lastComplexMaterial)
+                    UpdateImages();
+                _lastComplexMaterial = number;
+            }
+        }
+
+        public ObservableCollection<EnvironmentItem> EnvironmentItems { get; } = new();
+        int _lastBiome;
+        EnvironmentItem _selectedEnvironmentItem;
+        public EnvironmentItem SelectedEnvironmentItem
+        {
+            get => _selectedEnvironmentItem;
+            set
+            {
+                SetProp(ref _selectedEnvironmentItem, value);
+                var biome = value?.Biome ?? 0;
+                if (ShowBiomes && !_updatingImages && biome != _lastBiome)
+                    UpdateImages();
+                _lastBiome = biome;
+            }
+        }
+
+        bool _showOreLocations = true;
+        public bool ShowOreLocations
+        {
+            get => _showOreLocations;
+            set
+            {
+                if (!SetProp(ref _showOreLocations, value)) return;
+                if (!_updatingImages)
+                    UpdateOverlays(true);
+            }
+        }
+
+        bool _showGradients;
+        public bool ShowGradients
+        {
+            get => _showGradients;
+            set
+            {
+                if (!SetProp(ref _showGradients, value)) return;
+                if (!_updatingImages)
+                    UpdateImages();
+            }
+        }
+
+        bool _showLakes = true;
+        public bool ShowLakes
+        {
+            get => _showLakes;
+            set
+            {
+                if (!SetProp(ref _showLakes, value)) return;
+                if (!_updatingImages)
+                    UpdateImages();
+            }
+        }
+
+        bool _showBiomes = false;
+        public bool ShowBiomes
+        {
+            get => _showBiomes;
+            set
+            {
+                if (!SetProp(ref _showBiomes, value)) return;
+                if (!_updatingImages)
+                    UpdateImages();
+            }
+        }
+
+        public ICommand OpenPlanetDefinitionCommand => new RelayCommand(o =>
+        {
+            var dlg = new OpenFileDialog();
+            dlg.Filter = "sbc Files|*.sbc";
+            dlg.FileName = "PlanetGeneratorDefinitions.sbc";
+            dlg.Multiselect = false;
+            var res = dlg.ShowDialog();
+            if (res != true) return;
+            OpenPlanetDefinition(dlg.FileName);
+        });
+
+        string _lastOpenedFile;
+
+        public void OpenPlanetDefinition(string file)
+        {
+            _lastOpenedFile = file;
+            PlanetDefinitions.Clear();
+            TileUp = null;
+            TileFront = null;
+            TileRight = null;
+            TileBack = null;
+            TileLeft = null;
+            TileDown = null;
+
+            try
+            {
+                PlanetDefinitions.Clear();
+
+                XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+                if (!File.Exists(file)) return;
+                var doc = XDocument.Load(file);
+                var root = doc?.Root;
+                if (root?.Name != "Definitions")
+                {
+                    MessageBox.Show("File does not contain definitions", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                var definitions = root.Elements("Definition");
+                foreach (var definition in definitions)
+                {
+                    string xsiTypeValue = definition.Attribute(xsi + "type")?.Value;
+                    if (xsiTypeValue != "PlanetGeneratorDefinition") continue;
+                    ReadPlanetDefinition(definition);
+                }
+                // Pertam & Triton use different format
+                var defs = root.Elements("PlanetGeneratorDefinitions");
+                foreach (var def in defs)
+                {
+                    var subDefs = def.Elements("PlanetGeneratorDefinition");
+                    foreach (var subDef in subDefs)
+                    {
+                        ReadPlanetDefinition(subDef);
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+        }
+        bool ReadPlanetDefinition(XElement definition)
+        {
+            var id = definition.Element("Id")?.Element("SubtypeId")?.Value;
+            if (id == null) return false;
+            var def = new PlanetDefinition();
+            def.Name = id;
+            PlanetDefinitions.Add(def);
+            var oreMappings = definition.Element("OreMappings");
+            if (oreMappings != null)
+            {
+                foreach (var oreMapping in oreMappings.Elements("Ore"))
+                {
+                    try
+                    {
+                        var ore = new OreMapping();
+                        ore.Value = int.Parse(oreMapping.Attribute("Value")?.Value);
+                        ore.Type = oreMapping.Attribute("Type")?.Value;
+                        ore.Start = int.Parse(oreMapping.Attribute("Start")?.Value);
+                        ore.Depth = int.Parse(oreMapping.Attribute("Depth")?.Value);
+                        // optional:
+                        ore.TargetColor = oreMapping.Attribute("TargetColor")?.Value;
+                        if (ore.TargetColor != null && !ore.TargetColor.StartsWith("#")) ore.TargetColor = "#" + ore.TargetColor;
+                        ore.ColorInfluence = oreMapping.Attribute("ColorInfluence")?.Value;
+                        def.OreMappings.Add(ore);
+                    }
+                    catch { continue; }
+                }
+            }
+
+            var complexMaterials = definition.Element("ComplexMaterials");
+            if (complexMaterials != null)
+            {
+                foreach ( var complexMaterial in complexMaterials.Elements("MaterialGroup"))
+                {
+                    var name = complexMaterial.Attribute("Name")?.Value;
+                    var value = complexMaterial.Attribute("Value")?.Value;
+                    if (int.TryParse(value, out var iValue))
+                    {
+                        var cm = new ComplexMaterial { Name = name, Value = iValue };
+                        def.ComplexMaterials.Add(cm);
+                    }
+                }
+            }
+
+            var environmentItems = definition.Element("EnvironmentItems");
+            if (environmentItems != null)
+            {
+                foreach (var item in environmentItems.Elements("Item"))
+                {
+                    var env = new EnvironmentItem { Material = new() };
+                    var biomes = item.Element("Biomes");
+                    if (biomes != null)
+                    {
+                        var biome = biomes.Element("Biome");
+                        if (biome != null)
+                        {
+                            if (int.TryParse(biome.Value, out var b)) env.Biome = b;
+                        }
+                    }
+                    var materials = item.Element("Materials");
+                    if (materials != null)
+                    {
+                        var material = materials.Element("Material");
+                        if (material != null)
+                        {
+                            env.Material.Name = material.Value;
+                            // TODO: Value, MaxDepth are stored in another node
+                        }
+
+                    }
+                    var rule = item.Element("Rule");
+                    if (rule != null)
+                    {
+                        double min, max;
+                        RuleGetMinMax(rule.Element("Height"), out min, out max);
+                        env.MinHeight = min; env.MaxHeight = max;
+                        RuleGetMinMax(rule.Element("Latitude"), out min, out max);
+                        env.MinLatitude = min; env.MaxLatitude = max;
+                        RuleGetMinMax(rule.Element("Slope"), out min, out max);
+                        env.MinSlope = min; env.MaxSlope = max;
+                    }
+                    def.EnvironmentItems.Add(env);
+                }
+            }
+
+            return true;
+        }
+
+        void RuleGetMinMax(XElement element, out double min, out double max)
+        {
+            min = 0;
+            max = 0;
+            if (element == null) return;
+            var eMin = element.Attribute("Min");
+            if (eMin != null) double.TryParse(eMin.Value, CultureInfo.InvariantCulture, out min);
+            var eMax = element.Attribute("Max");
+            if (eMax != null) double.TryParse(eMax.Value, CultureInfo.InvariantCulture, out max);
+        }
+
+        Bitmap _tileUp;
+        public Bitmap TileUp
+        {
+            get => _tileUp;
+            set => SetProp(ref _tileUp, value);
+        }
+
+        Bitmap _tileFront;
+        public Bitmap TileFront
+        {
+            get => _tileFront;
+            set => SetProp(ref _tileFront, value);
+        }
+
+        Bitmap _tileRight;
+        public Bitmap TileRight
+        {
+            get => _tileRight;
+            set => SetProp(ref _tileRight, value);
+        }
+        Bitmap _tileBack;
+        public Bitmap TileBack
+        {
+            get => _tileBack;
+            set => SetProp(ref _tileBack, value);
+        }
+        Bitmap _tileLeft;
+        public Bitmap TileLeft
+        {
+            get => _tileLeft;
+            set => SetProp(ref _tileLeft, value);
+        }
+        Bitmap _tileDown;
+        public Bitmap TileDown
+        {
+            get => _tileDown;
+            set => SetProp(ref _tileDown, value);
+        }
+
+        WriteableBitmap _tileUpOverlay;
+        public WriteableBitmap TileUpOverlay
+        {
+            get => _tileUpOverlay;
+            set => SetProp(ref _tileUpOverlay, value);
+        }
+        WriteableBitmap _tileFrontOverlay;
+        public WriteableBitmap TileFrontOverlay
+        {
+            get => _tileFrontOverlay;
+            set => SetProp(ref _tileFrontOverlay, value);
+        }
+        WriteableBitmap _tileRightOverlay;
+        public WriteableBitmap TileRightOverlay
+        {
+            get => _tileRightOverlay;
+            set => SetProp(ref _tileRightOverlay, value);
+        }
+        WriteableBitmap _tileBackOverlay;
+        public WriteableBitmap TileBackOverlay
+        {
+            get => _tileBackOverlay;
+            set => SetProp(ref _tileBackOverlay, value);
+        }
+        WriteableBitmap _tileLeftOverlay;
+        public WriteableBitmap TileLeftOverlay
+        {
+            get => _tileLeftOverlay;
+            set => SetProp(ref _tileLeftOverlay, value);
+        }
+        WriteableBitmap _tileDownOverlay;
+        public WriteableBitmap TileDownOverlay
+        {
+            get => _tileDownOverlay;
+            set => SetProp(ref _tileDownOverlay, value);
+        }
+
+
+        int _oreInspectorSize = 20;
+        public int OreInspectorSize
+        {
+            get => _oreInspectorSize;
+            set => SetProp(ref _oreInspectorSize, value);
+        }
+
+        void ClearImages()
+        {
+            foreach (var info in _images.Values)
+            {
+                if (info != null) info.Dispose();
+            }
+            _images.Clear();
+        }
+
+        /// <summary>Raised after overlay pixels changed in place; the view has to repaint the overlay images.</summary>
+        public event Action OverlaysChanged;
+
+        static WriteableBitmap NewOverlay(int width) =>
+            new WriteableBitmap(new PixelSize(width, width), new Vector(96, 96), PixelFormats.Bgra8888, AlphaFormat.Unpremul);
+
+        void UpdateOverlays(bool clear)
+        {
+            if (clear || TileBackOverlay == null)
+            {
+                TileBackOverlay = NewOverlay(TileWidth);
+                TileDownOverlay = NewOverlay(TileWidth);
+                TileFrontOverlay = NewOverlay(TileWidth);
+                TileLeftOverlay = NewOverlay(TileWidth);
+                TileRightOverlay = NewOverlay(TileWidth);
+                TileUpOverlay = NewOverlay(TileWidth);
+            }
+            if (!ShowOreLocations || SelectedPlanetDefinition == null)
+            {
+                return;
+            }
+            var keys = _images.Keys;
+            List<OreMapping> oreMappings = null;
+            if (SelectedOreType != null && OreMappings != null && OreMappings.Count > 0)
+            {
+                oreMappings = OreMappings.ToList();
+            }
+            foreach (var key in keys)
+            {
+                if (!_images.TryGetValue(key, out var value)) continue;
+                if (value == null) continue;
+                WriteableBitmap bitmap = null;
+                switch (key)
+                {
+                    case CubeMapFace.Back: bitmap = TileBackOverlay; break;
+                    case CubeMapFace.Down: bitmap = TileDownOverlay; break;
+                    case CubeMapFace.Front: bitmap = TileFrontOverlay; break;
+                    case CubeMapFace.Left: bitmap = TileLeftOverlay; break;
+                    case CubeMapFace.Right: bitmap = TileRightOverlay; break;
+                    case CubeMapFace.Up: bitmap = TileUpOverlay; break;
+                }
+                if (bitmap == null) continue;
+                try
+                {
+                    using var fb = bitmap.Lock();
+                    unsafe
+                    {
+                        foreach (var tuple in value.OrePixels)
+                        {
+                            byte r = 0;
+                            byte g = 255;
+                            byte b = 0;
+                            byte a = 255;
+                            int x = tuple.Item1;
+                            int y = tuple.Item2;
+                            if (x >= fb.Size.Width || y >= fb.Size.Height) continue;
+
+                            if (UseOreDetectorRange)
+                            {
+                                var mapping = SelectedPlanetDefinition.OreMappings.FirstOrDefault(x => x.Value == tuple.Item3);
+                                if (mapping != null)
+                                {
+                                    if (mapping.Start > OreDetectorRange)
+                                        a = 32;
+                                }
+                            }
+
+                            byte* pixel = (byte*)fb.Address + y * fb.RowBytes + x * 4;
+
+                            if (oreMappings != null)
+                            {
+                                var mapping = oreMappings.FirstOrDefault(x => x.Value == tuple.Item3);
+                                if (mapping != null)
+                                {
+                                    r = mapping.MapRgbValue.R;
+                                    g = mapping.MapRgbValue.G;
+                                    b = mapping.MapRgbValue.B;
+                                }
+                                else
+                                {
+                                    g = 0;
+                                    b = 64;
+                                }
+                            }
+                            // Bgra8888, not premultiplied
+                            pixel[0] = b;
+                            pixel[1] = g;
+                            pixel[2] = r;
+                            pixel[3] = a;
+                        }
+                    }
+                }
+                catch { continue; }
+            }
+            OverlaysChanged?.Invoke();
+        }
+
+        void UpdateImages()
+        {
+            TileUp = null;
+            TileFront = null;
+            TileRight = null;
+            TileBack = null;
+            TileLeft = null;
+            TileDown = null;
+
+            var keys = _images.Keys;
+            foreach (var key in keys)
+            {
+                if (SelectedPlanetDefinition == null) return;
+                if (!_images.TryGetValue(key, out var value)) return;
+                if (value == null) return;
+
+                int? biome = null;
+                if (SelectedEnvironmentItem != null) biome = SelectedEnvironmentItem.Biome;
+                int? complexMaterial = null;
+                if (SelectedComplexMaterial != null) complexMaterial = SelectedComplexMaterial.Value;
+                var image = value.CreateBitmapImage(!ShowGradients, ShowLakes, complexMaterial, ShowBiomes, biome);
+
+                switch (key)
+                {
+                    case CubeMapFace.Back: TileBack = image; break;
+                    case CubeMapFace.Down: TileDown = image; break;
+                    case CubeMapFace.Front: TileFront = image; break;
+                    case CubeMapFace.Left: TileLeft = image; break;
+                    case CubeMapFace.Right: TileRight = image; break;
+                    case CubeMapFace.Up: TileUp = image; break;
+                }
+            }
+        }
+
+        Dictionary<CubeMapFace, ImageData> _images = new();
+
+        public ImageData GetInfo(CubeMapFace face, CancellationToken token)
+        {
+            var dir = Path.GetDirectoryName(_lastOpenedFile);
+            var imageDir = PathHelper.ResolveCase(Path.Combine(dir, "PlanetDataFiles", SelectedPlanetDefinition.Name));
+            if (!Directory.Exists(imageDir)) return null;
+            return ImageData.Create(imageDir, face, TileWidth, token);
+        }
+
+        Dictionary<CubeMapFace, ImageData> _materialMaps = new();
+        Dictionary<CubeMapFace, ImageData> _heightMaps = new();
+
+        public ICommand NoiseMapGeneratorCommand => new RelayCommand(o =>
+        {
+            //var ng = new NoiseGeneratorView();
+            //ng.Show();
+        });
+
+        public ICommand RedistributeOreCommand => new RelayCommand(o =>
+        {
+            // Command line arg -ignoretiers to not reduce tier jumps
+            bool ignoreTiers = Environment.GetCommandLineArgs().Any(x => x.Equals("-ignoretiers", StringComparison.InvariantCultureIgnoreCase));
+
+            var folderDlg = new FolderDialog { Title = "Select output folder for the new material maps (*_mat.png) and oremappings.xml" };
+            if (folderDlg.ShowDialog() != true)
+                return;
+
+            // Collect ore info
+            var setup = new RedistributionSetup();
+            //var existingOreDefs = SelectedPlanetDefinition.OreMappings.Select(o => o.Type).Distinct().ToList();
+            foreach (var oredef in OreTypes)
+            {
+                var info = new RedistributionSetupViewModel.OreInfo { Name = oredef.OreType, SpawnWeight = (int)(oredef.Percentage + .5) };
+                info.AddDefaultMapping();
+                setup.ViewModel.OreInfos.Add(info);
+            }
+            if (setup.ShowDialogBlocking() != true)
+                return;
+
+            // Update ore mapping values
+            var nextOreValue = setup.ViewModel.FinalizeList();
+
+            Func<int, int> GetTier = (d) =>
+            {
+                if (d <= 2) return 1;
+                if (d <= 5) return 2;
+                return 3;
+            };
+            if (nextOreValue >= 256)
+            {
+                MessageBox.Show("Too many ore definitions in oremappings.xml. This will not work!",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var directory = folderDlg.SelectedPath;
+
+            Dictionary<string, List<OreMapping>> mappingsDictionary = new();
+
+            // Save ore mappings as XML
+            var xmlFileName = Path.Combine(directory, "oremappings.xml");
+            if (File.Exists(xmlFileName))
+            {
+                if (MessageBox.Show("File \r\n'" + xmlFileName + "'\r\n already exists. " +
+                        "Override?\r\nProcess will abort if 'No' is selected.", "File found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                    return;
+            }
+            try
+            {
+                var node = new XElement("OreMappings");
+                foreach (var info in setup.ViewModel.OreInfos)
+                {
+                    var list = new List<OreMapping>();
+                    list.AddRange(info.OreMappings);
+                    mappingsDictionary[info.Name] = list;
+
+                    foreach (var mapping in list)
+                    {
+                        if (mapping.Value > 0)
+                        {
+                            mapping.Type = info.Name;
+                            node.Add(mapping.ToXElement());
+                        }
+                    }
+                }
+                var doc = new XDocument(node);
+                doc.Save(xmlFileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+
+            var keys = _images.Keys;
+            var rnd = new Random(setup.ViewModel.Seed); // Seed 0 is better for debugging.
+            var normal = new Normal(rnd);
+            bool overridefiles = false;
+            foreach (var key in keys)
+            {
+                if (!_images.TryGetValue(key, out var value)) return;
+
+                var fileName = Path.Combine(directory, key.ToString().ToLower() + "_mat.png");
+                if (!overridefiles && File.Exists(fileName))
+                {
+                    if (MessageBox.Show("File \r\n'" + fileName + "'\r\n already exists. " +
+                        "Override this and any other PNG files?\r\nProcess will abort if 'No' is selected.", "File found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                        return;
+                    overridefiles = true;
+                }
+
+                var image = new ImageData(key, TileWidth);
+
+                // Clear ores: Blue = 255
+                Parallel.For(0, TileWidth, x =>
+                {
+                    for (int y = 0; y < TileWidth; ++y)
+                    {
+                        image.R[x, y] = value.R[x, y];
+                        image.G[x, y] = value.G[x, y];
+                        image.B[x, y] = 255;
+                    }
+                });
+
+                int spawnRate = setup.ViewModel.OreSpawnRate; // Default 3000
+                if (setup.ViewModel.SmallPlanetMode) spawnRate *= 2;
+                if (spawnRate < 100) spawnRate = 100;
+                else if (spawnRate > 2000000) spawnRate = 2000000;
+
+                double prop = 1.0 / spawnRate;//(3136);
+                double nBaseMin = 0.72; // This is just a random number I picked
+                double nBaseMax = nBaseMin + prop;
+                for (int x = 0; x < TileWidth; ++x)
+                {
+                    for (int y = 0; y < TileWidth; ++y)
+                    {
+                        // Check if ore spawns at this location
+                        var r = rnd.NextDouble();
+                        if (r < nBaseMin || r > nBaseMax) continue;
+
+                        // Decide which ore is spawned
+                        var info = setup.ViewModel.PickRandomOreWeighted(rnd);
+                        var spawnSize = info.TypicalSize;
+                        if (setup.ViewModel.SmallPlanetMode) spawnSize *= 2;
+                        var depthMin = info.TypicalDepthMin;
+                        var depthMax = info.TypicalDepthMax;
+
+                        int depth = -1;
+                        if (info.PreferredDepth > -1)
+                        {
+                            double[] depthWeights = new double[10] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+                            if (!info.VeryDeepOre) depthWeights[9] = 0;
+                            if (depthMin > 0)
+                            {
+                                for (int i = 0; i < depthMin; ++i) depthWeights[i] = 0;
+                            }
+                            if (depthMax > -1)
+                            {
+                                for (int i = 8; i > depthMax; --i) depthWeights[i] = 0;
+                            }
+                            double weightSum = 0;
+                            for (int i = 0; i < 10; ++i)
+                            {
+                                if (depthWeights[i] == 0) continue;
+                                double stdDev = setup.ViewModel.StdDevDepth;
+                                var divider = stdDev * Math.Sqrt(2 * Math.PI);
+                                var eTerm = -0.5 * Math.Pow((i - info.PreferredDepth) / stdDev, 2);
+                                depthWeights[i] = Math.Exp(eTerm) / divider; // 10 is used to roughly get a prob of 1.0 for preferred depth
+                                weightSum += depthWeights[i];
+                            }
+                            var depthRnd = rnd.NextDouble() * weightSum;
+                            weightSum = 0;
+                            for (int i = 0; i < 10; ++i)
+                            {
+                                if (depthWeights[i] == 0) continue;
+                                weightSum += weightSum += depthWeights[i];
+                                if (depthRnd <= weightSum)
+                                {
+                                    depth = i;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (depthMin == -1 && depthMax == -1)
+                            {
+                                depth = rnd.Next(0, info.VeryDeepOre ? 9 : 10); // Max = 9
+                            }
+                            else if (depthMin == -1 && depthMax > -1)
+                            {
+                                depth = rnd.Next(0, depthMax + 1);
+                            }
+                            else if (depthMin >= -1 && depthMax == -1)
+                            {
+                                depth = rnd.Next(depthMin, info.VeryDeepOre ? 9 : 10);
+                            }
+                            else //if (depthMin >= -1 && depthMax >= -1)
+                            {
+                                depth = rnd.Next(depthMin, depthMax + 1);
+                            }
+                        }
+                        if (depth == -1) continue;
+
+
+                        // Randomize if not set by user
+                        if (spawnSize == 0) spawnSize = rnd.Next(5, 31);
+                        // Gauss randomizer
+                        if (setup.ViewModel.StdDev > 0)
+                        {
+                            var stdDevPercentage = setup.ViewModel.StdDev / 100.0;
+                            spawnSize = (int)(normal.Next(spawnSize, spawnSize * stdDevPercentage) + 0.5);
+                            if (spawnSize < 1) spawnSize = 1; else if (spawnSize > 500) spawnSize = 500;
+                        }
+
+                        //int defaultTier = GetTier(depth);
+                        int defaultDepthIndex = depth;
+                        int maxDepthIndex = info.VeryDeepOre ? 9 : 8;
+                        if (depthMax > -1 && depthMax < maxDepthIndex) maxDepthIndex = depthMax;
+                        int minDepthIndex = 0;
+                        if (depthMin > -1 && depthMin > minDepthIndex) minDepthIndex = depthMin;
+
+                        // Get mapping info for pixel value
+                        var mappings = mappingsDictionary[info.Name];
+
+                        HashSet<OreToDraw> drawnOre = new();
+                        drawnOre.Add(new OreToDraw(TileWidth) { X = x, Y = y, Value = mappings[defaultDepthIndex].Value });
+                        int lastDepthIndex = defaultDepthIndex;
+                        int lastX = x;
+                        int lastY = y;
+
+                        // Vanilla ore scanner max range is 150m
+                        // Only index 6 is detectable from surface
+                        // Start there and fall down to default depth index
+                        bool dive = false;
+                        if (lastDepthIndex > 6 && minDepthIndex <= 6)
+                        {
+                            lastDepthIndex = 5; // We call ++ below to set it to 6
+                            dive = true;
+                        }
+
+                        // Draw ore
+                        // Strategy:
+                        // - Start at X,Y
+                        // - Select random neighbor and draw if not already drawn
+                        // - If all neighbors are already drawn, escape in straight random direction until a non drawn field is available
+                        // - While drawing
+                        // - If last drawn height is not starting height give a 30% to jump back to starting height. 20% Chance of getting further away.
+                        //   50% of staying at same height.
+                        for (int i=1;i<spawnSize;++i) // We already added one pixel at this point, so start with 1
+                        {
+                            var direction = rnd.Next(4);
+                            var nextOreToDraw = new OreToDraw(TileWidth);
+                            // Check if that pixel is already painted:
+                            int directionTries = 0;
+                            bool foundFreePixel = false;
+                            while (directionTries < 4)
+                            {
+                                ++direction;
+                                if (direction > 3) direction = 0;
+                                // direction: 0 -> left, 1 -> up, 2 -> right, 3 -> down
+                                int dx, dy;
+
+                                // 10% chance of skipping over a pixel
+                                var skipX = rnd.NextDouble() < 0.1 ? 2 : 1;
+                                var skipY = rnd.NextDouble() < 0.1 ? 2 : 1;
+
+                                GetDeltas(direction, out dx, out dy);
+                                nextOreToDraw.X = lastX + dx * skipX;
+                                nextOreToDraw.Y = lastY + dy * skipY;
+
+                                if (!drawnOre.Contains(nextOreToDraw))
+                                {
+                                    foundFreePixel = true;
+                                    break;
+                                }
+                                ++directionTries;
+                            }
+                            if (!foundFreePixel)
+                            {
+                                int newX = lastX;
+                                int newY = lastY;
+                                // We're stuck. Get unstuck by going into random direction, brute force
+                                int pleaseDontHang = 0;
+                                int dx, dy;
+                                GetDeltas(direction, out dx, out dy);
+                                if (lastX < 500 && dx < 0) dx = 1;
+                                if (lastY < 500 && dy < 0) dy = 1;
+                                if (lastX > 1800 && dx > 0) dx = -1;
+                                if (lastY > 1800 && dy > 0) dy = -1;
+                                nextOreToDraw.X = lastX;
+                                nextOreToDraw.Y = lastY;
+                                while (pleaseDontHang++ < 1000)
+                                {
+                                    nextOreToDraw.X += dx;
+                                    nextOreToDraw.Y += dy;
+                                    if (!drawnOre.Contains(nextOreToDraw))
+                                    {
+                                        foundFreePixel = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!foundFreePixel) break; // Bye bye. Don't hammer your head against a wall
+
+                            lastX = nextOreToDraw.X;
+                            lastY = nextOreToDraw.Y;
+                            drawnOre.Add(nextOreToDraw);
+                            var depthMod = rnd.NextDouble();
+
+                            if (dive)
+                            {
+                                lastDepthIndex++;
+                                if (lastDepthIndex >= defaultDepthIndex)
+                                    dive = false;
+                            }
+                            else if (lastDepthIndex == defaultDepthIndex)
+                            {
+                                if (depthMod >= 0.70) // Give a 70% chance of staying at the same height if height is starting height
+                                {
+                                    // Flip to neighbor index
+                                    if (lastDepthIndex <= 0) lastDepthIndex++;
+                                    else if (lastDepthIndex >= maxDepthIndex) lastDepthIndex--;
+                                    else
+                                    {
+                                        // both directions possible
+                                        if (rnd.NextDouble() > 0.6 || ignoreTiers)
+                                        {
+                                            // 40% chance of going up or down
+                                            if (rnd.Next(2) == 0) lastDepthIndex--; else lastDepthIndex++;
+                                        }
+                                        else // 60% chance of staying in the same tier
+                                        {
+                                            var oldTier = GetTier(lastDepthIndex);
+                                            var tierDown = GetTier(lastDepthIndex + 1);
+                                            var tierUp = GetTier(lastDepthIndex - 1);
+                                            if (tierUp == oldTier && tierDown == oldTier)
+                                            {
+                                                // We are in the middle of a tier. Randomly go up or down
+                                                if (rnd.Next(2) == 0) lastDepthIndex--; else lastDepthIndex++;
+                                            }
+                                            else if (tierDown != oldTier && tierUp == oldTier)
+                                                lastDepthIndex--;
+                                            else if (tierDown == oldTier && tierUp != oldTier)
+                                                lastDepthIndex++;
+                                            else
+                                            {   /* Same as random above. Reaching this shouldn't be possible though */
+                                                if (rnd.Next(2) == 0) lastDepthIndex--; else lastDepthIndex++;
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                            // Give a 30% chance to jump back to starting height and 20% chance of getting further away
+                            else
+                            {
+                                if (depthMod <= 0.3)
+                                {
+                                    lastDepthIndex += Math.Sign(defaultDepthIndex - lastDepthIndex);
+                                }
+                                else if (depthMod <= 0.5) // 0.5-0.3 -> 20%
+                                {
+                                    if (lastDepthIndex < defaultDepthIndex)
+                                    {
+                                        lastDepthIndex--;
+                                    }
+                                    else
+                                    {
+                                        lastDepthIndex++;
+                                    }
+                                }
+                                // else: 50% chance of staying
+                            }
+                            // Ignore limits while diving
+                            if (!dive)
+                            {
+                                if (lastDepthIndex > maxDepthIndex) lastDepthIndex = maxDepthIndex;
+                                else if (lastDepthIndex < minDepthIndex) lastDepthIndex = minDepthIndex;
+                            }
+
+                            // Get value for depth
+                            nextOreToDraw.Value = mappings[lastDepthIndex].Value;
+                        }
+
+                        foreach (var drawn in drawnOre)
+                        {
+                            if (drawn.Value > 0 && drawn.Value < 256) // don't draw disabled entries which have value -1. See FinalizeList()
+                                image.B[drawn.X, drawn.Y] = (byte)drawn.Value;
+
+                        }
+                    }
+                }
+                image.SaveMaterialMap(fileName);
+            }
+            MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section.", "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
+            PathHelper.RevealInFileManager(xmlFileName);
+        },
+        o => SelectedPlanetDefinition != null);
+
+        public ICommand DeselectOreTypeCommand => new RelayCommand(o =>
+        {
+            SelectedOreType = null;
+        }, o => SelectedOreType != null);
+
+        public ICommand DeselectEvironmentItemCommand => new RelayCommand(o =>
+        {
+            SelectedEnvironmentItem = null;
+        }, o=> SelectedEnvironmentItem != null);
+
+        void GetDeltas(int direction, out int dx, out int dy)
+        {
+            switch (direction)
+            {
+                case 0: // Left
+                    dx = -1;
+                    dy = 0;
+                    return;
+                case 1: // Up
+                    dx = 0;
+                    dy = -1;
+                    return;
+                case 2: // Right
+                    dx = 1;
+                    dy = 0;
+                    return;
+                case 3: // Down
+                    dx = 0;
+                    dy = 1;
+                    return;
+            }
+            dx = 0;
+            dy = 0;
+        }
+
+        class OreToDraw
+        {
+            int _x,_y;
+            int _tileWidth = 2048;
+            public OreToDraw(int tileWidth)
+            {
+                _tileWidth = tileWidth;
+            }
+
+            public int X
+            {
+                get => _x;
+                set
+                {
+                    if (value < 0) _x = 0;
+                    else if (value > (_tileWidth - 1)) _x = (_tileWidth - 1);
+                    else _x = value;
+                }
+            }
+            public int Y
+            {
+                get => _y;
+                set
+                {
+                    if (value < 0) _y = 0;
+                    else if (value > (_tileWidth - 1)) _y = (_tileWidth - 1);
+                    else _y = value;
+                }
+            }
+            public int Value; // Selectively ignored for hash
+
+            public override bool Equals(object obj)
+            {
+                if (obj is not OreToDraw ore) return false;
+                return X == ore.X && Y == ore.Y;
+            }
+
+            public override int GetHashCode()
+            {
+                return X.GetHashCode() ^ Y.GetHashCode();
+            }
+        }
+
+        public ICommand CreateOcclusionMapsCommand => new RelayCommand(o =>
+        {
+            var dir = Path.GetDirectoryName(_lastOpenedFile);
+            var imageDir = PathHelper.ResolveCase(Path.Combine(dir, "PlanetDataFiles", SelectedPlanetDefinition.Name));
+            var msgRes = MessageBox.Show("This will create the '*_add.png' files.\r\nThey don't seem to have any effect, but whatever...\r\nContinue?", "Warning", MessageBoxButton.OKCancel);
+            if (msgRes != MessageBoxResult.OK) return;
+
+            // Write files
+
+            foreach (var face in Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>())
+            {
+                var faceName = face.ToString().ToLower();
+                var materialImg = SixLabors.ImageSharp.Image.Load(Path.Combine(imageDir, faceName + "_mat.png"));
+                var material = materialImg as Image<Rgb24>;
+                if (material == null)
+                {
+                    material = materialImg.CloneAs<Rgb24>();
+                    materialImg.Dispose(); // Dispose original image, we don't need it anymore
+                }
+                var w = material.Width;
+                var h = material.Height;
+                var addImage = new SixLabors.ImageSharp.Image<Rgba32>(w, h);
+                material.ProcessPixelRows(row =>
+                {
+                    for (int y = 0; y < h; ++y)
+                    {
+                        var span = row.GetRowSpan(y);
+                        for (int x = 0; x < w; ++x)
+                        {
+                            var blue = span[x].B;
+                            if (blue == 255)
+                                addImage[x, y] = new Rgba32(0, 0, 0);
+                            else
+                                addImage[x, y] = new Rgba32(144, 0, 0);
+                        }
+                    }
+                });
+                addImage.SaveAsPng(Path.Combine(imageDir, faceName + "_add.png"));
+                material.Dispose();
+            }
+            MessageBox.Show("Finished");
+        }, o=> SelectedPlanetDefinition != null);
+
+        public ICommand RewriteBiomesCommand => new RelayCommand(o =>
+        {
+            var msgRes = MessageBox.Show("This will override the biomes of the currently selected planet and save the files as '*_mat2.png'.\r\nOnly recommended for EarthLike and Alien\r\nThe tile width of the original files is used.\r\nContinue?", "Warning", MessageBoxButton.OKCancel);
+            if (msgRes != MessageBoxResult.OK) return;
+
+            var dir = Path.GetDirectoryName(_lastOpenedFile);
+            var imageDir = PathHelper.ResolveCase(Path.Combine(dir, "PlanetDataFiles", SelectedPlanetDefinition.Name));
+            if (!Directory.Exists(imageDir))
+            {
+                MessageBox.Show("Cannot find PlanetDataFiles folder.\r\nMake sure it exists!\r\n" + imageDir);
+                return;
+            }
+
+            HashSet<int> allBiomes = new HashSet<int>();
+            // Collect all required values:
+            foreach (var envItem in EnvironmentItems)
+            {
+                allBiomes.Add(envItem.Biome);
+            }
+
+            // Analyze existing files by latitude
+            // Remember all Biome values by number and quantity
+            Dictionary<int, Dictionary<int, int>> biomeDic = new();
+            int tileWidth = 2048;
+            foreach (var face in Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>())
+            {
+                var faceName = face.ToString().ToLower();
+                var materialImg = SixLabors.ImageSharp.Image.Load(Path.Combine(imageDir, faceName + "_mat.png"));
+                var material = materialImg as Image<Rgb24>;
+                if (material == null)
+                {
+                    material = materialImg.CloneAs<Rgb24>();
+                    materialImg.Dispose(); // Dispose original image, we don't need it anymore
+                }
+                tileWidth = material.Width;
+                material.ProcessPixelRows(row =>
+                {
+                    for (int y = 0; y < tileWidth; ++y)
+                    {
+                        var span = row.GetRowSpan(y);
+                        for (int x = 0; x < tileWidth; ++x)
+                        {
+                            int val = span[x].G;
+                            if (!allBiomes.Contains(val))
+                                val = -1; // Count how many pixels don't have biome def
+
+                            var point = CoordinateHelper.GetNormalizedSphereCoordinates(face, x, y, tileWidth); // Based on tileWidth*tileWidth!!
+                            var latitude = CoordinateHelper.ToLongitudeLatitude(point).latitude; // -90 to 90
+                            var bucket = GetLatitudeBucket(latitude);
+                            if (!biomeDic.ContainsKey(bucket)) { biomeDic[bucket] = new(); }
+                            if (!biomeDic[bucket].ContainsKey(val))
+                                biomeDic[bucket][val] = 1;
+                            else
+                                biomeDic[bucket][val]++;
+                        }
+                    }
+                });
+            }
+
+            // EarthLike: +- 5° has only 113 + 85, ignore others
+            foreach (var key in biomeDic[0].Keys.ToList())
+            {
+                if (key != 113 && key != 85 && key != -1) biomeDic[0].Remove(key);
+            }
+
+            // Generate new biome map
+            byte[] planetSurface = new byte[tileWidth * tileWidth * 6];
+
+            int surfaceBiomeCount = 0;
+            var random = new Random(0);
+            Action<int,int> placeBiome = (biomeIndex, biomeValue) =>
+            {
+                lock (planetSurface)
+                {
+                    if (biomeValue > 0)
+                    {
+                        if (planetSurface[biomeIndex] == 0) ++surfaceBiomeCount;
+                        planetSurface[biomeIndex] = (byte)biomeValue;
+                    }
+                    else
+                    {
+                        if (planetSurface[biomeIndex] > 0) --surfaceBiomeCount;
+                        planetSurface[biomeIndex] = 0;
+                    }
+                }
+            };
+
+            // Strategy: Drop random seeds of biomes that grow until map is filled to 83% (same value as vanilla)
+
+            // Part 1: place seeds on 4% of all pixels
+            double seedPercentage = 0.09;
+            while (surfaceBiomeCount < planetSurface.Length * seedPercentage)
+            {
+                var index = random.NextTS(planetSurface.Length);
+                var coord = PlanetSurfaceToCoordinates(index, tileWidth);
+                var point = CoordinateHelper.GetNormalizedSphereCoordinates(coord.face, coord.x, coord.y, tileWidth);
+                var latitude = CoordinateHelper.ToLongitudeLatitude(point).latitude; // -90 to 90
+                var bucket = GetLatitudeBucket(latitude);
+                var dic = biomeDic[bucket];
+                placeBiome(index, RandomBiomePick(dic, random));
+            }
+
+            // Part 2: Let the seeds grow until surface is covered
+            int xx = 0;
+            while (surfaceBiomeCount < planetSurface.Length * 0.97 && ++xx < 8)
+            {
+                // Find all current seeds
+                List<(int surfaceIndex, byte value)> seeds = new();
+                for (int i = 0; i < planetSurface.Length; i++)
+                {
+                    var surfaceValue = planetSurface[i];
+                    if (surfaceValue == 0) continue;
+                    seeds.Add((i, surfaceValue));
+                }
+                // Randonly pick seeds and let them grow
+                Parallel.For(0, seeds.Count, seedIndex =>
+                {
+                    (int surfaceIndex, byte value) seed;
+                    lock (planetSurface)
+                    {
+                        seed = seeds[seedIndex];
+                        if (seed.value != planetSurface[seed.surfaceIndex])
+                            return; // Seed got destroyed
+                    }
+
+                    var coords = PlanetSurfaceToCoordinates(seed.surfaceIndex, tileWidth);
+                    var pt = new CubeMapPointLight { Face = coords.face, X = coords.x, Y = coords.y, TileWidth=(ushort)tileWidth };
+                    int[] nmap = new int[4];
+                    // Get all four neigbors
+                    var nUp = CubeMapPointLight.GetPointRelativeTo(pt, 0, 1);
+                    var indexUp = CoordinatesToPlanetSurface(nUp.Face, nUp.X, nUp.Y, tileWidth);
+                    nmap[0] = planetSurface[indexUp];
+                    var nDown = CubeMapPointLight.GetPointRelativeTo(pt, 0, -1);
+                    var indexDown = CoordinatesToPlanetSurface(nDown.Face, nDown.X, nDown.Y, tileWidth);
+                    nmap[1] = planetSurface[indexDown];
+                    var nLeft = CubeMapPointLight.GetPointRelativeTo(pt, -1, 0);
+                    var indexLeft = CoordinatesToPlanetSurface(nLeft.Face, nLeft.X, nLeft.Y, tileWidth);
+                    nmap[2] = planetSurface[indexLeft];
+                    var nRight = CubeMapPointLight.GetPointRelativeTo(pt, 1, 0);
+                    var indexRight = CoordinatesToPlanetSurface(nRight.Face, nRight.X, nRight.Y, tileWidth);
+                    nmap[3] = planetSurface[indexRight];
+
+                    Func<int, int> NeighborMapIndexToSurfaceMapIndex = (nIndex) =>
+                    {
+                        if (nIndex == 0) return indexUp;
+                        if (nIndex == 1) return indexDown;
+                        if (nIndex == 2) return indexLeft;
+                        return indexRight;
+                    };
+
+                    // Rules:
+                    // - Prefer to grow into unoccupied spaces
+                    // - Never grow into same biome
+                    List<int> emptyNeighbors = new List<int>();
+                    List<int> differentNeighbors = new List<int>();
+                    for (int i = 0; i < nmap.Length; ++i)
+                    {
+                        if (nmap[i] > 0)
+                        {
+                            if (nmap[i] != seed.value)
+                            {
+                                differentNeighbors.Add(i);
+                            }
+                        }
+                        else emptyNeighbors.Add(i);
+                    }
+                    if (emptyNeighbors.Count > 0)
+                    {
+                        // Grow into unoccupied space
+                        var growTo = emptyNeighbors[random.NextTS(emptyNeighbors.Count)];
+                        placeBiome(NeighborMapIndexToSurfaceMapIndex(growTo), seed.value);
+                    }
+                });
+            }
+
+            // TODO: Don't leave black spots. Ore display bug. Fill them randomly
+            for (int i = 0; i < planetSurface.Length; ++i)
+            {
+                if (planetSurface[i] != 0) continue;
+                var coords = PlanetSurfaceToCoordinates(i, tileWidth);
+
+                var neigbors = new CubeMapPointLight[]
+                {
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, -1, 0),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, -1, 1),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, -1, -1),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, 1, 0),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, 1, 1),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, 1, -1),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, 0, 1),
+                    CubeMapPointLight.GetPointRelativeTo(new() { X = coords.x, Y = coords.y, Face = coords.face }, 0, -1),
+                };
+                var neighborsWithValue = neigbors.Where(x =>
+                {
+                    var index = CoordinatesToPlanetSurface(x.Face, x.X, x.Y, tileWidth);
+                    var value = planetSurface[index];
+                    return value != 0;
+                }).ToList();
+                Debug.Assert(neighborsWithValue.Count > 0);
+                var randomNeighbor = neighborsWithValue[random.NextTS(neighborsWithValue.Count)];
+                var indexOfRnd = CoordinatesToPlanetSurface(randomNeighbor.Face, randomNeighbor.X, randomNeighbor.Y, tileWidth);
+                var value = planetSurface[indexOfRnd];
+                foreach (var x in neigbors)
+                {
+                    var index = CoordinatesToPlanetSurface(x.Face, x.X, x.Y, tileWidth);
+                    if (planetSurface[index] == 0)
+                    {
+                        planetSurface[index] = value;
+                    }
+                }
+                planetSurface[i] = value;
+            }
+
+            // Write files
+
+            foreach (var face in Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>())
+            {
+                var faceName = face.ToString().ToLower();
+                var image = new SixLabors.ImageSharp.Image<Rgb24>(tileWidth, tileWidth);
+                var materialImg = SixLabors.ImageSharp.Image.Load(Path.Combine(imageDir, faceName + "_mat.png"));
+                var material = materialImg as Image<Rgb24>;
+                if (material == null)
+                {
+                    material = materialImg.CloneAs<Rgb24>();
+                    materialImg.Dispose(); // Dispose original image, we don't need it anymore
+                }
+                image.ProcessPixelRows(row =>
+                {
+                    for (int y = 0; y < tileWidth; ++y)
+                    {
+                        var span = row.GetRowSpan(y);
+                        for (int x = 0; x < tileWidth; ++x)
+                        {
+                            var surfaceVal = planetSurface[CoordinatesToPlanetSurface(face, x, y, tileWidth)];
+                            span[x] = new Rgb24(material[x, y].R, surfaceVal, material[x, y].B);
+                        }
+                    }
+                });
+                image.SaveAsPng(Path.Combine(imageDir, faceName + "_mat2.png"));
+                material.Dispose();
+                image.Dispose();
+            }
+
+            MessageBox.Show("Finished. Files were saved as '*_mat2.png' to preserve the original files.");
+        }, o => SelectedPlanetDefinition != null);
+
+        // Use a biome dictionary for a latitude.
+        // Choose a random biome from that latitude.
+        // Take relative quantities of different biomes into account
+        int RandomBiomePick(Dictionary<int,int> dic, Random rnd)
+        {
+            // Sum up all biomes
+            var sum = 0;
+            var kvps = dic.ToList();
+            foreach (var kvp in kvps)
+            {
+                sum += kvp.Value;
+            }
+            // Pick random number
+            var pick = rnd.NextTS(sum);
+
+            // Use counts like an index in a list
+            // This should preserve the relative amounts of different biomes
+            sum = 0;
+            for (int i=0;i< kvps.Count; i++)
+            {
+                sum += kvps[i].Value;
+                if (pick < sum) return kvps[i].Key;
+            }
+            // Fallback. Should not be hit.
+            Debug.Assert(false);
+            return kvps[0].Key;
+        }
+
+        (CubeMapFace face, int x, int y) PlanetSurfaceToCoordinates(int surfaceIndex, int tileWidth)
+        {
+            var twSquared = tileWidth * tileWidth;
+            var div = surfaceIndex / (twSquared);
+            var start = twSquared * div;
+            var posRel = surfaceIndex % (twSquared);
+            var y = posRel / tileWidth;
+            var x = surfaceIndex % tileWidth;
+            return ((CubeMapFace)div, x, y);
+        }
+
+        int CoordinatesToPlanetSurface(CubeMapFace face, int x, int y, int tileWidth)
+        {
+            return (int)face * tileWidth * tileWidth + x + y * tileWidth;
+        }
+
+        // Turn latitude values into dictionary keys
+        // Bucket size is width of longitude area to cover for one key.
+        // Keens SBC use a granularity of 5°.
+        int GetLatitudeBucket(double latitude, int bucketsize = 5)
+        {
+            for (int i = -90; i <= 90; i += bucketsize)
+                if (latitude < i) return i;
+            return 90;
+        }
+
+        public ICommand PlusCommand => new RelayCommand(o =>
+        {
+            if (OreInspectorSize < 100) OreInspectorSize += 10;
+        });
+
+        public ICommand MinusCommand => new RelayCommand(o =>
+        {
+            if (OreInspectorSize > 10) OreInspectorSize -= 10;
+        });
+
+        public ICommand CalcOreAmountCommand => new RelayCommand(o =>
+        {
+            // TODO: Calculate sum of ore patch * depth to get total volume of ore
+        });
+    }
+}

@@ -1,0 +1,12 @@
+<local:DialogWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
+        x:Class="SpaceEngineersOreRedistribution.Ore3dView"
+        Title="Ore 3D Viewer" Height="480" Width="640">
+    <Grid RowDefinitions="Auto,*">
+        <TextBlock Grid.Row="0" Margin="1" Text="Left Mouse: Pan, Right Mouse: Height, Scroll: Zoom" />
+        <Border Grid.Row="1" Background="White" Name="MyCanvas" ClipToBounds="True">
+            <local:Ore3dViewport Name="MyViewPort" IsHitTestVisible="False" />
+        </Border>
+    </Grid>
+</local:DialogWindow>

@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
+        x:Class="SpaceEngineersOreRedistribution.OreOverviewWindow"
+        Title="Ore Overview" Height="450" Width="800">
+    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto,Auto,*,Auto">
+        <TextBlock
+            Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+            Text="Raw Ore" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="5"/>
+        <local:PieChart
+            Grid.Column="0" Grid.Row="1"
+            Height="{Binding Bounds.Width, RelativeSource={RelativeSource Self}}"
+            VerticalAlignment="Top"
+            Margin="5"
+            ItemsSource="{Binding ItemsRaw}"/>
+        <ListBox
+            Grid.Row="1" Grid.Column="1" MinWidth="100" VerticalAlignment="Stretch" Margin="5"
+            ItemsSource="{Binding ItemsRaw}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="10" Height="10" Margin="5" Background="{Binding FillBrush}"/>
+                        <TextBlock Text="{Binding Name}" Margin="5"/>
+                        <TextBlock Text="{Binding Percentage}" Margin="0,5,5,5"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <Border
+            Grid.Row="1" Grid.Column="2" Margin="5" Width="2" Background="Black"/>
+        <TextBlock
+            Grid.Row="0" Grid.Column="2" Text="Base Ore" FontSize="24" FontWeight="Bold" Grid.ColumnSpan="2"
+            HorizontalAlignment="Center" Margin="5"/>
+        <local:PieChart
+            Grid.Column="3" Grid.Row="1" Margin="5"
+            Height="{Binding Bounds.Width, RelativeSource={RelativeSource Self}}"
+            VerticalAlignment="Top"
+            ItemsSource="{Binding ItemsBase}"/>
+        <ListBox
+             Grid.Row="1" Grid.Column="4" MinWidth="100" VerticalAlignment="Stretch" Margin="5"
+             ItemsSource="{Binding ItemsBase}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="10" Height="10" Margin="5" Background="{Binding FillBrush}"/>
+                        <TextBlock Text="{Binding Name}" Margin="5"/>
+                        <TextBlock Text="{Binding Percentage}" Margin="0,5,5,5"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" ColumnDefinitions="Auto,Auto,Auto,*">
+            <TextBlock
+                Grid.Column="0" Text="Calculation based on:" Margin="5"
+                VerticalAlignment="Center"/>
+            <ComboBox
+                Grid.Column="1" Margin="5" Width="140" ItemsSource="{Binding CalculationBases}" SelectedItem="{Binding SelectedCalculationBase}"
+                VerticalAlignment="Center"/>
+            <CheckBox
+                Grid.Column="2" Margin="5" IsChecked="{Binding UseAmounts}" VerticalAlignment="Center" Content="Use Amounts"/>
+            <Button
+                Grid.Column="3" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Margin="5" Content="Refresh" Command="{Binding RefreshCommand}"/>
+        </Grid>
+    </Grid>
+</Window>

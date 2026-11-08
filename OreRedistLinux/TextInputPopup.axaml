@@ -1,0 +1,11 @@
+<local:DialogWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
+        x:Class="SpaceEngineersOreRedistribution.TextInputPopup"
+        Title="Name Input" CanResize="False" SizeToContent="WidthAndHeight">
+    <StackPanel>
+        <TextBlock Text="Name?" Margin="5" x:Name="MyLabel"/>
+        <TextBox Text="" Margin="5" Width="150" x:Name="MyText"/>
+        <Button Content="OK" Margin="5" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="Button_Click" IsDefault="True"/>
+    </StackPanel>
+</local:DialogWindow>
