@@ -123,13 +123,67 @@ If you also want Better Stone's own style (2 mappings per ore), 37 ores would ne
 
 ## 7. Open points to decide before building the pack
 
-* **Galena_01:** pick which mod's definition you want (Better Stone: silver; Better Resources: lead). If you keep both mods enabled, the later one in the load order wins. A cleaner way is to give one of
-  them a new id in your pack.
+* **Galena_01 (decided):** real galena is PbS and usually carries silver, so the two mods' Galena are one ore. Keep Better Stone's `Galena_01` material (drop Better Resources' definition and its
+  `Galena` ore item from the pack) and give it Better Resources' refining recipe: **1 ore -> 0.3 Lead + 0.1 Silver + 0.1 Zinc** (Better Stone's own recipe gives only 0.035 Silver). This needs the Lead and Zinc
+  ingots from Better Resources, which the pack has anyway.
+* **Better Resources also overrides two vanilla recipes**: Magnesium ore -> 0.4 Magnesium (vanilla 0.007) and Uranium ore -> 0.1 Uranium + 0.01 Plutonium (vanilla 0.01). Decide which of them applies in the pack (they only matter for the pure vanilla ore items).
 * **Iron:** Better Stone's Iron_01 ("Iron") and Iron_02 ("Dense Iron") are both materials of the pack; decide whether Iron_01 should be on planets (Better Stone uses only Iron_02 on its planets).
 * **Uranium:** Better Stone keeps vanilla `Uraninite_01` next to Autunite, Carnotite and Uraniaurite. Leave it out of your list if you want the new minerals only.
 * **Refining:** both mods have their own blueprint files (Better Stone `Mod-Blueprints.sbc`, Better Resources `Blueprints.sbc`), presumably the ore-to-ingot recipes; the tool does not touch them. Check that every ore in the pack can be refined, in particular Sperrylite
   (defined by Better Stone but not on its planets) and Sulfur (defined by Better Resources but not on its planets).
 * **Vanilla materials stay loaded.** The unused vanilla ores still take a voxel material slot each.
+
+## 9. Native forms: which ores are native on Earth, which only elsewhere
+
+"Native" = the element itself (or a natural metal alloy), not a compound. Earth sources are from general geology; the extraterrestrial ones from meteorites, lunar samples and probe data.
+This is what decides which body gets which ore (each planet has its own 254, so a body's set can also be smaller and use more layers).
+
+| Ore | Native on Earth? | Extraterrestrial | Put on |
+|---|---|---|---|
+| Iron | very rare (Disko Island basalt); compounds: hematite, magnetite, banded iron formations | abundant as Fe-Ni metal: kamacite and taenite in iron meteorites and metal asteroids; metal grains in lunar soil | Earth-likes: Iron_01/02 (oxides). Moon, asteroids, Mars scatter: Kamacite, Taenite, Cohenite |
+| Nickel | essentially none (awaruite Ni3Fe in serpentinite); sulfides (Heazlewoodite, pentlandite), laterites | in Fe-Ni metal (kamacite 5-7 % Ni, taenite 25-50 %); asteroids | Earth-likes: Heazlewoodite, Cooperite; Moon, asteroids: Taenite, Kamacite, Cohenite |
+| Cobalt | none | traces in meteoritic Fe-Ni (about 0.5 %) | Earth-likes: Cattierite, Glaucodot; others: only via Kamacite/Cohenite |
+| Magnesium | none (too reactive); dolomite, magnesite, silicates | olivine and pyroxene everywhere (Moon, Mars, asteroids); Mg sulfates on Mars and Europa; carbonates in carbonaceous asteroids | Dolomite on Earth-likes, Mars (carbonates), C-type asteroids; Olivine, Akimotoite, Wadsleyite almost everywhere |
+| Silicon | practically none (traces in fulgurites) | traces of metallic Si in lunar soil and enstatite chondrites; silicates everywhere | Quartz on Earth-likes; Olivine, Sinoite, Hapkeite, Wadsleyite on Moon, asteroids |
+| Silver | yes, common native silver and electrum (Kongsberg, Ontario); Galena, Chlorargyrite | only traces (meteorites; silver detected in the LCROSS Cabeus plume) | Earth-likes (hydrothermal, volcanic); not on airless bodies except as a trace |
+| Gold | yes, the main form (placers, veins, electrum) | ppb levels in iron meteorites, no nuggets known | Earth-likes only; elsewhere only as a trace in Pyrite, Uraniaurite (shock / impact) |
+| Platinum | yes, native platinum and Pt-Fe alloys in ultramafic rocks and placers; Sperrylite, Cooperite | PGE alloy grains in chondrites, enriched in iron meteorite metal | Earth-likes (large intrusions); asteroids and impact-rich Moon: Niggliite, Cooperite, Sperrylite |
+| Uranium | none; Uraninite (UO2), Autunite, Carnotite are compounds | traces (KREEP on the Moon, chondrites), never ore-grade | Earth-likes (granite, sandstone, unconformity); Moon only as a weak KREEP spot |
+| Ice | glaciers, polar | everywhere: Moon poles, Mars poles, Europa shell, Titan bedrock, comets, C-type asteroids | all cold bodies; not hot dry Earth-likes except poles |
+
+Better Resources ores and Better Stone's rare minerals:
+
+| Ore | Native on Earth? | Extraterrestrial | Put on |
+|---|---|---|---|
+| Copper | yes, native copper (Keweenaw), also sulfides | trace native copper in lunar basalt | Earth-likes; Mars/Moon only a trace |
+| Aluminium (bauxite) | native Al practically none; bauxite is a tropical weathering product | Al in anorthite (lunar highlands), no bauxite | bauxite on wet Earth-likes; on the Moon use an Al silicate source (the highlands) |
+| Titanium | native none; ilmenite, rutile | ilmenite is the lunar mare titanium ore (up to about 15-20 %) | Moon (ilmenite), Earth-likes (beach sands, layered intrusions), Mars minor |
+| Lithium | none; spodumene (pegmatite), brines | traces | Earth-likes only |
+| Tungsten (Wolframite) | none; granite-related veins | ppm in meteoritic metal | Earth-likes only |
+| Galena (Pb, Ag) | PbS, the main lead ore, argentiferous | traces | Earth-likes (hydrothermal); not airless bodies |
+| Sulfur | yes, native sulfur (volcanic, salt domes) | troilite FeS in meteorites, sulfates on Mars, sulfur and SO2 on Io | Earth-likes (volcanic), Mars (sulfates), Europa-like (Io influence) |
+| Nitre (nitrates) | evaporite, arid regions (Atacama) | nitrates found by Curiosity on Mars | dry Earth-likes, Mars |
+| Petroleum | biogenic oil basins | none biogenic; **Titan**: liquid hydrocarbons, tholins; organics in C-type asteroids | Earth-likes (basins) and **Titan** (hydrocarbon lakes, sand), carbonaceous asteroids |
+| Kamacite, Taenite, Cohenite, Hapkeite, Sinoite | Kamacite/Taenite/Cohenite only in meteorites and rare native iron | meteorites; Hapkeite found in lunar meteorites and soil | Moon, asteroids; on Earth-likes only in meteorite craters (tiny regions) |
+| Akimotoite, Wadsleyite | not at the surface (mantle, shocked meteorites) | impact melt in meteorites | impact craters on any body, asteroids |
+| Heazlewoodite, Glaucodot, Cattierite, Porphyry, Electrum, Petzite, Chlorargyrite | hydrothermal, serpentinite, porphyry, epithermal | not found | Earth-likes only (Mars: some hydrothermal) |
+| Pyrite | common | in meteorites and Mars (iron sulfides) | everywhere with a crust |
+
+**Suggested sets per body (ores, then the layer budget goes up as the set gets smaller):**
+
+* **Earth-like / Alien:** all of the compound minerals and native Au, Ag, Cu, S, plus Iron_02/Iron_01, Aluminium, Titanium, Lithium, Wolframite, Nitre, Petroleum, Galena. About 30 ores.
+* **Mars:** Iron_02 (oxide), Olivine, Dolomite, Pyrite, Quartz, Sulfur, Nitre, Magnesium minerals, a little Kamacite/Taenite, Uraninite (traces), Ice (poles), Titanium (minor). About 12-16 ores.
+* **Moon:** Titanium (ilmenite), Olivine, Hapkeite, an aluminium source, Kamacite/Taenite/Cohenite, Cooperite/Niggliite (impact), Akimotoite/Wadsleyite (shock), Ice (poles), Uraninite as a weak KREEP spot. About 12-14 ores.
+* **Europa / icy moons:** Ice, Dolomite or Mg salts, Sulfur, Olivine, Pyrite, a little metal. About 6-8 ores.
+* **Titan:** Ice, Petroleum, Sulfur, Olivine, a little Kamacite. About 5-6 ores.
+* **Asteroids** (not part of the map tool): Kamacite, Taenite, Cohenite, Hapkeite, Sinoite, Akimotoite, Wadsleyite, PGE minerals, Olivine, Ice (C-type), Petroleum organics.
+
+## 10. Where Better Stone lacks a real mineral that Better Resources has
+
+Better Stone has no copper, aluminium, titanium, lithium, tungsten, lead (apart from Galena), sulfur, nitrate or petroleum ore. Better Resources fills exactly these gaps, which is why its ores stay. A few
+entries could be renamed to Better Stone's style (mineral names with the element in brackets) if you edit the materials: Copper -> native copper / chalcopyrite (Cu), Aluminium -> bauxite (Al), Titanium -> ilmenite (Fe,Ti)
+or rutile (Ti), Lithium -> spodumene (Li), Wolframite (W, Sn), Nitre -> niter (N), Sulfur -> native sulfur (S). Petroleum stays (not a mineral). Where both mods overlap, use the Better Stone ore and
+carry the better refining recipe over (Galena above). The only voxel-material overlap is `Galena_01`; `Iron_01`/`Iron_02` are Better Stone's.
 
 ## 8. Tool changes made while writing this
 
