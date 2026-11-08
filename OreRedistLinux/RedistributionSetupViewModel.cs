@@ -113,6 +113,8 @@ namespace SpaceEngineersOreRedistribution
             root.Add(new XAttribute("OreSpawnRate", OreSpawnRate));
             root.Add(new XAttribute("PlanetRadius", PlanetRadius.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XAttribute("TileWidth", TileWidth));
+            root.Add(new XAttribute("GlobSizeKm", GlobSizeKm.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            root.Add(new XAttribute("GlobCoverage", GlobCoverage.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XAttribute("Seed", Seed));
             root.Add(new XAttribute("SmallPlanet", SmallPlanetMode));
             if (withTimestamp) root.Add(new XAttribute("Saved", DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture)));
@@ -139,6 +141,8 @@ namespace SpaceEngineersOreRedistribution
             }
             if (int.TryParse(root.Attribute("Seed")?.Value, out var seed)) Seed = seed;
             if (bool.TryParse(root.Attribute("SmallPlanet")?.Value, out var spm)) SmallPlanetMode = spm;
+            if (double.TryParse(root.Attribute("GlobSizeKm")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gs)) GlobSizeKm = gs;
+            if (double.TryParse(root.Attribute("GlobCoverage")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gc)) GlobCoverage = gc;
             OreInfos.Clear();
             foreach (var node in root.Elements("OreInfo"))
                 OreInfos.Add(OreInfo.FromXElement(node));
@@ -269,6 +273,22 @@ namespace SpaceEngineersOreRedistribution
             OnPropertyChanged(nameof(PlanetRadiusKm));
             OnPropertyChanged(nameof(SpawnInfo));
             OnPropertyChanged(nameof(SpawnDensity));
+        }
+
+        double _globSizeKm = 15;
+        /// <summary>Size of the ore globs in km (Globbing). Applies to all ores that have a glob strength above 0.</summary>
+        public double GlobSizeKm
+        {
+            get => _globSizeKm;
+            set => SetProp(ref _globSizeKm, Math.Clamp(value, 0.5, 5000));
+        }
+
+        double _globCoverage = 20;
+        /// <summary>Share of the planet in percent that lies inside the globs of an ore at full strength.</summary>
+        public double GlobCoverage
+        {
+            get => _globCoverage;
+            set => SetProp(ref _globCoverage, Math.Clamp(value, 2, 90));
         }
 
         int _oreSpawnRate = DefaultSpawnRate;
@@ -674,6 +694,17 @@ namespace SpaceEngineersOreRedistribution
                 }
             }
 
+            double _glob;
+            /// <summary>
+            /// Globbing strength in percent: 0 = the ore is spread evenly (default), 100 = it only occurs inside its globs,
+            /// areas where this ore is common while it is rare elsewhere. See GlobField.
+            /// </summary>
+            public double Glob
+            {
+                get => _glob;
+                set => SetProp(ref _glob, Math.Clamp(value, 0, 100));
+            }
+
             double? _landShare;
             /// <summary>
             /// Land / seabed override of this ore (Land + seabed only): percent of its veins that start on land.
@@ -795,6 +826,7 @@ namespace SpaceEngineersOreRedistribution
                 // Land / seabed overrides
                 static double? Share(string t) => double.TryParse(t?.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : null;
                 info.LandShare = Share(node.Element("LandShare")?.Value);
+                info.Glob = Share(node.Element("Glob")?.Value) ?? 0;
                 var layerShares = node.Element("LayerLandShares")?.Value?.Split(';');
                 if (layerShares != null && layerShares.Length == info.OreMappings.Count)
                     for (int i = 0; i < layerShares.Length; ++i) info.OreMappings[i].LandShare = Share(layerShares[i]);
@@ -820,6 +852,7 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("VeryDeepOre", VeryDeepOre),
                     new XElement("WaterMode", WaterMode),
                     new XElement("Layers", string.Concat(OreMappings.Select(m => m.LayerEnabled ? '1' : '0'))),
+                    new XElement("Glob", Glob.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                     new XElement("LandShare", LandShare.HasValue ? LandShare.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),
                     new XElement("LayerLandShares", string.Join(";", OreMappings.Select(m => m.LandShare.HasValue ? m.LandShare.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""))));
 

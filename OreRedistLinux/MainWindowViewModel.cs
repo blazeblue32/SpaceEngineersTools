@@ -1165,6 +1165,7 @@ namespace SpaceEngineersOreRedistribution
             {
                 Setup = setup.ViewModel, Mappings = mappingsDictionary, TileWidth = TileWidth,
                 IgnoreTiers = ignoreTiers, Water = water, UseWater = useWater,
+                GlobSize = setup.ViewModel.GlobSizeKm * 1000, GlobCoverage = setup.ViewModel.GlobCoverage / 100, PlanetRadius = setup.ViewModel.PlanetRadius,
             };
 
             // The heavy part runs in the background with a progress window; files are written at the very end,

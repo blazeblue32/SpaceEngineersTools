@@ -14,6 +14,8 @@ namespace SpaceEngineersOreRedistribution
         public WaterSettings Water;
         /// <summary>Water rules are used at all (switched on and usable).</summary>
         public bool UseWater;
+        /// <summary>Globbing: size of the globs in meters, share of the planet inside globs (0..1) and planet radius for the noise.</summary>
+        public double GlobSize = 15000, GlobCoverage = 0.2, PlanetRadius = 60000;
     }
 
     /// <summary>Water related look-ups of one cube face: land pixels sorted by height, sea pixels, density bookkeeping.</summary>
@@ -99,6 +101,9 @@ namespace SpaceEngineersOreRedistribution
 
         readonly PlacementContext _c;
         readonly Random _rnd;
+        readonly int _seed;
+        readonly Dictionary<string, GlobField> _globs = new();
+        Func<int, int, bool> _accept; // glob test for the site search of the current vein (null = no globbing)
         readonly Normal _normal;
         readonly bool _rulesOn;
         readonly Dictionary<string, OreReportRow> _report;
@@ -118,6 +123,7 @@ namespace SpaceEngineersOreRedistribution
         {
             _c = ctx;
             _rnd = new Random(seed);
+            _seed = seed;
             _normal = new Normal(_rnd);
             _rulesOn = rulesOn && ctx.UseWater;
             _report = report;
@@ -221,6 +227,9 @@ namespace SpaceEngineersOreRedistribution
                     ++row.Events;
 
                     int siteX = x, siteY = y, idx = depth;
+                    _accept = AcceptFor(info, key);
+                    if (mode == OreWaterMode.Anywhere && _accept != null)
+                        GlobSite(info, key, image, x, y, out siteX, out siteY);
                     if (mode != OreWaterMode.Anywhere)
                     {
                         if (!FindSite(fw, source, image, mode, mappings, x, y, depth, minIdx, spawnSize, ShareFor(info, mappings, depth), row, out siteX, out siteY, out idx, out bool sea))
@@ -235,6 +244,51 @@ namespace SpaceEngineersOreRedistribution
                 }
             }
             return image;
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        // Globbing (see GlobField)
+
+        GlobField FieldFor(RedistributionSetupViewModel.OreInfo info)
+        {
+            if (!_globs.TryGetValue(info.Name, out var f))
+                _globs[info.Name] = f = new GlobField(GlobField.StableHash(info.Name, _seed), _c.PlanetRadius, _c.GlobSize, _c.GlobCoverage);
+            return f;
+        }
+
+        /// <summary>Chance 0..1 that a vein of this ore is accepted at a pixel (1 for ores without globbing).</summary>
+        double GlobChance(RedistributionSetupViewModel.OreInfo info, CubeMapFace face, int x, int y)
+        {
+            double s = info.Glob / 100.0;
+            if (s <= 0) return 1;
+            var field = FieldFor(info);
+            var p = CoordinateHelper.GetNormalizedSphereCoordinates(face, x, y, _c.TileWidth);
+            return field.Acceptance(field.Value(p.X, p.Y, p.Z), s);
+        }
+
+        /// <summary>Site test for the water rule search: null when the ore has no globbing.</summary>
+        Func<int, int, bool> AcceptFor(RedistributionSetupViewModel.OreInfo info, CubeMapFace face) =>
+            info.Glob > 0 ? (x, y) => _rnd.NextDouble() < GlobChance(info, face, x, y) : null;
+
+        /// <summary>
+        /// New site for a vein of an ore with globbing (no water rules): the dice pixel if it is accepted, otherwise random
+        /// pixels (empty ones first) until one is accepted; if none is, the most likely one that was seen.
+        /// </summary>
+        void GlobSite(RedistributionSetupViewModel.OreInfo info, CubeMapFace face, ImageData image, int diceX, int diceY, out int siteX, out int siteY)
+        {
+            siteX = diceX; siteY = diceY;
+            if (_rnd.NextDouble() < GlobChance(info, face, diceX, diceY)) return;
+            int tw = _c.TileWidth;
+            double best = -1; int bx = diceX, by = diceY;
+            for (int t = 0; t < 80; ++t)
+            {
+                int x = _rnd.Next(tw), y = _rnd.Next(tw);
+                if (t < 40 && !Free(image, x, y)) continue;
+                double a = GlobChance(info, face, x, y);
+                if (_rnd.NextDouble() < a) { siteX = x; siteY = y; return; }
+                if (a > best) { best = a; bx = x; by = y; }
+            }
+            siteX = bx; siteY = by;
         }
 
         int RollDepth(RedistributionSetupViewModel.OreInfo info, IList<OreMapping> mappings, int minIdx, int maxIdx)
@@ -427,7 +481,7 @@ namespace SpaceEngineersOreRedistribution
             siteX = diceX; siteY = diceY; siteIdx = idx;
             int w = fw.Width;
             // the pixel the dice chose
-            if (tryDiceSite && fw.IsSea(diceX, diceY) == !land)
+            if (tryDiceSite && fw.IsSea(diceX, diceY) == !land && (_accept == null || _accept(diceX, diceY)))
             {
                 if (land)
                 {
@@ -445,6 +499,7 @@ namespace SpaceEngineersOreRedistribution
                     int p = fw.LandPixels[_rnd.Next(k)];
                     int x = p / w, y = p % w;
                     if (t < PoolTries / 2 && !Free(image, x, y)) continue; // prefer empty ground first
+                    if (_accept != null && t < PoolTries / 2 && !_accept(x, y)) continue; // inside a glob first
                     if (!UnderCap(fw, x, y, veinSize)) continue;
                     int li = LandIndex(fw.H[x, y], mappings, idx, minIdx);
                     if (li < 0) continue;
@@ -460,6 +515,7 @@ namespace SpaceEngineersOreRedistribution
                     int p = fw.SeaPixels[_rnd.Next(fw.SeaPixels.Length)];
                     int x = p / w, y = p % w;
                     if (t < PoolTries / 2 && !Free(image, x, y)) continue;
+                    if (_accept != null && t < PoolTries / 2 && !_accept(x, y)) continue;
                     siteX = x; siteY = y; siteIdx = idx; return true;
                 }
                 return false;
@@ -780,6 +836,7 @@ namespace SpaceEngineersOreRedistribution
                 if ((e & 15) == 0) Token.ThrowIfCancellationRequested();
                 int dx = _rnd.Next(tw), dy = _rnd.Next(tw);
                 int size = RollSize(info);
+                _accept = AcceptFor(info, face);
                 if (!FindSite(fw, source, image, mode, mappings, dx, dy, layer, minIdx, size, ShareFor(info, mappings, layer), row, out int sx, out int sy, out int idx, out bool sea))
                 {
                     if (++fails >= 12) break; // no room for this ore and layer on this face

@@ -137,6 +137,17 @@ to the planet they are loaded on. The engine is unchanged: it uses the number sh
 (The 100 km in the original code was a *radius* and only used for the slope map; the spawn number never had a size.) The lowest allowed value is now 20
 (was 100) because planets larger than about 190 km radius need it. Not scaled: the size of the veins themselves (pixels per vein) and *Small Planet Mode*.
 
+## Globbing (ores cluster around ore of the same kind)
+Real ore is not scattered evenly: it occurs in regions where it is common and is rare elsewhere. Every ore has a **Glob %** (ore table; 0 = evenly
+spread, which is the default and what the tool always did, 100 = only inside its globs). Below the ore table, **globs** sets their size (default
+15 km) and how much of the planet an ore fills at full strength (default 20 %). Each ore gets its own smooth random field over the planet (3-D noise on the
+sphere, so globs continue across the edges of the cube map and different ores have different regions); a new vein is accepted at a place with a chance that
+depends on that field and the strength (outside the globs: (1 - strength)^3, so 25 % is already visible, 50 % clear, 75 % strong). A vein that is not accepted
+looks for another place, so **the number of veins and the ore ratios do not change, only where they are**; the same seed gives the same maps. Works with the water
+rules (the glob test is part of the site search, tried first) and the top-up. On EarthLike, Iron_02: the share of the ore found in its fullest fifth of the map cells
+goes 36 % (0) / 41 % (25) / 58 % (50) / 79 % (75) / 83 % (100), empty cells 2 % to 63 %, total ore pixels unchanged. Saved in setups. With every ore at 0 the maps
+are identical to before.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 
