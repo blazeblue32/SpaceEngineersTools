@@ -15,7 +15,22 @@ namespace SpaceEngineersToolsShared
         public int Tier { get => _tier; set => SetProp(ref _tier, value); }
 
         int _value;
-        public int Value { get => _value; set => SetProp(ref _value, value); }
+        public int Value
+        {
+            get => _value;
+            set { if (SetProp(ref _value, value)) OnPropertyChanged(nameof(ValueText)); }
+        }
+
+        bool _layerEnabled = true;
+        /// <summary>Switch for this layer. Off: the layer gets no number and is not used (UI only, never written to the game files).</summary>
+        public bool LayerEnabled
+        {
+            get => _layerEnabled;
+            set { if (SetProp(ref _layerEnabled, value)) OnPropertyChanged(nameof(ValueText)); }
+        }
+
+        /// <summary>Number this layer gets in oremappings.xml, "off" if switched off here, "cut" if a depth limit of the ore removed it.</summary>
+        public string ValueText => _value > 0 ? _value.ToString() : (_layerEnabled ? "cut" : "off");
         string _type;
         public string Type { get => _type; set => SetProp(ref _type, value); }
         int _start;

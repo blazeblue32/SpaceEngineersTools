@@ -128,12 +128,34 @@ namespace SpaceEngineersOreRedistribution
 
         OreWaterMode ModeOf(RedistributionSetupViewModel.OreInfo info) => _rulesOn ? info.WaterMode : OreWaterMode.Anywhere;
 
-        static void Limits(RedistributionSetupViewModel.OreInfo info, out int minIdx, out int maxIdx)
+        static void Limits(RedistributionSetupViewModel.OreInfo info, IList<OreMapping> mappings, out int minIdx, out int maxIdx)
         {
             maxIdx = info.VeryDeepOre ? 9 : 8;
             if (info.TypicalDepthMax > -1 && info.TypicalDepthMax < maxIdx) maxIdx = info.TypicalDepthMax;
             minIdx = 0;
             if (info.TypicalDepthMin > -1 && info.TypicalDepthMin > minIdx) minIdx = info.TypicalDepthMin;
+            // Layers switched off by hand at either end shorten the range (without such layers nothing changes)
+            while (minIdx < maxIdx && mappings[minIdx].Value <= 0) ++minIdx;
+            while (maxIdx > minIdx && mappings[maxIdx].Value <= 0) --maxIdx;
+        }
+
+        /// <summary>Is a layer inside the range switched off by hand? Then the random picks and the vein walk have to skip it.</summary>
+        static bool HasGap(IList<OreMapping> mappings, int minIdx, int maxIdx)
+        {
+            for (int i = minIdx; i <= maxIdx && i < mappings.Count; ++i)
+                if (mappings[i].Value <= 0) return true;
+            return false;
+        }
+
+        /// <summary>Nearest layer that is switched on (ties go towards the vein's own layer).</summary>
+        static int Snap(IList<OreMapping> mappings, int idx, int towards, int minIdx, int maxIdx)
+        {
+            if (idx >= 0 && idx < mappings.Count && mappings[idx].Value > 0) return idx;
+            int dir = Math.Sign(towards - idx); if (dir == 0) dir = 1;
+            for (int d = 1; d < 10; ++d)
+                foreach (int cand in new[] { idx + dir * d, idx - dir * d })
+                    if (cand >= minIdx && cand <= maxIdx && cand >= 0 && cand < mappings.Count && mappings[cand].Value > 0) return cand;
+            return idx;
         }
 
         // ------------------------------------------------------------------------------------------------
@@ -177,12 +199,12 @@ namespace SpaceEngineersOreRedistribution
 
                     // Decide which ore is spawned
                     var info = setup.PickRandomOreWeighted(_rnd);
-                    int depth = RollDepth(info);
+                    var mappings = _c.Mappings[info.Name];
+                    Limits(info, mappings, out int minIdx, out int maxIdx);
+                    int depth = RollDepth(info, mappings, minIdx, maxIdx);
                     if (depth == -1) continue;
                     int spawnSize = RollSize(info);
 
-                    Limits(info, out int minIdx, out int maxIdx);
-                    var mappings = _c.Mappings[info.Name];
                     var row = _report[info.Name];
                     var mode = ModeOf(info);
                     ++row.Events;
@@ -204,8 +226,11 @@ namespace SpaceEngineersOreRedistribution
             return image;
         }
 
-        int RollDepth(RedistributionSetupViewModel.OreInfo info)
+        int RollDepth(RedistributionSetupViewModel.OreInfo info, IList<OreMapping> mappings, int minIdx, int maxIdx)
         {
+            // Anything switched off by hand: only layers that are on may be rolled (also outside the depth limits' range).
+            // Without such layers the original rolls are used unchanged.
+            bool gaps = mappings.Any(m => !m.LayerEnabled);
             var setup = _c.Setup;
             var depthMin = info.TypicalDepthMin;
             var depthMax = info.TypicalDepthMax;
@@ -224,6 +249,9 @@ namespace SpaceEngineersOreRedistribution
                     // so with Very Deep Ore ticked layer 9 could still be picked and the vein was lost.
                     for (int i = AppSettings.LegacyVeryDeepRange ? 8 : 9; i > depthMax; --i) depthWeights[i] = 0;
                 }
+                if (gaps)
+                    for (int i = 0; i < 10; ++i)
+                        if (mappings[i].Value <= 0) depthWeights[i] = 0; // switched off by hand
                 double weightSum = 0;
                 for (int i = 0; i < 10; ++i)
                 {
@@ -249,6 +277,13 @@ namespace SpaceEngineersOreRedistribution
                         break;
                     }
                 }
+            }
+            else if (gaps)
+            {
+                // some layers are switched off: pick among the ones that are on
+                var on = new List<int>();
+                for (int i = minIdx; i <= maxIdx; ++i) if (mappings[i].Value > 0) on.Add(i);
+                depth = on.Count > 0 ? on[_rnd.Next(on.Count)] : -1;
             }
             else
             {
@@ -440,6 +475,7 @@ namespace SpaceEngineersOreRedistribution
             int siteX, int siteY, int defaultDepthIndex, int minDepthIndex, int maxDepthIndex, int spawnSize, long[] placedPerValue)
         {
             int tw = _c.TileWidth;
+            bool gaps = HasGap(mappings, minDepthIndex, maxDepthIndex);
             HashSet<OreToDraw> drawnOre = new();
             drawnOre.Add(new OreToDraw(tw) { X = siteX, Y = siteY, Value = mappings[defaultDepthIndex].Value });
             int lastDepthIndex = defaultDepthIndex;
@@ -591,12 +627,15 @@ namespace SpaceEngineersOreRedistribution
                     else if (lastDepthIndex < minDepthIndex) lastDepthIndex = minDepthIndex;
                 }
 
+                // Layer to draw: the walk may land on a layer that is switched off, then the nearest one that is on is used
+                int drawIdx = gaps ? Snap(mappings, lastDepthIndex, defaultDepthIndex, minDepthIndex, maxDepthIndex) : lastDepthIndex;
+
                 // Get value for depth
                 if (mode == OreWaterMode.Anywhere || fw == null)
-                    nextOreToDraw.Value = mappings[lastDepthIndex].Value;
+                    nextOreToDraw.Value = mappings[drawIdx].Value;
                 else
                 {
-                    int idxHere = PixelIndex(fw, mode, mappings, nextOreToDraw.X, nextOreToDraw.Y, lastDepthIndex, defaultDepthIndex, minDepthIndex);
+                    int idxHere = PixelIndex(fw, mode, mappings, nextOreToDraw.X, nextOreToDraw.Y, drawIdx, defaultDepthIndex, minDepthIndex);
                     if (idxHere < 0)
                     {
                         nextOreToDraw.Value = -1; ++row.SkippedPixels;
@@ -611,7 +650,7 @@ namespace SpaceEngineersOreRedistribution
                     }
                     else
                     {
-                        if (idxHere < lastDepthIndex) ++row.ClampedPixels;
+                        if (idxHere < drawIdx) ++row.ClampedPixels;
                         nextOreToDraw.Value = mappings[idxHere].Value;
                     }
                 }
@@ -663,7 +702,7 @@ namespace SpaceEngineersOreRedistribution
                 var mode = ModeOf(info);
                 if (mode == OreWaterMode.Anywhere) continue;
                 var mappings = _c.Mappings[info.Name];
-                Limits(info, out int minIdx, out int maxIdx);
+                Limits(info, mappings, out int minIdx, out int maxIdx);
                 var row = _report[info.Name];
                 for (int i = minIdx; i <= maxIdx && i < mappings.Count; ++i)
                 {

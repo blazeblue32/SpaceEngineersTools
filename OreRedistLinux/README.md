@@ -94,6 +94,14 @@ by a blank map, and ore map pixels whose value has no ore mapping are no longer 
 The output folder is no longer opened after *Redistribute Ore* (the original opened Explorer). *File > Open output folder when finished*
 turns it back on.
 
+## Switching layers off (more ores under the 254 limit)
+Every ore keeps its ten layers, because the vein generator is built around them. In the mapping list under the ore table each layer has an
+**On** checkbox and shows the **Number** it gets in `oremappings.xml`: a layer that is off gets no number (`off`), one removed by
+Very Deep Ore or Typ. Depth Min/Max shows `cut`. The *Layers* column shows how many layers each ore uses (e.g. 7/10), the bottom line the total
+(*Values Count*, max 254) and the number of ores, so you can keep it under the limit by hand. Veins skip layers that are off: random depth
+picks only use layers that are on, and a vein that wanders onto a switched-off layer uses the nearest one that is on. With nothing switched
+off the maps are identical to before. The switches are saved with *Export* / loaded with *Import*.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

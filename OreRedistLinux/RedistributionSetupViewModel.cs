@@ -396,6 +396,8 @@ namespace SpaceEngineersOreRedistribution
 
         private void OreItem_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            // "Layers" is only the display of the result of FinalizeList, reacting to it would loop
+            if (e.PropertyName == nameof(OreInfo.Layers)) return;
             OnPropertyChanged(nameof(ValuesCount));
             CalcRatios();
         }
@@ -538,6 +540,27 @@ namespace SpaceEngineersOreRedistribution
 
             public ObservableCollection<OreMapping> OreMappings { get; } = new();
 
+            public OreInfo()
+            {
+                OreMappings.CollectionChanged += (s, e) =>
+                {
+                    if (e.NewItems != null)
+                        foreach (OreMapping m in e.NewItems) m.PropertyChanged += Mapping_PropertyChanged;
+                    if (e.OldItems != null)
+                        foreach (OreMapping m in e.OldItems) m.PropertyChanged -= Mapping_PropertyChanged;
+                };
+            }
+
+            void Mapping_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+            {
+                // A layer was switched on or off: the numbers have to be handed out again
+                if (e.PropertyName == nameof(OreMapping.LayerEnabled)) OnPropertyChanged("LayerToggled");
+            }
+
+            /// <summary>Layers that get a number, e.g. "7/10". Updated by FinalizeList.</summary>
+            public string Layers => $"{OreMappings.Count(m => m.Value > 0)}/{OreMappings.Count}";
+            public void RefreshLayers() => OnPropertyChanged(nameof(Layers));
+
             public void AddDefaultMapping()
             {
                 OreMappings.Clear();
@@ -592,6 +615,11 @@ namespace SpaceEngineersOreRedistribution
                 info.OreMappings[6].Tier = info.OreMappings[7].Tier = info.OreMappings[8].Tier = 3;
                 info.OreMappings[9].Tier = 4;
 
+                // Switched off layers (flags in layer order)
+                var flags = node.Element("Layers")?.Value?.Trim();
+                if (flags != null && flags.Length == info.OreMappings.Count)
+                    for (int i = 0; i < flags.Length; ++i) info.OreMappings[i].LayerEnabled = flags[i] != '0';
+
                 return info;
             }
 
@@ -606,7 +634,8 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("TypicalDepthMax", TypicalDepthMax),
                     new XElement("PreferredDepth", PreferredDepth),
                     new XElement("VeryDeepOre", VeryDeepOre),
-                    new XElement("WaterMode", WaterMode));
+                    new XElement("WaterMode", WaterMode),
+                    new XElement("Layers", string.Concat(OreMappings.Select(m => m.LayerEnabled ? '1' : '0'))));
 
                 if (OreMappings.Count > 0)
                 {
@@ -637,7 +666,7 @@ namespace SpaceEngineersOreRedistribution
             {
                 foreach (var mapping in info.OreMappings)
                 {
-                    mapping.Value = 0; // enabled
+                    mapping.Value = mapping.LayerEnabled ? 0 : -1; // 0 = enabled, gets a number below
                 }
 
                 // If deep ore deselected, ignore entry
@@ -658,6 +687,7 @@ namespace SpaceEngineersOreRedistribution
                     if (mapping.Value == 0)
                         mapping.Value = value++;
                 }
+                info.RefreshLayers();
             }
             return value - 1;
         }
