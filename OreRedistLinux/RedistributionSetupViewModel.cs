@@ -91,6 +91,50 @@ namespace SpaceEngineersOreRedistribution
             if (Parent != null) overview.Show(Parent); else overview.Show();
         });
 
+        /// <summary>Rock suitability of the vanilla ores (Sed, MetL, MetH, Extr, Intr), after real ore geology.</summary>
+        public static readonly Dictionary<string, double[]> VanillaRocks = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Iron"] = new double[] { 80, 60, 50, 15, 40 },
+            ["Nickel"] = new double[] { 10, 10, 30, 60, 100 },
+            ["Cobalt"] = new double[] { 50, 40, 30, 30, 70 },
+            ["Magnesium"] = new double[] { 100, 60, 40, 10, 30 },
+            ["Silicon"] = new double[] { 80, 60, 50, 40, 70 },
+            ["Silver"] = new double[] { 20, 40, 20, 90, 60 },
+            ["Gold"] = new double[] { 25, 100, 50, 40, 50 },
+            ["Platinum"] = new double[] { 5, 5, 20, 20, 100 },
+            ["Uranium"] = new double[] { 80, 30, 30, 20, 60 },
+            ["Ice"] = new double[] { 100, 100, 100, 100, 100 },
+        };
+
+        /// <summary>Name without the version suffix: "Iron_02" -> "Iron".</summary>
+        static string BaseOreName(string name) => System.Text.RegularExpressions.Regex.Replace((name ?? "").Trim(), @"[_\s]*\d+$", "");
+
+        /// <summary>Sets the rock weights of every vanilla ore by name. Returns the names of the ores that are not vanilla (left as they are).</summary>
+        public List<string> ApplyVanillaRocks(out int applied)
+        {
+            applied = 0;
+            var others = new List<string>();
+            foreach (var info in OreInfos)
+            {
+                if (VanillaRocks.TryGetValue(BaseOreName(info.Name), out var w))
+                {
+                    for (int k = 0; k < GeoInfo.Rocks; ++k) info.Rocks[k].Weight = w[k];
+                    ++applied;
+                }
+                else others.Add(info.Name);
+            }
+            return others;
+        }
+
+        public ICommand VanillaRocksCommand => new RelayCommand(o =>
+        {
+            var others = ApplyVanillaRocks(out int applied);
+            MessageBox.Show(applied == 0
+                ? "No vanilla ore found in the list (Iron, Nickel, Cobalt, Magnesium, Silicon, Silver, Gold, Platinum, Uranium, Ice)."
+                : $"Rock types set for {applied} vanilla ore(s)." + (others.Count > 0 ? "\r\nNot touched (not vanilla): " + string.Join(", ", others) : ""),
+                "Vanilla rock types");
+        }, o => OreInfos.Count > 0);
+
         public ICommand SortCommand => new RelayCommand(o =>
         {
             var list = OreInfos.ToList();
@@ -734,8 +778,9 @@ namespace SpaceEngineersOreRedistribution
                     double max = Rocks.Max(r => r.Weight);
                     if (max <= 0) return "None!";
                     if (Rocks.All(r => Math.Abs(r.Weight - max) < 1e-9)) return "All rocks";
-                    var names = Rocks.Where(r => r.Weight >= max * 0.5).Select(r => GeoInfo.RockShort[r.Index]).ToList();
-                    return string.Join(", ", names) + (Rocks.Any(r => r.Weight > 0 && r.Weight < max * 0.5) ? "+" : "");
+                    var names = Rocks.Where(r => r.Weight >= max * 0.5).OrderByDescending(r => r.Weight).Select(r => GeoInfo.RockShort[r.Index]).ToList();
+                    bool more = names.Count > 2 || Rocks.Any(r => r.Weight > 0 && r.Weight < max * 0.5);
+                    return string.Join(", ", names.Take(2)) + (more ? "+" : "");
                 }
             }
 
