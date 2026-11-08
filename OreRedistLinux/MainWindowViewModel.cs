@@ -293,6 +293,9 @@ namespace SpaceEngineersOreRedistribution
             Avalonia.Media.Colors.OliveDrab,
         };
         Avalonia.Media.IBrush _defaultOreBrush = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Avalonia.Media.Color.FromRgb(0, 0xff, 0));
+        /// <summary>Gray of the ores that are not selected: neutral, far from every ore color (all of them are saturated).</summary>
+        const byte DimGray = 72;
+
         OreDistributionStatViewModel _selectedOreType;
         public OreDistributionStatViewModel SelectedOreType
         {
@@ -311,7 +314,7 @@ namespace SpaceEngineersOreRedistribution
                 // Reset colors so they don't appear in ore inspector
                 foreach (var m in SelectedPlanetDefinition.OreMappings)
                 {
-                    m.MapRgbValue = new(0, 0, 64);
+                    m.MapRgbValue = new(DimGray, DimGray, DimGray);
                 }
 
                 var mappings = SelectedPlanetDefinition.OreMappings.Where(x => x.Type == value.OreType);
@@ -1083,7 +1086,7 @@ namespace SpaceEngineersOreRedistribution
                                 // An ore is selected: old style, its depth tiers are colored, everything else is dimmed
                                 var sel = selectedByValue[v];
                                 if (sel != null) { r = sel.MapRgbValue.R; g = sel.MapRgbValue.G; b = sel.MapRgbValue.B; }
-                                else { r = 0; g = 0; b = 64; }
+                                else { r = g = b = DimGray; }
                             }
                             else
                             {
