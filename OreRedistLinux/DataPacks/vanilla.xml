@@ -11,19 +11,21 @@
   Glob         Optional. Regional strength 0-100: 0 = the ore is spread evenly, 100 = it only occurs in a few regions (like gold in greenstone belts,
                nickel at Sudbury). In geology mode the regions also lie where the ore's rocks are.
   GlobSize     Optional. Size of the regions in km (the planet default is 15). GlobCoverage: share of the planet in percent inside the regions (default 20).
+               Number of regions on a 120 km diameter planet (size km / coverage %): 50/4 = 3, 40/6 = 5, 40/8 = 5, 30/8 = 8, 30/12 = 10, 25/12 = 13,
+               20/12 = 16, 12/12 = 35. Bigger size = fewer, larger regions; coverage = how much of the planet they take together.
   Order        Packs are applied in order (lowest first); a later pack overrides an ore of an earlier one.
 -->
 <OreDataPack Format="1" Tool="OreRedistLinux" Name="Vanilla" Author="OreRedistLinux" Order="0"
              Description="The nine vanilla ores and Ice: abundance in the Earth's crust and the rock types they form in.">
   <Ore Name="Silicon"   Abundance="282000" Rocks="80;60;50;40;70" Glob="0"  />
-  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40" Glob="40" GlobSize="25" GlobCoverage="30"  />
-  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" Glob="20" GlobSize="20" GlobCoverage="30" />
-  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" Glob="75" GlobSize="12" GlobCoverage="12" />
-  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70" Glob="70" GlobSize="15" GlobCoverage="12"  />
-  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60" Glob="70" GlobSize="15" GlobCoverage="12"  />
-  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60" Glob="55" GlobSize="12" GlobCoverage="15"  />
-  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100" Glob="90" GlobSize="10" GlobCoverage="6"   />
-  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" Glob="75" GlobSize="12" GlobCoverage="12" />
+  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40" Glob="40" GlobSize="40" GlobCoverage="30"  />
+  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" Glob="20" GlobSize="30" GlobCoverage="30" />
+  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" Glob="75" GlobSize="40" GlobCoverage="8" />
+  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70" Glob="70" GlobSize="40" GlobCoverage="6"  />
+  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60" Glob="70" GlobSize="40" GlobCoverage="8"  />
+  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60" Glob="55" GlobSize="30" GlobCoverage="8"  />
+  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="4"   />
+  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" Glob="75" GlobSize="40" GlobCoverage="6" />
   <!-- Ice is not a crust ore: no abundance, no rock preference -->
   <Ore Name="Ice" Rocks="100;100;100;100;100" Glob="0" />
 </OreDataPack>
