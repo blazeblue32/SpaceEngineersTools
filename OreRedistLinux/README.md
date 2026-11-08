@@ -135,7 +135,14 @@ included the same way (4096 pixel tiles: 4 times as many pixels). The **Ore dens
 immediately). The density stays the same when you change the planet size. Saved setups (autosave, Export) remember the size they were made for and are converted
 to the planet they are loaded on. The engine is unchanged: it uses the number shown. At the default size the maps are identical to before.
 (The 100 km in the original code was a *radius* and only used for the slope map; the spawn number never had a size.) The lowest allowed value is now 20
-(was 100) because planets larger than about 190 km radius need it. Not scaled: the size of the veins themselves (pixels per vein) and *Small Planet Mode*.
+(was 100) because planets larger than about 190 km radius need it. 
+
+**Ore patch size** follows the planet size too (*Scale ore patches with the planet size*, on by default; it replaces the manual *Small Planet Mode* of the
+original tool). The Size column is the number of pixels of a vein on the reference planet (EarthLike: 60 km radius, 2048 pixel tiles). A pixel covers
+(radius / tile width)^2 of ground, so the pixels per vein are multiplied by the same factor as the spawn number: on a 60 km diameter planet a vein of 15
+becomes 60 pixels, on a 240 km one 3.8, and the vein covers the same ground (about 27,000 m2) everywhere. A line under the checkbox shows the factor.
+At the reference size the maps are identical to before. Switch it off to draw exactly the pixels in the Size column. The size of globs and rock patches is in
+km on the planet and needs no scaling.
 
 ## Globbing (ores cluster around ore of the same kind)
 Real ore is not scattered evenly: it occurs in regions where it is common and is rare elsewhere. Every ore has a **Glob %** (ore table; 0 = evenly

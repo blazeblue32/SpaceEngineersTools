@@ -183,7 +183,7 @@ namespace SpaceEngineersOreRedistribution
             root.Add(new XAttribute("GlobCoverage", GlobCoverage.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XAttribute("RegionRockAffinity", RegionRockAffinity.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XAttribute("Seed", Seed));
-            root.Add(new XAttribute("SmallPlanet", SmallPlanetMode));
+            root.Add(new XAttribute("AutoPatchScale", AutoPatchScale));
             if (withTimestamp) root.Add(new XAttribute("Saved", DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture)));
             foreach (var oreInfo in OreInfos)
                 root.Add(oreInfo.ToXElement());
@@ -207,7 +207,7 @@ namespace SpaceEngineersOreRedistribution
                 ApplyScale();
             }
             if (int.TryParse(root.Attribute("Seed")?.Value, out var seed)) Seed = seed;
-            if (bool.TryParse(root.Attribute("SmallPlanet")?.Value, out var spm)) SmallPlanetMode = spm;
+            if (bool.TryParse(root.Attribute("AutoPatchScale")?.Value, out var aps)) AutoPatchScale = aps; // older files (SmallPlanet) get the automatic scaling
             if (Enum.TryParse<PlacementMode>(root.Attribute("Placement")?.Value, out var pm)) Placement = pm;
             if (double.TryParse(root.Attribute("GlobSizeKm")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gs)) GlobSizeKm = gs;
             if (double.TryParse(root.Attribute("GlobCoverage")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gc)) GlobCoverage = gc;
@@ -342,6 +342,8 @@ namespace SpaceEngineersOreRedistribution
             OnPropertyChanged(nameof(PlanetRadiusKm));
             OnPropertyChanged(nameof(SpawnInfo));
             OnPropertyChanged(nameof(SpawnDensity));
+            OnPropertyChanged(nameof(PatchScale));
+            OnPropertyChanged(nameof(PatchInfo));
         }
 
         PlacementMode _placement = PlacementMode.Globbing;
@@ -439,11 +441,31 @@ namespace SpaceEngineersOreRedistribution
             set => SetProp(ref _seed, value);
         }
 
-        bool _smallPlanetMode;
-        public bool SmallPlanetMode
+        bool _autoPatchScale = true;
+        /// <summary>
+        /// Scale the size of the ore patches (veins) with the planet size, so they cover the same area on the voxel planet whatever the planet size or tile
+        /// width: the Size column is the number of pixels of a vein on the reference planet (EarthLike, 60 km radius, 2048 pixel tiles). Replaces the manual
+        /// "Small Planet Mode" of the original tool.
+        /// </summary>
+        public bool AutoPatchScale
         {
-            get => _smallPlanetMode;
-            set => SetProp(ref _smallPlanetMode, value);
+            get => _autoPatchScale;
+            set { if (SetProp(ref _autoPatchScale, value)) { OnPropertyChanged(nameof(PatchScale)); OnPropertyChanged(nameof(PatchInfo)); } }
+        }
+
+        /// <summary>Factor for the size of a vein in pixels: how many times more pixels cover the same area than on the reference planet (1 when switched off).</summary>
+        public double PatchScale => _autoPatchScale ? Scale(ReferenceRadius, ReferenceTileWidth) / Scale(PlanetRadius, _tileWidth) : 1;
+
+        public string PatchInfo
+        {
+            get
+            {
+                if (!_autoPatchScale) return "Ore patches are drawn exactly as many pixels as the Size column says.";
+                double f = PatchScale;
+                return f is > 0.995 and < 1.005
+                    ? "Ore patches: sizes as in the Size column (reference planet size)."
+                    : $"Ore patches are scaled x{f:0.##} for this planet size: a patch of 15 in the Size column becomes {15 * f:0.#} pixels, the same area on the planet as on EarthLike.";
+            }
         }
 
         public Action ConfirmAction;

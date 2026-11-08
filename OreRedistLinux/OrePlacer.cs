@@ -198,7 +198,6 @@ namespace SpaceEngineersOreRedistribution
 
             var setup = _c.Setup;
             int spawnRate = setup.OreSpawnRate; // Default 3000
-            if (setup.SmallPlanetMode) spawnRate *= 2;
             if (spawnRate < RedistributionSetupViewModel.MinSpawnRate) spawnRate = RedistributionSetupViewModel.MinSpawnRate;
             else if (spawnRate > RedistributionSetupViewModel.MaxSpawnRate) spawnRate = RedistributionSetupViewModel.MaxSpawnRate;
 
@@ -536,18 +535,20 @@ namespace SpaceEngineersOreRedistribution
         int RollSize(RedistributionSetupViewModel.OreInfo info)
         {
             var setup = _c.Setup;
+            double f = setup.PatchScale; // pixels per vein follow the planet size (1 on the reference planet)
             var spawnSize = info.TypicalSize;
-            if (setup.SmallPlanetMode) spawnSize *= 2;
             // Randomize if not set by user
             if (spawnSize == 0) spawnSize = _rnd.Next(5, 31);
+            double size = spawnSize * f;
             // Gauss randomizer
             if (setup.StdDev > 0)
             {
                 var stdDevPercentage = setup.StdDev / 100.0;
-                spawnSize = (int)(_normal.Next(spawnSize, spawnSize * stdDevPercentage) + 0.5);
-                if (spawnSize < 1) spawnSize = 1; else if (spawnSize > 500) spawnSize = 500;
+                size = _normal.Next(size, size * stdDevPercentage) + 0.5;
+                int result = (int)size;
+                return result < 1 ? 1 : result > Math.Max(500, 500 * f) ? (int)Math.Max(500, 500 * f) : result;
             }
-            return spawnSize;
+            return Math.Max(1, (int)(size + 0.5));
         }
 
         // ------------------------------------------------------------------------------------------------
@@ -997,8 +998,8 @@ namespace SpaceEngineersOreRedistribution
             var fw = _faces[face];
             var source = _sources[face];
             int tw = _c.TileWidth;
-            int baseSize = Math.Max(5, info.TypicalSize * (_c.Setup.SmallPlanetMode ? 2 : 1));
-            if (info.TypicalSize == 0) baseSize = 17;
+            int baseSize = (int)Math.Max(1, Math.Round(Math.Max(5, info.TypicalSize) * _c.Setup.PatchScale));
+            if (info.TypicalSize == 0) baseSize = (int)Math.Max(1, Math.Round(17 * _c.Setup.PatchScale));
             long placed = 0;
             int fails = 0;
             var counts = new long[256];
