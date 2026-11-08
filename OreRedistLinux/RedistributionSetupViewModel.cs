@@ -378,7 +378,7 @@ namespace SpaceEngineersOreRedistribution
         public double GlobCoverage
         {
             get => _globCoverage;
-            set => SetProp(ref _globCoverage, Math.Clamp(value, 2, 90));
+            set => SetProp(ref _globCoverage, Math.Clamp(value, 0.5, 90));
         }
 
         int _oreSpawnRate = DefaultSpawnRate;
@@ -830,7 +830,7 @@ namespace SpaceEngineersOreRedistribution
             /// <summary>Size of this ore's globs / regions in km. Empty = the size of the setup.</summary>
             public double? GlobSizeKm { get => _globSizeKm; set => SetProp(ref _globSizeKm, value.HasValue ? Math.Clamp(value.Value, 0.5, 5000) : null); }
             /// <summary>Share of the planet in percent inside this ore's globs / regions at full strength. Empty = the share of the setup.</summary>
-            public double? GlobCoverage { get => _globCoverage; set => SetProp(ref _globCoverage, value.HasValue ? Math.Clamp(value.Value, 2, 90) : null); }
+            public double? GlobCoverage { get => _globCoverage; set => SetProp(ref _globCoverage, value.HasValue ? Math.Clamp(value.Value, 0.5, 90) : null); }
 
             double _glob;
             /// <summary>

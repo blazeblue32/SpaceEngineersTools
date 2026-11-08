@@ -42,7 +42,7 @@ namespace SpaceEngineersOreRedistribution
             }
             Array.Sort(samples);
             _sorted = samples;
-            coverage = Math.Clamp(coverage, 0.02, 0.9);
+            coverage = Math.Clamp(coverage, 0.005, 0.9);
             _threshold = samples[(int)Math.Clamp((1 - coverage) * samples.Length, 0, samples.Length - 1)];
             double mean = samples.Average();
             double sd = Math.Sqrt(samples.Sum(v => (v - mean) * (v - mean)) / samples.Length);
@@ -137,14 +137,14 @@ namespace SpaceEngineersOreRedistribution
             _noise = noise;
             _affinity = Math.Clamp(affinity, 0, 1);
             var rnd = new Random(seed ^ 0x5bd1e995);
-            var sc = new double[12000];
+            var sc = new double[30000];
             for (int i = 0; i < sc.Length; ++i)
             {
                 var face = (CubeMapFace)rnd.Next(6); int x = rnd.Next(tileWidth), y = rnd.Next(tileWidth);
                 sc[i] = Score(face, x, y, tileWidth, suitability(face, x, y));
             }
             Array.Sort(sc);
-            coverage = Math.Clamp(coverage, 0.02, 0.9);
+            coverage = Math.Clamp(coverage, 0.005, 0.9);
             _threshold = Math.Max(1e-6, sc[(int)Math.Clamp((1 - coverage) * sc.Length, 0, sc.Length - 1)]);
             double mean = sc.Average();
             double sd = Math.Sqrt(sc.Sum(v => (v - mean) * (v - mean)) / sc.Length);

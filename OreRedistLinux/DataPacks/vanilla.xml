@@ -11,21 +11,24 @@
   Glob         Optional. Regional strength 0-100: 0 = the ore is spread evenly, 100 = it only occurs in a few regions (like gold in greenstone belts,
                nickel at Sudbury). In geology mode the regions also lie where the ore's rocks are.
   GlobSize     Optional. Size of the regions in km (the planet default is 15). GlobCoverage: share of the planet in percent inside the regions (default 20).
-               Number of regions on a 120 km diameter planet (size km / coverage %): 50/4 = 3, 40/6 = 5, 40/8 = 5, 30/8 = 8, 30/12 = 10, 25/12 = 13,
-               20/12 = 16, 12/12 = 35. Bigger size = fewer, larger regions; coverage = how much of the planet they take together.
+               The built-in packs size the regions from real deposits: the diameter of a real district or belt (Bushveld 350 km, Witwatersrand 300 km,
+               Athabasca 250 km...) x 0.047 (the 120 km planet is 1/106 of Earth, with an allowance of x5 for being a game), but at least about 8 km;
+               the number of regions is how many such districts the planet gets. The coverage is that number times the area of a region (0.5 % = a few
+               small regions, 7 % = a few big basins) and the size is the noise size that gives that number of regions (measured: 50 km / 1 % = 2 regions,
+               32 km / 1 % = 4, 27 km / 1 % = 6, 20 km / 0.5 % = 5; bigger size = fewer regions). Regions are in km, so a smaller planet gets fewer.
   Order        Packs are applied in order (lowest first); a later pack overrides an ore of an earlier one.
 -->
 <OreDataPack Format="1" Tool="OreRedistLinux" Name="Vanilla" Author="OreRedistLinux" Order="0"
              Description="The nine vanilla ores and Ice: abundance in the Earth's crust and the rock types they form in.">
   <Ore Name="Silicon"   Abundance="282000" Rocks="80;60;50;40;70" Glob="0"  />
-  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40" Glob="40" GlobSize="40" GlobCoverage="30"  />
-  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" Glob="20" GlobSize="30" GlobCoverage="30" />
-  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" Glob="75" GlobSize="40" GlobCoverage="8" />
-  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70" Glob="70" GlobSize="40" GlobCoverage="6"  />
-  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60" Glob="70" GlobSize="40" GlobCoverage="8"  />
-  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60" Glob="55" GlobSize="30" GlobCoverage="8"  />
-  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="4"   />
-  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" Glob="75" GlobSize="40" GlobCoverage="6" />
+  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40" Glob="40" GlobSize="37.5" GlobCoverage="6"  />  <!-- ~6 regions of about 24 km; real: Hamersley, Carajas, Superior banded iron basins, 500 km -->
+  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" Glob="20" GlobSize="32.5" GlobCoverage="2" />  <!-- ~6 regions of about 14 km; real: magnesite and dolomite basins, 300 km -->
+  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" Glob="75" GlobSize="20" GlobCoverage="0.5" />  <!-- ~5 regions of about 8 km; real: Sudbury, Norilsk, Kambalda, 150 km -->
+  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70" Glob="70" GlobSize="32.5" GlobCoverage="0.5"  />  <!-- ~3 regions of about 10 km; real: Katanga copper-cobalt belt, Bou Azzer, 250 km -->
+  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60" Glob="70" GlobSize="32.5" GlobCoverage="1"  />  <!-- ~5 regions of about 11 km; real: Athabasca, Kazakhstan basins, Olympic Dam, 250 km -->
+  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60" Glob="55" GlobSize="27.5" GlobCoverage="1"  />  <!-- ~6 regions of about 10 km; real: Mexican silver belt, Andes, Nevada, 200 km -->
+  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="1.5"   />  <!-- ~3 regions of about 17 km; real: Bushveld complex, Norilsk, 350 km -->
+  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" Glob="75" GlobSize="32.5" GlobCoverage="2" />  <!-- ~6 regions of about 14 km; real: Witwatersrand, Yilgarn, Abitibi, 300 km -->
   <!-- Ice is not a crust ore: no abundance, no rock preference -->
   <Ore Name="Ice" Rocks="100;100;100;100;100" Glob="0" />
 </OreDataPack>

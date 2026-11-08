@@ -182,7 +182,7 @@ namespace SpaceEngineersOreRedistribution
                 var gs = Num((string)e.Attribute("GlobSize"));
                 if (gs.HasValue && gs.Value > 0) ore.GlobSize = Math.Clamp(gs.Value, 0.5, 5000);
                 var gc = Num((string)e.Attribute("GlobCoverage"));
-                if (gc.HasValue && gc.Value > 0) ore.GlobCoverage = Math.Clamp(gc.Value, 2, 90);
+                if (gc.HasValue && gc.Value > 0) ore.GlobCoverage = Math.Clamp(gc.Value, 0.5, 90);
                 if (ore.Abundance.HasValue || ore.Rocks != null || ore.Glob.HasValue) pack.Ores.Add(ore);
             }
             return pack;

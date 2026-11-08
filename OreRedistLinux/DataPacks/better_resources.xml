@@ -2,12 +2,12 @@
 <!-- Ore data pack for OreRedistLinux. See vanilla.xml for the format. -->
 <OreDataPack Format="1" Tool="OreRedistLinux" Name="Better Resources" Author="OreRedistLinux" Order="10"
              Description="Ores added by the Better Resources mod (workshop 2841960221). Use together with Vanilla.">
-  <Ore Name="Aluminium"  Abundance="82300" Rocks="90;40;30;50;40" Glob="50" GlobSize="40" GlobCoverage="20"   />
-  <Ore Name="Titanium"   Abundance="5650"  Rocks="40;40;60;40;90" Glob="45" GlobSize="30" GlobCoverage="12"   />
-  <Ore Name="Petroleum"  Abundance="100"   Rocks="100;5;0;0;0" Glob="80" GlobSize="40" GlobCoverage="12"      />
-  <Ore Name="Nitre"      Abundance="30"    Rocks="100;5;0;5;0" Glob="90" GlobSize="50" GlobCoverage="6"      />
-  <Ore Name="Copper"     Abundance="60"    Rocks="30;30;30;70;100" Glob="65" GlobSize="30" GlobCoverage="12"  />
-  <Ore Name="Lithium"    Abundance="20"    Rocks="40;20;30;40;100" Glob="80" GlobSize="40" GlobCoverage="6"  />
-  <Ore Name="Galena"     Abundance="16"    Rocks="70;40;20;50;60" Glob="40" GlobSize="30" GlobCoverage="12"   />
-  <Ore Name="Wolframite" Abundance="2"     Rocks="5;30;40;10;100" Glob="75" GlobSize="40" GlobCoverage="6"   />
+  <Ore Name="Aluminium"  Abundance="82300" Rocks="90;40;30;50;40" Glob="50" GlobSize="40" GlobCoverage="5"   />  <!-- ~5 regions of about 24 km; real: tropical bauxite belts, 500 km -->
+  <Ore Name="Titanium"   Abundance="5650"  Rocks="40;40;60;40;90" Glob="45" GlobSize="32.5" GlobCoverage="1"   />  <!-- ~5 regions of about 11 km; real: ilmenite and rutile districts, beach sands, 200 km -->
+  <Ore Name="Petroleum"  Abundance="100"   Rocks="100;5;0;0;0" Glob="80" GlobSize="42.5" GlobCoverage="7"      />  <!-- ~5 regions of about 28 km; real: Persian Gulf, West Siberia, Gulf of Mexico basins, 600 km -->
+  <Ore Name="Nitre"      Abundance="30"    Rocks="100;5;0;5;0" Glob="90" GlobSize="50" GlobCoverage="0.5"      />  <!-- ~2 regions of about 12 km; real: Atacama nitrate fields, 250 km -->
+  <Ore Name="Copper"     Abundance="60"    Rocks="30;30;30;70;100" Glob="65" GlobSize="35" GlobCoverage="3"  />  <!-- ~5 regions of about 19 km; real: Andean porphyry belt, Zambian copperbelt, 400 km -->
+  <Ore Name="Lithium"    Abundance="20"    Rocks="40;20;30;40;100" Glob="80" GlobSize="30" GlobCoverage="0.5"  />  <!-- ~4 regions of about 8 km; real: Atacama triangle, spodumene pegmatite belts, 200 km -->
+  <Ore Name="Galena"     Abundance="16"    Rocks="70;40;20;50;60" Glob="40" GlobSize="27.5" GlobCoverage="1.5"   />  <!-- ~6 regions of about 12 km; real: Mississippi Valley lead-zinc districts, 250 km -->
+  <Ore Name="Wolframite" Abundance="2"     Rocks="5;30;40;10;100" Glob="75" GlobSize="50" GlobCoverage="1"   />  <!-- ~3 regions of about 14 km; real: southern China tungsten belt, 300 km -->
 </OreDataPack>

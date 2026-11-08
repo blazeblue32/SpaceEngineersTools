@@ -4,34 +4,34 @@
              Description="Minerals added by the Better Stone mod (workshop 406244471). Use together with Vanilla.">
   <!-- common rock forming minerals -->
   <Ore Name="Quartz"          Abundance="120000" Rocks="80;60;60;40;80" Glob="0"   />
-  <Ore Name="Olivine"         Abundance="30000"  Rocks="0;10;40;70;100" Glob="35" GlobSize="40" GlobCoverage="20"   />
-  <Ore Name="Dolomite"        Abundance="20000"  Rocks="100;60;40;5;20" Glob="25" GlobSize="30" GlobCoverage="30"   />
-  <Ore Name="Pyrite"          Abundance="1000"   Rocks="50;60;50;70;70" Glob="10" GlobSize="30" GlobCoverage="30"   />
+  <Ore Name="Olivine"         Abundance="30000"  Rocks="0;10;40;70;100" Glob="35" GlobSize="27.5" GlobCoverage="1"   />  <!-- ~6 regions of about 10 km; real: ultramafic massifs and ophiolites, 200 km -->
+  <Ore Name="Dolomite"        Abundance="20000"  Rocks="100;60;40;5;20" Glob="25" GlobSize="35" GlobCoverage="3.5"   />  <!-- ~6 regions of about 18 km; real: carbonate platforms, 400 km -->
+  <Ore Name="Pyrite"          Abundance="1000"   Rocks="50;60;50;70;70" Glob="10" GlobSize="27.5" GlobCoverage="3"   />  <!-- ~8 regions of about 15 km; real: massive sulfide and hydrothermal districts, 300 km -->
   <!-- iron and nickel minerals (meteoritic and ultramafic) -->
-  <Ore Name="Kamacite"        Abundance="0.5"    Rocks="20;20;40;20;70" Glob="60" GlobSize="40" GlobCoverage="6"   />
-  <Ore Name="Taenite"         Abundance="0.3"    Rocks="20;20;40;20;70" Glob="60" GlobSize="40" GlobCoverage="6"   />
-  <Ore Name="Cohenite"        Abundance="0.1"    Rocks="20;20;30;20;70" Glob="60" GlobSize="40" GlobCoverage="6"   />
-  <Ore Name="Heazlewoodite"   Abundance="1"      Rocks="5;70;50;30;90" Glob="70" GlobSize="40" GlobCoverage="8"    />
+  <Ore Name="Kamacite"        Abundance="0.5"    Rocks="20;20;40;20;70" Glob="60" GlobSize="32.5" GlobCoverage="0.5"   />  <!-- ~3 regions of about 10 km; real: meteorite strewn fields, 100 km -->
+  <Ore Name="Taenite"         Abundance="0.3"    Rocks="20;20;40;20;70" Glob="60" GlobSize="32.5" GlobCoverage="0.5"   />  <!-- ~3 regions of about 10 km; real: meteorite strewn fields, 100 km -->
+  <Ore Name="Cohenite"        Abundance="0.1"    Rocks="20;20;30;20;70" Glob="60" GlobSize="32.5" GlobCoverage="0.5"   />  <!-- ~3 regions of about 10 km; real: meteorite strewn fields, 100 km -->
+  <Ore Name="Heazlewoodite"   Abundance="1"      Rocks="5;70;50;30;90" Glob="70" GlobSize="30" GlobCoverage="0.5"    />  <!-- ~4 regions of about 8 km; real: serpentinite belts, 150 km -->
   <!-- cobalt -->
-  <Ore Name="Glaucodot"       Abundance="0.5"    Rocks="10;70;60;20;60" Glob="60" GlobSize="40" GlobCoverage="8"   />
-  <Ore Name="Cattierite"      Abundance="0.1"    Rocks="60;50;30;30;60" Glob="70" GlobSize="50" GlobCoverage="4"   />
+  <Ore Name="Glaucodot"       Abundance="0.5"    Rocks="10;70;60;20;60" Glob="60" GlobSize="32.5" GlobCoverage="0.5"   />  <!-- ~3 regions of about 10 km; real: cobalt arsenide veins, 100 km -->
+  <Ore Name="Cattierite"      Abundance="0.1"    Rocks="60;50;30;30;60" Glob="70" GlobSize="50" GlobCoverage="0.5"   />  <!-- ~2 regions of about 12 km; real: Katanga cobalt sulfides, 300 km -->
   <!-- lead, silver and gold -->
-  <Ore Name="Galena"          Abundance="16"     Rocks="70;40;20;50;60" Glob="40" GlobSize="30" GlobCoverage="12"   />
-  <Ore Name="Chlorargyrite"   Abundance="0.01"   Rocks="30;30;10;80;50" Glob="60" GlobSize="30" GlobCoverage="6"   />
-  <Ore Name="Electrum"        Abundance="0.002"  Rocks="20;50;20;90;60" Glob="70" GlobSize="30" GlobCoverage="6"   />
-  <Ore Name="Petzite"         Abundance="0.001"  Rocks="20;50;20;90;60" Glob="70" GlobSize="30" GlobCoverage="6"   />
-  <Ore Name="Porphyry"        Abundance="0.01"   Rocks="10;30;20;40;100" Glob="65" GlobSize="30" GlobCoverage="8"  />
+  <Ore Name="Galena"          Abundance="16"     Rocks="70;40;20;50;60" Glob="40" GlobSize="27.5" GlobCoverage="1.5"   />  <!-- ~6 regions of about 12 km; real: Mississippi Valley lead-zinc districts, 250 km -->
+  <Ore Name="Chlorargyrite"   Abundance="0.01"   Rocks="30;30;10;80;50" Glob="60" GlobSize="30" GlobCoverage="0.5"   />  <!-- ~4 regions of about 8 km; real: oxidised silver zones, 100 km -->
+  <Ore Name="Electrum"        Abundance="0.002"  Rocks="20;50;20;90;60" Glob="70" GlobSize="20" GlobCoverage="0.5"   />  <!-- ~5 regions of about 8 km; real: epithermal gold-silver districts, 100 km -->
+  <Ore Name="Petzite"         Abundance="0.001"  Rocks="20;50;20;90;60" Glob="70" GlobSize="20" GlobCoverage="0.5"   />  <!-- ~5 regions of about 8 km; real: epithermal telluride districts, 100 km -->
+  <Ore Name="Porphyry"        Abundance="0.01"   Rocks="10;30;20;40;100" Glob="65" GlobSize="32.5" GlobCoverage="1"  />  <!-- ~5 regions of about 11 km; real: porphyry gold systems, 200 km -->
   <!-- platinum group -->
-  <Ore Name="Cooperite"       Abundance="0.002"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="4"    />
-  <Ore Name="Niggliite"       Abundance="0.001"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="4"    />
+  <Ore Name="Cooperite"       Abundance="0.002"  Rocks="5;5;20;20;100" Glob="90" GlobSize="60" GlobCoverage="1"    />  <!-- ~2 regions of about 17 km; real: Bushveld complex, Norilsk, 350 km -->
+  <Ore Name="Niggliite"       Abundance="0.001"  Rocks="5;5;20;20;100" Glob="90" GlobSize="60" GlobCoverage="1"    />  <!-- ~2 regions of about 17 km; real: Bushveld complex, 350 km -->
   <!-- uranium -->
-  <Ore Name="Uraninite"       Abundance="1"      Rocks="70;50;40;20;80" Glob="65" GlobSize="40" GlobCoverage="8"   />
-  <Ore Name="Autunite"        Abundance="0.3"    Rocks="100;30;20;20;60" Glob="70" GlobSize="40" GlobCoverage="6"  />
-  <Ore Name="Carnotite"       Abundance="0.3"    Rocks="100;30;20;30;20" Glob="75" GlobSize="40" GlobCoverage="6"  />
-  <Ore Name="Uraniaurite"     Abundance="0.001"  Rocks="40;60;30;20;60" Glob="85" GlobSize="50" GlobCoverage="4"   />
+  <Ore Name="Uraninite"       Abundance="1"      Rocks="70;50;40;20;80" Glob="65" GlobSize="32.5" GlobCoverage="1"   />  <!-- ~5 regions of about 11 km; real: granite and unconformity uranium districts, 250 km -->
+  <Ore Name="Autunite"        Abundance="0.3"    Rocks="100;30;20;20;60" Glob="70" GlobSize="32.5" GlobCoverage="0.5"  />  <!-- ~3 regions of about 10 km; real: weathered granite uranium, 100 km -->
+  <Ore Name="Carnotite"       Abundance="0.3"    Rocks="100;30;20;30;20" Glob="75" GlobSize="32.5" GlobCoverage="0.5"  />  <!-- ~3 regions of about 10 km; real: Colorado Plateau, Athabasca sandstone, 250 km -->
+  <Ore Name="Uraniaurite"     Abundance="0.001"  Rocks="40;60;30;20;60" Glob="85" GlobSize="50" GlobCoverage="0.5"   />  <!-- ~2 regions of about 12 km; real: rare gold-uranium veins, 100 km -->
   <!-- high pressure and impact minerals: very rare -->
-  <Ore Name="Akimotoite"      Abundance="0.01"   Rocks="0;0;70;10;100" Glob="85" GlobSize="50" GlobCoverage="4"    />
-  <Ore Name="Wadsleyite"      Abundance="0.01"   Rocks="0;0;70;10;100" Glob="85" GlobSize="50" GlobCoverage="4"    />
-  <Ore Name="Hapkeite"        Abundance="0.001"  Rocks="0;0;30;20;100" Glob="85" GlobSize="50" GlobCoverage="4"    />
-  <Ore Name="Sinoite"         Abundance="0.001"  Rocks="0;0;30;20;100" Glob="85" GlobSize="50" GlobCoverage="4"    />
+  <Ore Name="Akimotoite"      Abundance="0.01"   Rocks="0;0;70;10;100" Glob="85" GlobSize="50" GlobCoverage="0.5"    />  <!-- ~2 regions of about 12 km; real: impact structures, 100 km -->
+  <Ore Name="Wadsleyite"      Abundance="0.01"   Rocks="0;0;70;10;100" Glob="85" GlobSize="50" GlobCoverage="0.5"    />  <!-- ~2 regions of about 12 km; real: impact structures, 100 km -->
+  <Ore Name="Hapkeite"        Abundance="0.001"  Rocks="0;0;30;20;100" Glob="85" GlobSize="50" GlobCoverage="0.5"    />  <!-- ~2 regions of about 12 km; real: impact structures, 100 km -->
+  <Ore Name="Sinoite"         Abundance="0.001"  Rocks="0;0;30;20;100" Glob="85" GlobSize="50" GlobCoverage="0.5"    />  <!-- ~2 regions of about 12 km; real: impact structures, 100 km -->
 </OreDataPack>
