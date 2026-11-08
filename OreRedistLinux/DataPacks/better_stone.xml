@@ -24,6 +24,7 @@
   <!-- platinum group -->
   <Ore Name="Cooperite"       Abundance="0.002"  Rocks="5;5;20;20;100" Glob="90" GlobSize="60" GlobCoverage="1" Size="59" />  <!-- ~2 regions of about 17 km; real: Bushveld complex, Norilsk, 350 km ; size: a PGE reef about 50 km2 -> 59 px -->
   <Ore Name="Niggliite"       Abundance="0.001"  Rocks="5;5;20;20;100" Glob="90" GlobSize="60" GlobCoverage="1" Size="59" />  <!-- ~2 regions of about 17 km; real: Bushveld complex, 350 km ; size: a PGE reef about 50 km2 -> 59 px -->
+  <Ore Name="Sperrylite"      Abundance="0.002"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="1" Size="59" />  <!-- ~2 regions of about 12 km; real: Bushveld complex, 350 km; size: a PGE reef about 50 km2 -> 59 px -->
   <!-- uranium -->
   <Ore Name="Uraninite"       Abundance="1"      Rocks="70;50;40;20;80" Glob="65" GlobSize="32.5" GlobCoverage="1" Size="19" />  <!-- ~5 regions of about 11 km; real: granite and unconformity uranium districts, 250 km ; size: a uranium orebody about 2 km2 -> 19 px -->
   <Ore Name="Autunite"        Abundance="0.3"    Rocks="100;30;20;20;60" Glob="70" GlobSize="32.5" GlobCoverage="0.5" Size="10" />  <!-- ~3 regions of about 10 km; real: weathered granite uranium, 100 km ; size: a weathered uranium zone about 0.3 km2 -> 10 px -->
