@@ -1,9 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using Avalonia.Media;
+using Avalonia.Media.Immutable;
 
 namespace SpaceEngineersOreRedistribution
 {
@@ -21,6 +24,53 @@ namespace SpaceEngineersOreRedistribution
             _totalVolume = totalVolume;
             ShowByArea = true;
         }
+
+        // ---- map color of this ore (the tag at the end of the name)
+        Color _color;
+        bool _initializing;
+
+        /// <summary>Color this ore has when it is not selected.</summary>
+        public Color DefaultColor { get; private set; }
+
+        /// <summary>Raised when the user picked a color or reset it.</summary>
+        public event Action<OreDistributionStatViewModel> ColorChanged;
+
+        public void InitColor(Color defaultColor, Color? custom)
+        {
+            _initializing = true;
+            DefaultColor = defaultColor;
+            Color = custom ?? defaultColor;
+            IsCustom = custom.HasValue && custom.Value != defaultColor;
+            _initializing = false;
+        }
+
+        public Color Color
+        {
+            get => _color;
+            set
+            {
+                if (!SetProp(ref _color, value)) return;
+                OnPropertyChanged(nameof(ColorBrush));
+                OnPropertyChanged(nameof(ColorTextBrush));
+                OnPropertyChanged(nameof(ColorText));
+                if (_initializing) return;
+                IsCustom = value != DefaultColor;
+                ColorChanged?.Invoke(this);
+            }
+        }
+
+        bool _isCustom;
+        public bool IsCustom
+        {
+            get => _isCustom;
+            private set => SetProp(ref _isCustom, value);
+        }
+
+        public IBrush ColorBrush => new ImmutableSolidColorBrush(_color);
+        public IBrush ColorTextBrush => new ImmutableSolidColorBrush(OrePalette.TextOn(_color));
+        public string ColorText => OrePalette.ToHex(_color);
+
+        public ICommand ResetColorCommand => new RelayCommand(o => Color = DefaultColor, o => IsCustom);
 
         double _percentageArea;
         double _percentageVolume;

@@ -143,8 +143,11 @@ namespace SpaceEngineersOreRedistribution
                 ComplexMaterials.Clear();
                 if (value == null)
                 {
+                    _oreTypeOrder = new();
                     return;
                 }
+                // Order of first appearance in the definition: keeps each ore's default color stable
+                _oreTypeOrder = value.OreMappings.Select(m => m.Type).Distinct().ToList();
                 //HashSet<string> types = new();
                 //foreach (var item in value.OreMappings)
                 //{
@@ -177,7 +180,9 @@ namespace SpaceEngineersOreRedistribution
                         Parallel.ForEach(Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>(), f =>
                         {
                             if (token.IsCancellationRequested) return;
-                            _images[f] = GetInfo(f, token);
+                            var info = GetInfo(f, token);
+                            // Dictionary is not thread safe. Unlocked parallel writes could drop a cube face.
+                            lock (_images) { _images[f] = info; }
                         });
                         if (token.IsCancellationRequested) return;
 
@@ -216,11 +221,14 @@ namespace SpaceEngineersOreRedistribution
                         List<OreDistributionStatViewModel> list = new();
                         foreach (var key in oreArea.Keys)
                         {
-                            list.Add(new OreDistributionStatViewModel(
+                            var stat = new OreDistributionStatViewModel(
                                 key,
                                 oreArea[key] * 100.0 / oreSumArea,
                                 oreVolume[key] * 100.0 / oreSumVolume, oreArea[key], oreVolume[key])
-                            { ShowByArea = ShowOreDistByArea });
+                            { ShowByArea = ShowOreDistByArea };
+                            stat.InitColor(DefaultOreColor(key), OrePalette.TryGetCustom(key, out var custom) ? custom : null);
+                            stat.ColorChanged += OreColorChanged;
+                            list.Add(stat);
                         }
                         list.Sort((a, b) => b.Percentage.CompareTo(a.Percentage));
                         if (list.Count > 0)
@@ -687,6 +695,36 @@ namespace SpaceEngineersOreRedistribution
             _images.Clear();
         }
 
+        List<string> _oreTypeOrder = new();
+
+        Avalonia.Media.Color DefaultOreColor(string type)
+        {
+            int index = _oreTypeOrder.IndexOf(type);
+            return OrePalette.Default(index < 0 ? 0 : index);
+        }
+
+        Avalonia.Media.Color OreColor(string type) =>
+            OrePalette.TryGetCustom(type, out var c) ? c : DefaultOreColor(type);
+
+        DispatcherTimer _colorTimer;
+        void OreColorChanged(OreDistributionStatViewModel stat)
+        {
+            // The color picker fires on every drag step: save once it settles, redraw quickly
+            OrePalette.SetCustom(stat.OreType, stat.IsCustom ? stat.Color : null);
+            _colorTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+            _colorTimer.Tick -= ColorTimerTick;
+            _colorTimer.Tick += ColorTimerTick;
+            _colorTimer.Stop();
+            _colorTimer.Start();
+        }
+
+        void ColorTimerTick(object sender, EventArgs e)
+        {
+            _colorTimer.Stop();
+            if (!_updatingImages && SelectedPlanetDefinition != null && ShowOreLocations)
+                UpdateOverlays(false);
+        }
+
         /// <summary>Raised after overlay pixels changed in place; the view has to repaint the overlay images.</summary>
         public event Action OverlaysChanged;
 
@@ -714,6 +752,26 @@ namespace SpaceEngineersOreRedistribution
             {
                 oreMappings = OreMappings.ToList();
             }
+            // value (blue channel) -> mapping / color, so the per pixel work is an array lookup
+            var byValue = new OreMapping[256];
+            foreach (var m in SelectedPlanetDefinition.OreMappings)
+                if (m.Value >= 0 && m.Value < 256 && byValue[m.Value] == null) byValue[m.Value] = m;
+            OreMapping[] selectedByValue = null;
+            if (oreMappings != null)
+            {
+                selectedByValue = new OreMapping[256];
+                foreach (var m in oreMappings)
+                    if (m.Value >= 0 && m.Value < 256 && selectedByValue[m.Value] == null) selectedByValue[m.Value] = m;
+            }
+            var colorByValue = new Avalonia.Media.Color?[256];
+            var typeColors = new Dictionary<string, Avalonia.Media.Color>();
+            for (int i = 0; i < 256; ++i)
+            {
+                if (byValue[i] == null) continue;
+                var type = byValue[i].Type;
+                if (!typeColors.TryGetValue(type, out var tc)) typeColors[type] = tc = OreColor(type);
+                colorByValue[i] = tc;
+            }
             foreach (var key in keys)
             {
                 if (!_images.TryGetValue(key, out var value)) continue;
@@ -736,41 +794,33 @@ namespace SpaceEngineersOreRedistribution
                     {
                         foreach (var tuple in value.OrePixels)
                         {
-                            byte r = 0;
-                            byte g = 255;
-                            byte b = 0;
-                            byte a = 255;
+                            int v = tuple.Item3;
                             int x = tuple.Item1;
                             int y = tuple.Item2;
                             if (x >= fb.Size.Width || y >= fb.Size.Height) continue;
 
-                            if (UseOreDetectorRange)
+                            var mapping = byValue[v];
+                            byte a = 255;
+                            if (UseOreDetectorRange && mapping != null && mapping.Start > OreDetectorRange)
+                                a = 32;
+
+                            byte r, g, b;
+                            if (selectedByValue != null)
                             {
-                                var mapping = SelectedPlanetDefinition.OreMappings.FirstOrDefault(x => x.Value == tuple.Item3);
-                                if (mapping != null)
-                                {
-                                    if (mapping.Start > OreDetectorRange)
-                                        a = 32;
-                                }
+                                // An ore is selected: old style, its depth tiers are colored, everything else is dimmed
+                                var sel = selectedByValue[v];
+                                if (sel != null) { r = sel.MapRgbValue.R; g = sel.MapRgbValue.G; b = sel.MapRgbValue.B; }
+                                else { r = 0; g = 0; b = 64; }
+                            }
+                            else
+                            {
+                                // Nothing selected: every ore type has its own color
+                                var c = colorByValue[v];
+                                if (c.HasValue) { r = c.Value.R; g = c.Value.G; b = c.Value.B; }
+                                else { r = 0; g = 255; b = 0; }
                             }
 
                             byte* pixel = (byte*)fb.Address + y * fb.RowBytes + x * 4;
-
-                            if (oreMappings != null)
-                            {
-                                var mapping = oreMappings.FirstOrDefault(x => x.Value == tuple.Item3);
-                                if (mapping != null)
-                                {
-                                    r = mapping.MapRgbValue.R;
-                                    g = mapping.MapRgbValue.G;
-                                    b = mapping.MapRgbValue.B;
-                                }
-                                else
-                                {
-                                    g = 0;
-                                    b = 64;
-                                }
-                            }
                             // Bgra8888, not premultiplied
                             pixel[0] = b;
                             pixel[1] = g;

@@ -29,6 +29,11 @@ namespace SpaceEngineersOreRedistribution
             BorderView.PointerMoved += ImageView_MouseMove;
             BorderView.PointerExited += (_, _) => UpdateOreInspectRect(new Point(-1, -1));
             OreInspectorCb.IsCheckedChanged += OreInspectorCb_Checked;
+            // Overlay pixels are changed in place; Avalonia does not notice, so repaint the images
+            ViewModel.OverlaysChanged += () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                foreach (var img in ImageView.Children.OfType<Image>()) img.InvalidateVisual();
+            });
             LinkButton.Click += Hyperlink_Click;
         }
 
