@@ -220,7 +220,9 @@ namespace SpaceEngineersOreRedistribution
                 }
                 if (depthMax > -1)
                 {
-                    for (int i = 8; i > depthMax; --i) depthWeights[i] = 0;
+                    // Layer 9 is switched off by FinalizeList for every maximum below 9. The original loop started at 8,
+                    // so with Very Deep Ore ticked layer 9 could still be picked and the vein was lost.
+                    for (int i = AppSettings.LegacyVeryDeepRange ? 8 : 9; i > depthMax; --i) depthWeights[i] = 0;
                 }
                 double weightSum = 0;
                 for (int i = 0; i < 10; ++i)

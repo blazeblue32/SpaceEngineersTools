@@ -647,7 +647,7 @@ namespace SpaceEngineersOreRedistribution
                     for (int i=0; i<info.TypicalDepthMin; ++i)
                         info.OreMappings[i].Value = -1;
                 }
-                if (info.TypicalDepthMax > 0)
+                if (info.TypicalDepthMax >= 0) // 0 is a valid maximum (surface layer only); -1 = no limit
                 {
                     for (int i = 9; i > info.TypicalDepthMax; --i)
                         info.OreMappings[i].Value = -1;

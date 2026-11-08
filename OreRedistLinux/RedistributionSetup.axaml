@@ -119,7 +119,7 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Content="Abort" Width="150" Height="32" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Click="ButtonAbort_Click" />
             <Button Content="Confirm" Width="150" Height="32" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Command="{Binding ConfirmCommand}" />
-            <TextBlock Text="Values Count (max: 255):" VerticalAlignment="Center" Margin="5,3,3,3"/>
+            <TextBlock Text="Values Count (max: 254):" VerticalAlignment="Center" Margin="5,3,3,3"/>
             <TextBlock Text="{Binding ValuesCount}" VerticalAlignment="Center"/>
         </StackPanel>
         <TextBlock Grid.Row="2" Text="{Binding WaterInfo}" TextWrapping="Wrap" FontSize="12" Foreground="Gray" Margin="6,0,6,4"/>
