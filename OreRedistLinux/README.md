@@ -31,8 +31,9 @@ moved into a toolbar next to the menu. *Map* options are checkable menu items.
 - Selecting an ore type works like the original: its depth tiers get the tier colors and all other ore is dimmed.
 
 Also fixed: random depth for ore without a preferred depth used `VeryDeepOre ? 9 : 10` as the (exclusive) upper bound, which is
-backwards: with *Very Deep Ore* ticked depth 9 never spawned, and with it unticked depth 9 (disabled) could still be picked, so about
-10% of that ore's veins silently disappeared. Both fixes can be switched back to the original behavior in the **Debug** menu
+backwards: with *Very Deep Ore* ticked depth 9 never spawned, and with it unticked depth 9 (disabled) could still be picked, so a share of
+that ore's random picks started on a disabled layer (measured: ~0.7% fewer ore pixels overall; with the box ticked, depth 9 got 12k pixels
+instead of 27k). Both fixes can be switched back to the original behavior in the **Debug** menu
 (*Original depth weighting*, *Original Very Deep Ore range*), in case a setup was tuned around them. The choice is remembered in
 `~/.config/OreRedistLinux/settings.xml`. The depth weighting bug: with a *Preferred Depth* the weights were summed twice per step
 (`weightSum += weightSum += w`), which skewed veins toward shallow layers (preferred depth 5 peaked at 3).
