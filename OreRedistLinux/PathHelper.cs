@@ -44,6 +44,16 @@ namespace SpaceEngineersOreRedistribution
             }
         }
 
+        /// <summary>
+        /// Loads an XML file whose declared encoding may be wrong. Mod files often say encoding="utf-16" but are saved
+        /// as UTF-8 / ASCII, which XDocument.Load refuses ("no Unicode byte order mark"). Reading the text first
+        /// (the BOM, if any, decides) and parsing the string ignores the declaration.
+        /// </summary>
+        public static System.Xml.Linq.XDocument LoadXmlTolerant(string path)
+        {
+            return System.Xml.Linq.XDocument.Parse(File.ReadAllText(path), System.Xml.Linq.LoadOptions.None);
+        }
+
         /// <summary>Writable per-user folder for presets (~/.config/OreRedistLinux).</summary>
         public static string UserConfigDirectory
         {

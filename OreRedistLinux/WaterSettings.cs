@@ -1,5 +1,6 @@
 using SpaceEngineersToolsShared;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -227,7 +228,7 @@ namespace SpaceEngineersOreRedistribution
             }
 
             // WaterConfig.xml of the mod
-            var cfg = FindConfig(planet.Name, definitionFile);
+            var cfg = FindConfig(planet.Name, definitionFile, out var cfgProblem);
             if (cfg != null)
             {
                 // WaterConfig.xml stores the values as child elements: <Radius>1.025</Radius>
@@ -248,27 +249,44 @@ namespace SpaceEngineersOreRedistribution
             }
             else
             {
-                w.Source = "no WaterConfig.xml found for this planet, set the values yourself";
+                w.Source = cfgProblem != null ? cfgProblem + ". Set the values yourself." : "no WaterConfig.xml found for this planet, set the values yourself";
             }
             if (notes.Count > 0) w.Source += " (" + string.Join(", ", notes) + ")";
             w._loading = false;
             return w;
         }
 
-        static XElement FindConfig(string planetName, string definitionFile)
+        /// <summary>
+        /// Looks for WaterConfig.xml next to the planet definition. Returns the WaterSettings element of the planet,
+        /// or null with the reason in <paramref name="problem"/> (null if there simply is no file).
+        /// </summary>
+        static XElement FindConfig(string planetName, string definitionFile, out string problem)
         {
+            problem = null;
             try
             {
                 var dir = Path.GetDirectoryName(definitionFile);
                 if (string.IsNullOrEmpty(dir)) return null;
                 var file = PathHelper.ResolveCase(Path.Combine(dir, "WaterConfig.xml"));
                 if (!File.Exists(file)) return null;
-                var root = XDocument.Load(file).Root;
-                var cfg = root?.Element("PlanetConfigs")?.Elements("PlanetConfig")
-                    .FirstOrDefault(e => string.Equals(e.Attribute("SubtypeId")?.Value, planetName, StringComparison.OrdinalIgnoreCase));
-                return cfg?.Element("WaterSettings");
+                var root = PathHelper.LoadXmlTolerant(file).Root;
+                var configs = root?.Element("PlanetConfigs")?.Elements("PlanetConfig").ToList() ?? new List<XElement>();
+                var cfg = configs.FirstOrDefault(e => string.Equals(e.Attribute("SubtypeId")?.Value, planetName, StringComparison.OrdinalIgnoreCase));
+                if (cfg == null)
+                {
+                    var names = configs.Select(e => e.Attribute("SubtypeId")?.Value).Where(n => !string.IsNullOrEmpty(n)).ToList();
+                    problem = $"WaterConfig.xml found, but it has no entry for \"{planetName}\"" + (names.Count > 0 ? " (it has: " + string.Join(", ", names) + ")" : "");
+                    return null;
+                }
+                var ws = cfg.Element("WaterSettings");
+                if (ws == null) problem = $"WaterConfig.xml has an entry for \"{planetName}\" without WaterSettings";
+                return ws;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                problem = "WaterConfig.xml found but could not be read: " + ex.Message;
+                return null;
+            }
         }
 
         public void Save()

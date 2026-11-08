@@ -608,7 +608,7 @@ namespace SpaceEngineersOreRedistribution
 
                 XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
                 if (!File.Exists(file)) return;
-                var doc = XDocument.Load(file);
+                var doc = PathHelper.LoadXmlTolerant(file);
                 var root = doc?.Root;
                 if (root?.Name != "Definitions")
                 {
