@@ -106,6 +106,59 @@ namespace SpaceEngineersOreRedistribution
             ["Ice"] = new double[] { 100, 100, 100, 100, 100 },
         };
 
+        /// <summary>Abundance in the Earth's continental crust in ppm by mass (reference for the ore weights). Vanilla ores and a few common mod ores.</summary>
+        public static readonly Dictionary<string, double> CrustPpm = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Silicon"] = 282000, ["Aluminium"] = 82300, ["Aluminum"] = 82300, ["Iron"] = 56300, ["Magnesium"] = 23300, ["Titanium"] = 5650,
+            ["Sulfur"] = 350, ["Sulphur"] = 350, ["Manganese"] = 950, ["Carbon"] = 200, ["Coal"] = 200, ["Chromium"] = 102, ["Nickel"] = 84, ["Zinc"] = 70,
+            ["Copper"] = 60, ["Cobalt"] = 25, ["Lithium"] = 20, ["Lead"] = 14, ["Thorium"] = 9.6, ["Uranium"] = 2.7, ["Tin"] = 2.3, ["Tungsten"] = 1.25,
+            ["Silver"] = 0.075, ["Palladium"] = 0.015, ["Platinum"] = 0.005, ["Gold"] = 0.004,
+        };
+
+        double _rarityStrength = 0.25;
+        /// <summary>How strongly the real abundances are followed: 0 = all ores equal, 1 = the real ratios (iron 14 million times as common as gold), in between compresses the range.</summary>
+        public double RarityStrength { get => _rarityStrength; set => SetProp(ref _rarityStrength, Math.Clamp(value, 0, 1)); }
+
+        /// <summary>
+        /// Sets the spawn weight of every ore with a known name from its abundance in the Earth's crust, relative to the other ores of the list
+        /// (the most common known ore gets 1000). Weight = (abundance / highest abundance) ^ strength. Ores with unknown names keep their share compared to the known ones. Returns the unknown ores.
+        /// </summary>
+        public List<string> ApplyEarthRarity(out int applied)
+        {
+            applied = 0;
+            var unknown = new List<string>();
+            var known = new List<(OreInfo info, double ppm)>();
+            foreach (var info in OreInfos)
+            {
+                if (CrustPpm.TryGetValue(BaseOreName(info.Name), out var ppm)) known.Add((info, ppm));
+                else unknown.Add(info.Name);
+            }
+            if (known.Count == 0) return unknown;
+            double max = known.Max(k => k.ppm);
+            double oldSum = known.Sum(k => (double)k.info.SpawnWeight), newSum = 0;
+            foreach (var (info, ppm) in known)
+            {
+                int w = (int)Math.Max(1, Math.Round(1000 * Math.Pow(ppm / max, RarityStrength)));
+                newSum += w; info.SpawnWeight = w;
+                ++applied;
+            }
+            // ores with unknown names keep their share relative to the others: scale their weight by the same factor
+            if (oldSum > 0)
+                foreach (var info in OreInfos.Where(i => !CrustPpm.ContainsKey(BaseOreName(i.Name))))
+                    info.SpawnWeight = (int)Math.Max(1, Math.Round(info.SpawnWeight * newSum / oldSum));
+            return unknown;
+        }
+
+        public ICommand EarthRarityCommand => new RelayCommand(o =>
+        {
+            var unknown = ApplyEarthRarity(out int applied);
+            MessageBox.Show(applied == 0
+                ? "None of the ores has a known name (Iron, Nickel, Cobalt, Magnesium, Silicon, Silver, Gold, Platinum, Uranium, Copper, Aluminium...)."
+                : $"Weights set for {applied} ore(s) from their abundance in the Earth's crust, strength {RarityStrength:0.##}." +
+                  (unknown.Count > 0 ? "\r\nUnknown names, weight scaled along with the others: " + string.Join(", ", unknown) : ""),
+                "Earth rarity");
+        }, o => OreInfos.Count > 0);
+
         /// <summary>Name without the version suffix: "Iron_02" -> "Iron".</summary>
         static string BaseOreName(string name) => System.Text.RegularExpressions.Regex.Replace((name ?? "").Trim(), @"[_\s]*\d+$", "");
 

@@ -165,6 +165,13 @@ sedimentary, metamorphic (low / high grade), igneous extrusive (volcanic surface
 * Stored per planet in `~/.config/OreRedistLinux/Geology/<planet>/` (`geology.xml`, `paint.png`). The placement report gets a geology section.
 * Water rules, ratios and density limits still apply; veins are counted by the rock layer they start in. Output with Globbing / geology off is unchanged.
 
+## Earth rarity (ore weights from real abundance)
+The **Earth rarity** button in the redistribution window sets the Weight of every ore with a known name (the vanilla ores plus common mod ores like Copper,
+Aluminium, Titanium, Lead, Tin...) from its abundance in the Earth's continental crust, relative to the other ores of the list: weight = (abundance /
+highest abundance) ^ strength. The box next to the button is the strength: 1 = the real ratios (iron is about 14 million times as common as gold), 0 = all
+equal, the default 0.25 compresses the range so rare ores still appear (iron about 67 % of silicon, gold about 1 %). Ores with unknown names are scaled along
+so their share stays the same. Ice is not a crust ore and is not changed.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

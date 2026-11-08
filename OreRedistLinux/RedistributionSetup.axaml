@@ -68,6 +68,11 @@
                     <Button Content="Update Ore Mapping Diagram" Margin="3" Click="UpdateDiagramClick"/>
                     <Button Content="Ore Overview" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding ShowOverviewCommand}"/>
                     <Button Content="Sort" Margin="3" Width="80" HorizontalContentAlignment="Center" Command="{Binding SortCommand}"/>
+                    <Button Content="Earth rarity" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding EarthRarityCommand}"
+                            ToolTip.Tip="Sets the Weight of every ore with a known name from its abundance in the Earth's crust, relative to the other ores in the list (iron far more common than gold)."/>
+                    <TextBox Width="55" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0,3,3,3"
+                             Text="{Binding RarityStrength, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip.Tip="Strength of the Earth rarity: 0 = all ores equal, 1 = the real ratios (iron about 14 million times as common as gold), 0.25 = compressed so rare ores still appear."/>
                     <Button Content="Vanilla rocks" Margin="3" Width="110" HorizontalContentAlignment="Center" Command="{Binding VanillaRocksCommand}" IsVisible="{Binding GeologyMode}"
                             ToolTip.Tip="Geology mode: set the rock types of the vanilla ores (Iron, Nickel, Cobalt, Magnesium, Silicon, Silver, Gold, Platinum, Uranium, Ice) by name. Other ores are not changed."/>
                     <StackPanel Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
