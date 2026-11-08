@@ -798,16 +798,6 @@ namespace SpaceEngineersOreRedistribution
             _images.Clear();
         }
 
-        /// <summary>
-        /// Exclusive upper bound for a random depth index. Depth 9 only exists with very deep ore.
-        /// The original tool had this backwards, see AppSettings.LegacyVeryDeepRange.
-        /// </summary>
-        static int DepthUpperBound(bool veryDeepOre)
-        {
-            bool tenSlots = AppSettings.LegacyVeryDeepRange ? !veryDeepOre : veryDeepOre;
-            return tenSlots ? 10 : 9;
-        }
-
         public bool LegacyDepthWeighting
         {
             get => AppSettings.LegacyDepthWeighting;
@@ -1039,12 +1029,6 @@ namespace SpaceEngineersOreRedistribution
             // Update ore mapping values
             var nextOreValue = setup.ViewModel.FinalizeList();
 
-            Func<int, int> GetTier = (d) =>
-            {
-                if (d <= 2) return 1;
-                if (d <= 5) return 2;
-                return 3;
-            };
             if (nextOreValue >= 256)
             {
                 MessageBox.Show("Too many ore definitions in oremappings.xml. This will not work!",
@@ -1092,7 +1076,9 @@ namespace SpaceEngineersOreRedistribution
             }
 
 
-            var keys = _images.Keys;
+            // Fixed face order: the faces load in parallel and the dictionary order depends on who finished first,
+            // which changed the random number stream and made the same seed give different maps.
+            var keys = Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>().Where(f => _images.ContainsKey(f)).ToList();
 
             // Water Mod rules
             var water = Water;
@@ -1107,367 +1093,66 @@ namespace SpaceEngineersOreRedistribution
             var report = new Dictionary<string, OreReportRow>();
             foreach (var oi in setup.ViewModel.OreInfos)
                 report[oi.Name] = new OreReportRow { Name = oi.Name, Mode = useWater ? oi.WaterMode : OreWaterMode.Anywhere };
+            keys = keys.Where(k => _images[k] != null).ToList();
 
-            var rnd = new Random(setup.ViewModel.Seed); // Seed 0 is better for debugging.
-            var normal = new Normal(rnd);
-            bool overridefiles = false;
-            foreach (var key in keys)
+            // Existing files: ask once, before anything is generated
+            var existing = keys.Select(k => Path.Combine(directory, k.ToString().ToLower() + "_mat.png")).FirstOrDefault(File.Exists);
+            if (existing != null)
             {
-                if (!_images.TryGetValue(key, out var value)) return;
-
-                var fileName = Path.Combine(directory, key.ToString().ToLower() + "_mat.png");
-                if (!overridefiles && File.Exists(fileName))
-                {
-                    if (MessageBox.Show("File \r\n'" + fileName + "'\r\n already exists. " +
-                        "Override this and any other PNG files?\r\nProcess will abort if 'No' is selected.", "File found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
-                        return;
-                    overridefiles = true;
-                }
-
-                var image = new ImageData(key, TileWidth);
-
-                // Clear ores: Blue = 255
-                Parallel.For(0, TileWidth, x =>
-                {
-                    for (int y = 0; y < TileWidth; ++y)
-                    {
-                        image.R[x, y] = value.R[x, y];
-                        image.G[x, y] = value.G[x, y];
-                        image.B[x, y] = 255;
-                    }
-                });
-
-                int spawnRate = setup.ViewModel.OreSpawnRate; // Default 3000
-                if (setup.ViewModel.SmallPlanetMode) spawnRate *= 2;
-                if (spawnRate < 100) spawnRate = 100;
-                else if (spawnRate > 2000000) spawnRate = 2000000;
-
-                double prop = 1.0 / spawnRate;//(3136);
-                double nBaseMin = 0.72; // This is just a random number I picked
-                double nBaseMax = nBaseMin + prop;
-                for (int x = 0; x < TileWidth; ++x)
-                {
-                    for (int y = 0; y < TileWidth; ++y)
-                    {
-                        // Check if ore spawns at this location
-                        var r = rnd.NextDouble();
-                        if (r < nBaseMin || r > nBaseMax) continue;
-
-                        // Decide which ore is spawned
-                        var info = setup.ViewModel.PickRandomOreWeighted(rnd);
-                        var spawnSize = info.TypicalSize;
-                        if (setup.ViewModel.SmallPlanetMode) spawnSize *= 2;
-                        var depthMin = info.TypicalDepthMin;
-                        var depthMax = info.TypicalDepthMax;
-
-                        int depth = -1;
-                        if (info.PreferredDepth > -1)
-                        {
-                            double[] depthWeights = new double[10] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-                            if (!info.VeryDeepOre) depthWeights[9] = 0;
-                            if (depthMin > 0)
-                            {
-                                for (int i = 0; i < depthMin; ++i) depthWeights[i] = 0;
-                            }
-                            if (depthMax > -1)
-                            {
-                                for (int i = 8; i > depthMax; --i) depthWeights[i] = 0;
-                            }
-                            double weightSum = 0;
-                            for (int i = 0; i < 10; ++i)
-                            {
-                                if (depthWeights[i] == 0) continue;
-                                double stdDev = setup.ViewModel.StdDevDepth;
-                                var divider = stdDev * Math.Sqrt(2 * Math.PI);
-                                var eTerm = -0.5 * Math.Pow((i - info.PreferredDepth) / stdDev, 2);
-                                depthWeights[i] = Math.Exp(eTerm) / divider; // 10 is used to roughly get a prob of 1.0 for preferred depth
-                                weightSum += depthWeights[i];
-                            }
-                            var depthRnd = rnd.NextDouble() * weightSum;
-                            weightSum = 0;
-                            for (int i = 0; i < 10; ++i)
-                            {
-                                if (depthWeights[i] == 0) continue;
-                                if (AppSettings.LegacyDepthWeighting)
-                                    weightSum += weightSum += depthWeights[i]; // original (buggy) double counting
-                                else
-                                    weightSum += depthWeights[i];
-                                if (depthRnd <= weightSum)
-                                {
-                                    depth = i;
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (depthMin == -1 && depthMax == -1)
-                            {
-                                depth = rnd.Next(0, DepthUpperBound(info.VeryDeepOre)); // upper bound is exclusive
-                            }
-                            else if (depthMin == -1 && depthMax > -1)
-                            {
-                                depth = rnd.Next(0, depthMax + 1);
-                            }
-                            else if (depthMin >= -1 && depthMax == -1)
-                            {
-                                depth = rnd.Next(depthMin, DepthUpperBound(info.VeryDeepOre));
-                            }
-                            else //if (depthMin >= -1 && depthMax >= -1)
-                            {
-                                depth = rnd.Next(depthMin, depthMax + 1);
-                            }
-                        }
-                        if (depth == -1) continue;
-
-
-                        // Randomize if not set by user
-                        if (spawnSize == 0) spawnSize = rnd.Next(5, 31);
-                        // Gauss randomizer
-                        if (setup.ViewModel.StdDev > 0)
-                        {
-                            var stdDevPercentage = setup.ViewModel.StdDev / 100.0;
-                            spawnSize = (int)(normal.Next(spawnSize, spawnSize * stdDevPercentage) + 0.5);
-                            if (spawnSize < 1) spawnSize = 1; else if (spawnSize > 500) spawnSize = 500;
-                        }
-
-                        //int defaultTier = GetTier(depth);
-                        int defaultDepthIndex = depth;
-                        int maxDepthIndex = info.VeryDeepOre ? 9 : 8;
-                        if (depthMax > -1 && depthMax < maxDepthIndex) maxDepthIndex = depthMax;
-                        int minDepthIndex = 0;
-                        if (depthMin > -1 && depthMin > minDepthIndex) minDepthIndex = depthMin;
-
-                        // Get mapping info for pixel value
-                        var mappings = mappingsDictionary[info.Name];
-
-                        // Water rules: find a site where the wanted layer (or a shallower one) stays above the water
-                        var row = report[info.Name];
-                        var waterMode = useWater ? info.WaterMode : OreWaterMode.Anywhere;
-                        int siteX = x, siteY = y;
-                        ++row.Events;
-                        if (waterMode != OreWaterMode.Anywhere)
-                        {
-                            if (!WaterPlacement.FindSite(water, waterMode, value, mappings, x, y, defaultDepthIndex, minDepthIndex, rnd, TileWidth,
-                                    out siteX, out siteY, out var siteIdx, out var siteIsSea))
-                            {
-                                ++row.Dropped;
-                                continue;
-                            }
-                            if (siteX != x || siteY != y) ++row.Moved;
-                            if (siteIdx < defaultDepthIndex) ++row.ClampedVeins;
-                            if (siteIsSea) ++row.VeinsSea; else ++row.VeinsLand;
-                            defaultDepthIndex = siteIdx;
-                        }
-                        ++row.Placed;
-
-                        HashSet<OreToDraw> drawnOre = new();
-                        drawnOre.Add(new OreToDraw(TileWidth) { X = siteX, Y = siteY, Value = mappings[defaultDepthIndex].Value });
-                        int lastDepthIndex = defaultDepthIndex;
-                        int lastX = siteX;
-                        int lastY = siteY;
-
-                        // Vanilla ore scanner max range is 150m
-                        // Only index 6 is detectable from surface
-                        // Start there and fall down to default depth index
-                        bool dive = false;
-                        if (lastDepthIndex > 6 && minDepthIndex <= 6)
-                        {
-                            lastDepthIndex = 5; // We call ++ below to set it to 6
-                            dive = true;
-                        }
-
-                        // Draw ore
-                        // Strategy:
-                        // - Start at X,Y
-                        // - Select random neighbor and draw if not already drawn
-                        // - If all neighbors are already drawn, escape in straight random direction until a non drawn field is available
-                        // - While drawing
-                        // - If last drawn height is not starting height give a 30% to jump back to starting height. 20% Chance of getting further away.
-                        //   50% of staying at same height.
-                        int extraSteps = 0;
-                        for (int i=1;i<spawnSize;++i) // We already added one pixel at this point, so start with 1
-                        {
-                            var direction = rnd.Next(4);
-                            var nextOreToDraw = new OreToDraw(TileWidth);
-                            // Check if that pixel is already painted:
-                            int directionTries = 0;
-                            bool foundFreePixel = false;
-                            while (directionTries < 4)
-                            {
-                                ++direction;
-                                if (direction > 3) direction = 0;
-                                // direction: 0 -> left, 1 -> up, 2 -> right, 3 -> down
-                                int dx, dy;
-
-                                // 10% chance of skipping over a pixel
-                                var skipX = rnd.NextDouble() < 0.1 ? 2 : 1;
-                                var skipY = rnd.NextDouble() < 0.1 ? 2 : 1;
-
-                                GetDeltas(direction, out dx, out dy);
-                                nextOreToDraw.X = lastX + dx * skipX;
-                                nextOreToDraw.Y = lastY + dy * skipY;
-
-                                if (!drawnOre.Contains(nextOreToDraw))
-                                {
-                                    foundFreePixel = true;
-                                    break;
-                                }
-                                ++directionTries;
-                            }
-                            if (!foundFreePixel)
-                            {
-                                int newX = lastX;
-                                int newY = lastY;
-                                // We're stuck. Get unstuck by going into random direction, brute force
-                                int pleaseDontHang = 0;
-                                int dx, dy;
-                                GetDeltas(direction, out dx, out dy);
-                                if (lastX < 500 && dx < 0) dx = 1;
-                                if (lastY < 500 && dy < 0) dy = 1;
-                                if (lastX > 1800 && dx > 0) dx = -1;
-                                if (lastY > 1800 && dy > 0) dy = -1;
-                                nextOreToDraw.X = lastX;
-                                nextOreToDraw.Y = lastY;
-                                while (pleaseDontHang++ < 1000)
-                                {
-                                    nextOreToDraw.X += dx;
-                                    nextOreToDraw.Y += dy;
-                                    if (!drawnOre.Contains(nextOreToDraw))
-                                    {
-                                        foundFreePixel = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!foundFreePixel) break; // Bye bye. Don't hammer your head against a wall
-
-                            int prevX = lastX, prevY = lastY; // for water rules: step back if this pixel is too wet
-                            lastX = nextOreToDraw.X;
-                            lastY = nextOreToDraw.Y;
-                            drawnOre.Add(nextOreToDraw);
-                            var depthMod = rnd.NextDouble();
-
-                            if (dive)
-                            {
-                                lastDepthIndex++;
-                                if (lastDepthIndex >= defaultDepthIndex)
-                                    dive = false;
-                            }
-                            else if (lastDepthIndex == defaultDepthIndex)
-                            {
-                                if (depthMod >= 0.70) // Give a 70% chance of staying at the same height if height is starting height
-                                {
-                                    // Flip to neighbor index
-                                    if (lastDepthIndex <= 0) lastDepthIndex++;
-                                    else if (lastDepthIndex >= maxDepthIndex) lastDepthIndex--;
-                                    else
-                                    {
-                                        // both directions possible
-                                        if (rnd.NextDouble() > 0.6 || ignoreTiers)
-                                        {
-                                            // 40% chance of going up or down
-                                            if (rnd.Next(2) == 0) lastDepthIndex--; else lastDepthIndex++;
-                                        }
-                                        else // 60% chance of staying in the same tier
-                                        {
-                                            var oldTier = GetTier(lastDepthIndex);
-                                            var tierDown = GetTier(lastDepthIndex + 1);
-                                            var tierUp = GetTier(lastDepthIndex - 1);
-                                            if (tierUp == oldTier && tierDown == oldTier)
-                                            {
-                                                // We are in the middle of a tier. Randomly go up or down
-                                                if (rnd.Next(2) == 0) lastDepthIndex--; else lastDepthIndex++;
-                                            }
-                                            else if (tierDown != oldTier && tierUp == oldTier)
-                                                lastDepthIndex--;
-                                            else if (tierDown == oldTier && tierUp != oldTier)
-                                                lastDepthIndex++;
-                                            else
-                                            {   /* Same as random above. Reaching this shouldn't be possible though */
-                                                if (rnd.Next(2) == 0) lastDepthIndex--; else lastDepthIndex++;
-                                            }
-                                        }
-
-                                    }
-                                }
-                            }
-                            // Give a 30% chance to jump back to starting height and 20% chance of getting further away
-                            else
-                            {
-                                if (depthMod <= 0.3)
-                                {
-                                    lastDepthIndex += Math.Sign(defaultDepthIndex - lastDepthIndex);
-                                }
-                                else if (depthMod <= 0.5) // 0.5-0.3 -> 20%
-                                {
-                                    if (lastDepthIndex < defaultDepthIndex)
-                                    {
-                                        lastDepthIndex--;
-                                    }
-                                    else
-                                    {
-                                        lastDepthIndex++;
-                                    }
-                                }
-                                // else: 50% chance of staying
-                            }
-                            // Ignore limits while diving
-                            if (!dive)
-                            {
-                                if (lastDepthIndex > maxDepthIndex) lastDepthIndex = maxDepthIndex;
-                                else if (lastDepthIndex < minDepthIndex) lastDepthIndex = minDepthIndex;
-                            }
-
-                            // Get value for depth
-                            if (waterMode == OreWaterMode.Anywhere)
-                                nextOreToDraw.Value = mappings[lastDepthIndex].Value;
-                            else
-                            {
-                                // Water rules per pixel: the vein may creep towards the sea, then it gets shallower or stops
-                                int idxHere = WaterPlacement.IndexAt(water, waterMode, value, mappings, nextOreToDraw.X, nextOreToDraw.Y, lastDepthIndex, minDepthIndex);
-                                if (idxHere < 0)
-                                {
-                                    nextOreToDraw.Value = -1; ++row.SkippedPixels;
-                                    // Wet pixel stays marked as used, the vein steps back and goes on along the shore,
-                                    // so it still reaches its size (limited, so it cannot loop forever)
-                                    if (extraSteps < spawnSize * 4)
-                                    {
-                                        ++extraSteps;
-                                        lastX = prevX; lastY = prevY;
-                                        --i;
-                                    }
-                                }
-                                else
-                                {
-                                    if (idxHere < lastDepthIndex) ++row.ClampedPixels;
-                                    nextOreToDraw.Value = mappings[idxHere].Value;
-                                }
-                            }
-                        }
-
-                        foreach (var drawn in drawnOre)
-                        {
-                            if (drawn.Value > 0 && drawn.Value < 256) // don't draw disabled entries which have value -1. See FinalizeList()
-                            {
-                                image.B[drawn.X, drawn.Y] = (byte)drawn.Value;
-                                ++row.Pixels;
-                            }
-                        }
-                    }
-                }
-                image.SaveMaterialMap(fileName);
+                if (MessageBox.Show("File \r\n'" + existing + "'\r\n already exists. " +
+                    "Override this and any other PNG files?\r\nProcess will abort if 'No' is selected.", "File found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                    return;
             }
-            string reportText = WaterPlacement.BuildReport(water, useWater, report.Values);
+
+            var ctx = new PlacementContext
+            {
+                Setup = setup.ViewModel, Mappings = mappingsDictionary, TileWidth = TileWidth,
+                IgnoreTiers = ignoreTiers, Water = water, UseWater = useWater,
+            };
+            int seed = setup.ViewModel.Seed; // Seed 0 is better for debugging.
+            bool waterRules = useWater && setup.ViewModel.OreInfos.Any(i => i.WaterMode != OreWaterMode.Anywhere);
+
+            // Reference: what the tool places without water rules. Gives the target per ore and layer
+            // and the normal ore density (the land density limit is a multiple of it).
+            Dictionary<CubeMapFace, long[]> reference = null;
+            double normalDensity = 0;
+            if (waterRules && water.KeepRatios)
+            {
+                var dummyReport = setup.ViewModel.OreInfos.ToDictionary(oi => oi.Name, oi => new OreReportRow { Name = oi.Name });
+                var refPlacer = new OrePlacer(ctx, seed, false, dummyReport);
+                reference = new();
+                long orePixels = 0, allPixels = 0;
+                foreach (var key in keys)
+                {
+                    var refImage = refPlacer.GenerateFace(_images[key], key);
+                    var counts = OrePlacer.CountValues(refImage);
+                    reference[key] = counts;
+                    orePixels += counts.Sum() - counts[255];
+                    allPixels += (long)TileWidth * TileWidth;
+                }
+                normalDensity = allPixels > 0 ? (double)orePixels / allPixels : 0;
+            }
+
+            var placer = new OrePlacer(ctx, seed, waterRules, report) { ReferenceDensity = normalDensity };
+            var results = new Dictionary<CubeMapFace, ImageData>();
+            foreach (var key in keys)
+                results[key] = placer.GenerateFace(_images[key], key);
+            if (reference != null) placer.TopUp(results, reference);
+            placer.FillLayerStats(results, reference);
+            string densityLine = placer.DensityLine(results);
+            foreach (var key in keys)
+                results[key].SaveMaterialMap(Path.Combine(directory, key.ToString().ToLower() + "_mat.png"));
+
+            string reportText = WaterPlacement.BuildReport(water, useWater, report.Values, densityLine, reference != null);
             try { File.WriteAllText(Path.Combine(directory, "placement_report.txt"), reportText); } catch { }
             string extra = "";
             if (useWater)
             {
-                var shortfalls = WaterPlacement.Shortfalls(report.Values);
+                var shortfalls = WaterPlacement.Shortfalls(report.Values, reference != null);
                 extra = "\r\n\r\nWater rules were applied. " + (shortfalls.Count == 0
-                    ? "Every ore got (almost) all of its veins."
-                    : "Some ores found too little dry ground:\r\n" + string.Join("\r\n", shortfalls) +
-                      "\r\nLower the water radius, or let these ores spawn anywhere / use shallower layers.") +
+                    ? "Ore ratios were kept."
+                    : "Some ores stay below their target:\r\n" + string.Join("\r\n", shortfalls) +
+                      "\r\nLower the water radius, raise the density limit, or set these ores to Land + seabed.") +
                     "\r\nDetails: placement_report.txt in the output folder.";
             }
             MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section." + extra, "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1484,74 +1169,6 @@ namespace SpaceEngineersOreRedistribution
         {
             SelectedEnvironmentItem = null;
         }, o=> SelectedEnvironmentItem != null);
-
-        void GetDeltas(int direction, out int dx, out int dy)
-        {
-            switch (direction)
-            {
-                case 0: // Left
-                    dx = -1;
-                    dy = 0;
-                    return;
-                case 1: // Up
-                    dx = 0;
-                    dy = -1;
-                    return;
-                case 2: // Right
-                    dx = 1;
-                    dy = 0;
-                    return;
-                case 3: // Down
-                    dx = 0;
-                    dy = 1;
-                    return;
-            }
-            dx = 0;
-            dy = 0;
-        }
-
-        class OreToDraw
-        {
-            int _x,_y;
-            int _tileWidth = 2048;
-            public OreToDraw(int tileWidth)
-            {
-                _tileWidth = tileWidth;
-            }
-
-            public int X
-            {
-                get => _x;
-                set
-                {
-                    if (value < 0) _x = 0;
-                    else if (value > (_tileWidth - 1)) _x = (_tileWidth - 1);
-                    else _x = value;
-                }
-            }
-            public int Y
-            {
-                get => _y;
-                set
-                {
-                    if (value < 0) _y = 0;
-                    else if (value > (_tileWidth - 1)) _y = (_tileWidth - 1);
-                    else _y = value;
-                }
-            }
-            public int Value; // Selectively ignored for hash
-
-            public override bool Equals(object obj)
-            {
-                if (obj is not OreToDraw ore) return false;
-                return X == ore.X && Y == ore.Y;
-            }
-
-            public override int GetHashCode()
-            {
-                return X.GetHashCode() ^ Y.GetHashCode();
-            }
-        }
 
         public ICommand CreateOcclusionMapsCommand => new RelayCommand(o =>
         {

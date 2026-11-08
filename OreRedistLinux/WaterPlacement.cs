@@ -24,6 +24,14 @@ namespace SpaceEngineersOreRedistribution
         public int ClampedVeins;
         /// <summary>Veins whose first site was on land / on the seabed (only counted when water rules apply).</summary>
         public int VeinsLand, VeinsSea;
+        /// <summary>Veins that wanted land but were sent to the seabed (no fitting or no room on land).</summary>
+        public int Diverted;
+        /// <summary>Extra veins placed afterwards to make up for lost pixels, and the pixels they added.</summary>
+        public int TopUpVeins;
+        public long TopUpPixels;
+        /// <summary>Pixels per layer: what the tool places without water rules (target) and what the map got.</summary>
+        public long[] LayerTarget = new long[10];
+        public long[] LayerAchieved = new long[10];
         public long Pixels;
         /// <summary>Single pixels of veins that were made shallower.</summary>
         public long ClampedPixels;
@@ -31,111 +39,77 @@ namespace SpaceEngineersOreRedistribution
         public long SkippedPixels;
     }
 
-    /// <summary>
-    /// Water rules for ore placement, see WaterSettings for the geometry.
-    ///
-    /// - AboveWater: the whole layer (Start..Start+Depth) has to end above water + margin. If the wanted
-    ///   layer is too deep for a pixel the next shallower allowed layer is used ("clamp shallower").
-    ///   If no allowed layer fits, the pixel is not used.
-    /// - UnderwaterOnly: only pixels where the terrain is below the water line.
-    /// - LandAndSeabed: both at once, decided per pixel: land pixels follow the AboveWater rule, pixels under
-    ///   standing water take any layer. Veins can cross the shore without stepping back.
-    /// - Anywhere: unchanged behavior.
-    /// New veins that start on a pixel where nothing fits look for another site on the same cube face,
-    /// so ore keeps its share and is not simply lost on faces with a lot of ocean.
-    /// </summary>
+    /// <summary>Text of the placement report and the short shortfall list. The placement itself is in OrePlacer.</summary>
     internal static class WaterPlacement
     {
-        public const int SiteTries = 400;
-
-        /// <summary>
-        /// Index of the layer to use at this pixel (never deeper than idx, never shallower than minIdx), or -1.
-        /// </summary>
-        public static int IndexAt(WaterSettings w, OreWaterMode mode, ImageData img, IList<OreMapping> mappings, int x, int y, int idx, int minIdx)
+        public static string BuildReport(WaterSettings w, bool waterUsed, IEnumerable<OreReportRow> rows, string densityLine = "", bool hasReference = false)
         {
-            if (idx < 0 || idx >= mappings.Count) return -1;
-            if (mode == OreWaterMode.Anywhere) return idx;
-            var h = img.H16[x, y];
-            if (mode == OreWaterMode.UnderwaterOnly) return w.IsUnderwater(h) ? idx : -1;
-            if (mode == OreWaterMode.LandAndSeabed && w.IsUnderwater(h)) return idx;
-
-            double allowed = w.AllowedDepth(h);
-            if (minIdx < 0) minIdx = 0;
-            for (int i = idx; i >= minIdx; --i)
-            {
-                var m = mappings[i];
-                if (m.Value > 0 && m.Start + m.Depth <= allowed) return i;
-            }
-            return -1;
-        }
-
-        /// <summary>
-        /// First try the pixel the dice chose, then random pixels of the same cube face.
-        /// For Land + seabed with a fixed seabed share the dice first decide land or seabed for this vein
-        /// (and fall back to the other if the face has none). Returns false if nothing was found.
-        /// </summary>
-        public static bool FindSite(WaterSettings w, OreWaterMode mode, ImageData img, IList<OreMapping> mappings,
-            int x, int y, int idx, int minIdx, Random rnd, int tileWidth,
-            out int siteX, out int siteY, out int siteIdx, out bool siteIsSea)
-        {
-            bool? wantSea = null;
-            if (mode == OreWaterMode.LandAndSeabed && w.SeabedShare.HasValue)
-                wantSea = rnd.NextDouble() * 100 < w.SeabedShare.Value;
-
-            for (int pass = 0; pass < (wantSea.HasValue ? 2 : 1); ++pass)
-            {
-                // pass 1 (only with a wish): give up the wish, any suitable site will do
-                bool? want = pass == 0 ? wantSea : null;
-                siteX = x; siteY = y;
-                for (int i = 0; i <= SiteTries; ++i)
-                {
-                    if (i > 0) { siteX = rnd.Next(tileWidth); siteY = rnd.Next(tileWidth); }
-                    bool sea = w.IsUnderwater(img.H16[siteX, siteY]);
-                    if (want.HasValue && sea != want.Value) continue;
-                    siteIdx = IndexAt(w, mode, img, mappings, siteX, siteY, idx, minIdx);
-                    if (siteIdx >= 0) { siteIsSea = sea; return true; }
-                }
-            }
-            siteX = x; siteY = y; siteIdx = -1; siteIsSea = false;
-            return false;
-        }
-
-        public static string BuildReport(WaterSettings w, bool waterUsed, IEnumerable<OreReportRow> rows)
-        {
-            var inv = CultureInfo.InvariantCulture;
+            rows = rows.ToList();
             var sb = new StringBuilder();
             sb.AppendLine("Ore placement report");
             if (waterUsed)
             {
                 sb.AppendLine("Water rules: ON  (" + w.Describe() + ")");
+                if (!string.IsNullOrWhiteSpace(w.Summary)) sb.AppendLine(w.Summary);
                 if (w.SeabedShare.HasValue) sb.AppendLine($"Land + seabed ores: {w.SeabedShare.Value:0}% of their veins are sent to the seabed.");
-                sb.AppendLine(string.IsNullOrWhiteSpace(w.Summary) ? "" : w.Summary);
+                sb.AppendLine($"Keep ratios: {(hasReference ? "on (reference run + top-up)" : "off")}, land density limit: {(w.LandDensityLimit > 0 ? w.LandDensityLimit.ToString("0.##") + "x normal" : "none")}, " +
+                              $"shallower layers allowed: {(w.AllowShallower ? "yes" : "no")}");
+                if (!string.IsNullOrEmpty(densityLine)) sb.AppendLine(densityLine);
             }
             else sb.AppendLine("Water rules: off");
             sb.AppendLine();
-            sb.AppendLine("Ore".PadRight(18) + "Water mode".PadRight(26) + "Veins".PadLeft(7) + "Placed".PadLeft(8) + "Dropped".PadLeft(9) + "Moved".PadLeft(7) +
-                          "Shallower".PadLeft(11) + "On land".PadLeft(9) + "Seabed".PadLeft(8) + "Pixels".PadLeft(9) + "Skipped px".PadLeft(12));
+            sb.AppendLine("Ore".PadRight(18) + "Water mode".PadRight(26) + "Veins".PadLeft(7) + "Placed".PadLeft(8) + "Dropped".PadLeft(9) +
+                          "Shallower".PadLeft(11) + "On land".PadLeft(9) + "Seabed".PadLeft(8) + "Diverted".PadLeft(10) + "Top-up".PadLeft(8) +
+                          "Pixels".PadLeft(9) + "Skipped px".PadLeft(12));
             foreach (var r in rows.OrderBy(r => r.Name))
             {
                 sb.AppendLine(r.Name.PadRight(18) + OreWaterModes.NameOf(r.Mode).PadRight(26) + r.Events.ToString().PadLeft(7) + r.Placed.ToString().PadLeft(8) +
-                              r.Dropped.ToString().PadLeft(9) + r.Moved.ToString().PadLeft(7) + r.ClampedVeins.ToString().PadLeft(11) +
-                              r.VeinsLand.ToString().PadLeft(9) + r.VeinsSea.ToString().PadLeft(8) +
+                              r.Dropped.ToString().PadLeft(9) + r.ClampedVeins.ToString().PadLeft(11) +
+                              r.VeinsLand.ToString().PadLeft(9) + r.VeinsSea.ToString().PadLeft(8) + r.Diverted.ToString().PadLeft(10) + r.TopUpVeins.ToString().PadLeft(8) +
                               r.Pixels.ToString().PadLeft(9) + r.SkippedPixels.ToString().PadLeft(12));
             }
             sb.AppendLine();
-            sb.AppendLine("Veins: how many the random placement wanted. Dropped: no suitable site on the cube face (shortfall).");
-            sb.AppendLine("Moved: first site was not allowed, another site on the same face was used. Shallower: layer made shallower to stay dry.");
-            sb.AppendLine("On land / Seabed: where the vein started (land = terrain above the water line).");
+            sb.AppendLine("Veins: wanted by the random placement. Dropped: no suitable site found. Shallower: layer made shallower (only with that option).");
+            sb.AppendLine("On land / Seabed: where the vein started. Diverted: wanted land, sent to the seabed (no fitting land with room). Top-up: extra veins placed afterwards.");
+
+            if (hasReference)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Pixels per layer in the map as % of the target (what the tool places without water rules). 100% = ratio kept.");
+                sb.AppendLine("Ore".PadRight(18) + string.Concat(Enumerable.Range(0, 10).Select(i => ("L" + i).PadLeft(7))));
+                foreach (var r in rows.OrderBy(r => r.Name))
+                {
+                    if (r.Mode == OreWaterMode.Anywhere) { sb.AppendLine(r.Name.PadRight(18) + "(ignores the water, not compensated)"); continue; }
+                    sb.AppendLine(r.Name.PadRight(18) + string.Concat(Enumerable.Range(0, 10).Select(i =>
+                        r.LayerTarget[i] <= 0 ? "-".PadLeft(7) : (100.0 * r.LayerAchieved[i] / r.LayerTarget[i]).ToString("0", CultureInfo.InvariantCulture).PadLeft(6) + "%")));
+                }
+                sb.AppendLine("Below 100% where no ground is left that is dry enough (or not full yet) for that layer: lower the water radius,");
+                sb.AppendLine("raise the density limit, or set the ore to Land + seabed so it can use the seabed.");
+            }
             return sb.ToString();
         }
 
-        /// <summary>Ores that lost a noticeable part of their veins, as short lines for the message box.</summary>
-        public static List<string> Shortfalls(IEnumerable<OreReportRow> rows, double minShare = 0.05)
+        /// <summary>Ores that lost veins, or whose layers stay clearly below the target, as short lines for the message box.</summary>
+        public static List<string> Shortfalls(IEnumerable<OreReportRow> rows, bool hasReference, double minShare = 0.05)
         {
-            return rows.Where(r => r.Events > 0 && r.Dropped > r.Events * minShare)
-                .OrderByDescending(r => (double)r.Dropped / r.Events)
-                .Select(r => $"{r.Name}: {100.0 * r.Placed / r.Events:0}% of its veins placed ({r.Dropped} of {r.Events} found no dry site)")
-                .ToList();
+            var lines = new List<string>();
+            foreach (var r in rows.OrderBy(r => r.Name))
+            {
+                if (r.Events > 0 && r.Dropped > r.Events * minShare)
+                    lines.Add($"{r.Name}: {100.0 * r.Placed / r.Events:0}% of its veins placed ({r.Dropped} of {r.Events} found no site)");
+                if (hasReference && r.Mode != OreWaterMode.Anywhere)
+                {
+                    long t = r.LayerTarget.Sum(), a2 = 0;
+                    var low = new List<string>();
+                    for (int i = 0; i < 10; ++i)
+                    {
+                        a2 += Math.Min(r.LayerAchieved[i], r.LayerTarget[i]);
+                        if (r.LayerTarget[i] > 0 && r.LayerAchieved[i] < 0.85 * r.LayerTarget[i]) low.Add($"L{i} {100.0 * r.LayerAchieved[i] / r.LayerTarget[i]:0}%");
+                    }
+                    if (low.Count > 0) lines.Add($"{r.Name}: below target on {string.Join(", ", low)}");
+                }
+            }
+            return lines;
         }
     }
 }

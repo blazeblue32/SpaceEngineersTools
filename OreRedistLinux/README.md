@@ -65,14 +65,29 @@ so ore below it can only be reached by digging into water. The new **Water** men
 - **Land / seabed balance** (Water window, for *Land + seabed* ores): *By area* lets the dice decide, so an ocean world gets mostly
   seabed ore (Typhoon: 97%); *Fixed* sends a chosen share of the veins to the seabed and the rest to land (30% fixed gave a 70/30 split
   of the veins on Typhoon). If a cube face lacks one kind of ground the other is used.
-- **Not enough dry ground?** A vein whose first site is too wet looks for another site on the same cube face (up to 400 tries), so
-  ore keeps its share. If nothing fits at all the vein is dropped and listed in the message and in `placement_report.txt`
-  (written next to the maps), together with how many veins moved, were made shallower, or started on land / seabed. On a planet that is mostly ocean the ore
-  ends up on the islands, deep layers only on high ground.
+- **Keeping the ore ratios** (Water window, on by default): the tool first works out what it would place *without* water rules
+  (target pixels per ore and layer, and the normal ore density = ore pixels per surface pixel). Then:
+  - a vein keeps the layer the dice chose and looks for a site where that layer is dry (land pixels sorted by height, so deep layers
+    land in the highlands), instead of being pushed to a shallower layer;
+  - land never gets more than *Most ore on land* x the normal density (default 1.25, measured per 128 x 128 block, a soft limit). When land is
+    full, *Land + seabed* ores go to the seabed instead ("Diverted" in the report), *Land only* ores lose the vein;
+  - veins prefer empty pixels, so they do not paint over other ore;
+  - after the main pass, whatever is still missing per ore and layer (cut-off veins, overlap) is topped up with extra veins where
+    the ore's mode allows it (Land + seabed ores can use the seabed).
+  Typhoon, Land + seabed, by area: every ore and layer at 98-100% of the target (layers 7-9: 29.7% of the ore, target 29.8%),
+  land and seabed at 0.97x / 1.00x of the normal density, no wet land layer. With a fixed 30% seabed share: 97-113% of target,
+  land density 1.16x. *Land only* on that ocean world gets only ~5% of the target (land is 3.8% of the surface, capped at 1.25x density),
+  with the layer proportions preserved and the shortfall listed; set those ores to *Land + seabed*, or raise the limit (0 = none:
+  everything piles up on the islands at 27x normal density).
+- *Allow shallower layers* (off by default) brings back the old way out: a layer that does not fit is replaced by the next shallower one
+  that does. That fills the land but shifts the rarity (layer 9: 1.2% of the ore instead of 7.4%).
+- If an ore still cannot reach its target, the message after the run and `placement_report.txt` (next to the maps) list it, with
+  veins wanted / placed / dropped, where they started (land / seabed), diverted and top-up veins, and the achieved % of target per layer.
 - The water window shows how much of the planet is underwater and on how much of the surface a layer ending at 10 / 25 / 50 / 100 / 200 / 400 m
   stays dry. Not covered: the Perlin distortion some planets add to the terrain (use the safety margin) and the planet's own lake layer.
 
-Also changed: height maps that are not 16 bit (8 bit and palette PNGs, used by some mods) are now converted instead of being replaced
+Also changed: the same seed now always gives the same maps (the faces were visited in the order they happened to finish loading,
+which changed the random number stream); height maps that are not 16 bit (8 bit and palette PNGs, used by some mods) are now converted instead of being replaced
 by a blank map, and ore map pixels whose value has no ore mapping are no longer painted green (Typhoon uses 0 for "no ore").
 
 ## Build and run

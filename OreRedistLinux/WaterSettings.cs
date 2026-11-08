@@ -100,6 +100,28 @@ namespace SpaceEngineersOreRedistribution
         /// <summary>Wanted share (0..100) of land+seabed veins on the seabed, null = by area.</summary>
         public double? SeabedShare => _seabedByArea ? null : _seabedPercent;
 
+        bool _keepRatios = true;
+        /// <summary>
+        /// Keep the ore ratios: first work out what the tool would place without water rules (target per ore and layer
+        /// and the normal ore density), then top up what the rules took away on ground where it is allowed.
+        /// </summary>
+        public bool KeepRatios { get => _keepRatios; set { if (SetProp(ref _keepRatios, value)) Changed(); } }
+
+        double _landDensityLimit = 1.25;
+        /// <summary>
+        /// Most ore allowed on land, as multiple of the normal density (ore pixels per surface pixel the tool
+        /// produces without water rules), measured per block of 128 x 128 pixels. 0 = no limit.
+        /// In Land + seabed mode veins that do not fit any more go to the seabed instead.
+        /// </summary>
+        public double LandDensityLimit { get => _landDensityLimit; set { if (SetProp(ref _landDensityLimit, Math.Max(0, value))) Changed(); } }
+
+        bool _allowShallower;
+        /// <summary>
+        /// Off (default): a layer that does not fit is not used, the ore stays rarer there (reported).
+        /// On: use the next shallower layer that fits, which makes shallow layers more common.
+        /// </summary>
+        public bool AllowShallower { get => _allowShallower; set { if (SetProp(ref _allowShallower, value)) Changed(); } }
+
         string _source = "";
         /// <summary>Human readable origin of the values, shown in the water window.</summary>
         public string Source { get => _source; set => SetProp(ref _source, value); }
@@ -129,6 +151,15 @@ namespace SpaceEngineersOreRedistribution
         public double AllowedDepth(ushort h16) => HeightAboveWater(h16) - Margin;
 
         public bool IsUnderwater(ushort h16) => HeightAboveWater(h16) < 0;
+
+        /// <summary>Smallest height map value (0..65536) at which AllowedDepth is at least the given depth.</summary>
+        public int MinH16ForAllowed(double depth)
+        {
+            double t = ((depth + Margin) / _planetRadius + (1 + _hillMin) * (_radius - 1)) / (_hillMax - _hillMin);
+            if (t <= 0) return 0;
+            if (t > 1) return 65536;
+            return (int)Math.Ceiling(t * 65535 - 1e-9);
+        }
 
         /// <summary>Is a whole ore layer (Start..Start+Depth below the surface) above the water margin at this height?</summary>
         public bool LayerIsDry(OreMapping layer, ushort h16) => layer.Start + layer.Depth <= AllowedDepth(h16);
@@ -177,6 +208,9 @@ namespace SpaceEngineersOreRedistribution
                 w._planetRadius = D(saved, "PlanetRadius", DefaultPlanetRadius);
                 w._seabedByArea = saved.Attribute("SeabedByArea")?.Value != "false";
                 w._seabedPercent = D(saved, "SeabedPercent", 50);
+                w._keepRatios = saved.Attribute("KeepRatios")?.Value != "false";
+                w._landDensityLimit = D(saved, "LandDensityLimit", 1.25);
+                w._allowShallower = saved.Attribute("AllowShallower")?.Value == "true";
                 if (saved.Attribute("Margin") != null) w._marginOverride = D(saved, "Margin", 0);
                 if (planet.HillMin == null && saved.Attribute("HillMin") != null) w._hillMin = D(saved, "HillMin", 0);
                 if (planet.HillMax == null && saved.Attribute("HillMax") != null) w._hillMax = D(saved, "HillMax", 0);
@@ -248,7 +282,10 @@ namespace SpaceEngineersOreRedistribution
                     new XAttribute("HillMin", HillMin.ToString(inv)),
                     new XAttribute("HillMax", HillMax.ToString(inv)),
                     new XAttribute("SeabedByArea", SeabedByArea ? "true" : "false"),
-                    new XAttribute("SeabedPercent", SeabedPercent.ToString(inv)));
+                    new XAttribute("SeabedPercent", SeabedPercent.ToString(inv)),
+                    new XAttribute("KeepRatios", KeepRatios ? "true" : "false"),
+                    new XAttribute("LandDensityLimit", LandDensityLimit.ToString(inv)),
+                    new XAttribute("AllowShallower", AllowShallower ? "true" : "false"));
                 if (MarginOverride.HasValue) el.Add(new XAttribute("Margin", MarginOverride.Value.ToString(inv)));
                 doc.Root.Add(el);
                 doc.Save(UserFile);
