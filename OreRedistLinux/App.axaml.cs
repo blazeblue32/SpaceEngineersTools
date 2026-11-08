@@ -10,6 +10,7 @@ namespace SpaceEngineersOreRedistribution
 
         public override void OnFrameworkInitializationCompleted()
         {
+            CrashLog.Install();
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 desktop.MainWindow = new MainWindow();
             base.OnFrameworkInitializationCompleted();

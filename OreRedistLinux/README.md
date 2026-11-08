@@ -30,6 +30,10 @@ moved into a toolbar next to the menu. *Map* options are checkable menu items.
   Custom colors are saved by ore name in `~/.config/OreRedistLinux/OreColors.xml`.
 - Selecting an ore type works like the original: its depth tiers get the tier colors and all other ore is dimmed.
 
+Also fixed: random depth for ore without a preferred depth used `VeryDeepOre ? 9 : 10` as the (exclusive) upper bound, which is
+backwards: with *Very Deep Ore* ticked depth 9 never spawned, and with it unticked depth 9 (disabled) could still be picked, so about
+10% of that ore's veins silently disappeared. Unhandled errors are written to `~/.config/OreRedistLinux/crash.log` and shown in a dialog.
+
 Also fixed: the six cube faces were loaded in parallel into a non-thread-safe dictionary, which could randomly drop a face
 (ore statistics too low, face without ore overlay).
 

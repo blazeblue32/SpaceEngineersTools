@@ -1057,7 +1057,7 @@ namespace SpaceEngineersOreRedistribution
                         {
                             if (depthMin == -1 && depthMax == -1)
                             {
-                                depth = rnd.Next(0, info.VeryDeepOre ? 9 : 10); // Max = 9
+                                depth = rnd.Next(0, info.VeryDeepOre ? 10 : 9); // upper bound is exclusive; depth 9 only with very deep ore
                             }
                             else if (depthMin == -1 && depthMax > -1)
                             {
@@ -1065,7 +1065,7 @@ namespace SpaceEngineersOreRedistribution
                             }
                             else if (depthMin >= -1 && depthMax == -1)
                             {
-                                depth = rnd.Next(depthMin, info.VeryDeepOre ? 9 : 10);
+                                depth = rnd.Next(depthMin, info.VeryDeepOre ? 10 : 9);
                             }
                             else //if (depthMin >= -1 && depthMax >= -1)
                             {
