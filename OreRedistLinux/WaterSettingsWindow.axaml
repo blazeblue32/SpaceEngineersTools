@@ -15,7 +15,7 @@
             <TextBlock Grid.Row="1" Text="Planet radius (m)" VerticalAlignment="Center"/>
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PlanetRadius, UpdateSourceTrigger=PropertyChanged}"/>
             <TextBlock Grid.Row="1" Grid.Column="2" FontSize="12" Foreground="Gray" VerticalAlignment="Center" TextWrapping="Wrap"
-                       Text="Set when the planet is spawned, not stored in any file. Ore depth does not scale with it, but the height of the terrain does. 60000 = EarthLike (120 km diameter)."/>
+                       Text="Set when the planet is spawned, not stored in any file. Ore depth does not scale with it, but the height of the terrain does. 60000 = EarthLike (120 km diameter). Also sets the distance between ore patches in the redistribution window."/>
 
             <TextBlock Grid.Row="2" Text="Tide height (m)" VerticalAlignment="Center"/>
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TideHeight, UpdateSourceTrigger=PropertyChanged}"/>

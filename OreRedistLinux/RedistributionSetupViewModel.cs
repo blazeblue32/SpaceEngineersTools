@@ -23,7 +23,19 @@ namespace SpaceEngineersOreRedistribution
         public WaterSettings Water
         {
             get => _water;
-            set { _water = value; OnPropertyChanged(); OnPropertyChanged(nameof(WaterEnabled)); OnPropertyChanged(nameof(WaterInfo)); }
+            set
+            {
+                if (_water != null) _water.PropertyChanged -= Water_PropertyChanged;
+                _water = value;
+                if (_water != null) _water.PropertyChanged += Water_PropertyChanged;
+                OnPropertyChanged(); OnPropertyChanged(nameof(WaterEnabled)); OnPropertyChanged(nameof(WaterInfo));
+                ApplyScale(); // the planet size may be different from the reference
+            }
+        }
+
+        void Water_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(WaterSettings.PlanetRadius)) ApplyScale();
         }
 
         public bool WaterEnabled => _water != null && _water.Enabled;
@@ -99,6 +111,8 @@ namespace SpaceEngineersOreRedistribution
             root.Add(new XAttribute("StdDev", StdDev));
             root.Add(new XAttribute("StdDevDepth", StdDevDepth));
             root.Add(new XAttribute("OreSpawnRate", OreSpawnRate));
+            root.Add(new XAttribute("PlanetRadius", PlanetRadius.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            root.Add(new XAttribute("TileWidth", TileWidth));
             root.Add(new XAttribute("Seed", Seed));
             root.Add(new XAttribute("SmallPlanet", SmallPlanetMode));
             if (withTimestamp) root.Add(new XAttribute("Saved", DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture)));
@@ -114,7 +128,15 @@ namespace SpaceEngineersOreRedistribution
             if (root?.Name != "OreInfos") throw new Exception("Invalid file!");
             if (int.TryParse(root.Attribute("StdDev")?.Value, out var stdDev)) StdDev = stdDev;
             if (int.TryParse(root.Attribute("StdDevDepth")?.Value, out var stdDevDepth)) StdDevDepth = stdDevDepth;
-            if (int.TryParse(root.Attribute("OreSpawnRate")?.Value, out var oresp)) OreSpawnRate = oresp;
+            if (int.TryParse(root.Attribute("OreSpawnRate")?.Value, out var oresp))
+            {
+                // The saved number was for the planet size of that time: keep its distance in meters on this planet.
+                // Files without a size (older exports) are taken as the reference size.
+                double savedRadius = double.TryParse(root.Attribute("PlanetRadius")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sr) && sr > 0 ? sr : ReferenceRadius;
+                int savedTile = int.TryParse(root.Attribute("TileWidth")?.Value, out var st) && st > 0 ? st : ReferenceTileWidth;
+                _gap = oresp * Scale(savedRadius, savedTile);
+                ApplyScale();
+            }
             if (int.TryParse(root.Attribute("Seed")?.Value, out var seed)) Seed = seed;
             if (bool.TryParse(root.Attribute("SmallPlanet")?.Value, out var spm)) SmallPlanetMode = spm;
             OreInfos.Clear();
@@ -192,11 +214,84 @@ namespace SpaceEngineersOreRedistribution
         // Lets randomize this a bit:
         // Square of 2*28 pixels width and length with 1 ore means:
         // 1 ore in 3136 pixels
-        int _oreSpawnRate = 1000; // Updated to 1000 because it seems to be closer to original
+        //
+        // The number of pixels between ore patches means a different distance on every planet size: a pixel is
+        // about 42 m wide on a 60 km radius planet and 4 x that on a 240 km one. The value is therefore tied to the
+        // planet size: 1000 is the default for the EarthLike size (60 km radius = 120 km diameter, 2048 pixel tiles),
+        // and when the planet size (or tile width) changes the number is recalculated so the ore patches stay the
+        // same distance apart in meters. What is kept is _gap, the distance squared in "pixels x (radius / tile width)^2".
+        public const double ReferenceRadius = 60000;
+        public const int ReferenceTileWidth = 2048;
+        public const int DefaultSpawnRate = 1000;
+        public const int MinSpawnRate = 20;
+        public const int MaxSpawnRate = 2000000;
+
+        static double Scale(double radius, double tileWidth) => (radius / tileWidth) * (radius / tileWidth);
+
+        double _gap = DefaultSpawnRate * Scale(ReferenceRadius, ReferenceTileWidth);
+        bool _adjusting;
+        double _localRadius = ReferenceRadius;
+        int _tileWidth = ReferenceTileWidth;
+
+        /// <summary>Tile width of the maps (pixels per cube face side), set by the main window.</summary>
+        public int TileWidth
+        {
+            get => _tileWidth;
+            set { if (value > 0 && value != _tileWidth) { _tileWidth = value; ApplyScale(); } }
+        }
+
+        /// <summary>Planet radius in meters (shared with the Water settings of the planet).</summary>
+        public double PlanetRadius => _water?.PlanetRadius ?? _localRadius;
+
+        public double PlanetRadiusKm => PlanetRadius / 1000;
+
+        /// <summary>Planet diameter in km. Editing it changes the planet radius and with it the spawn rate below.</summary>
+        public double PlanetDiameterKm
+        {
+            get => Math.Round(PlanetRadius * 2 / 1000, 3);
+            set
+            {
+                if (!(value > 0)) return;
+                if (_water != null) _water.PlanetRadius = value * 500; // raises Water_PropertyChanged -> ApplyScale
+                else { _localRadius = value * 500; ApplyScale(); }
+            }
+        }
+
+        /// <summary>Recalculates the spawn rate for the current planet size, keeping the distance in meters.</summary>
+        void ApplyScale()
+        {
+            double n = _gap / Scale(PlanetRadius, _tileWidth);
+            int v = (int)Math.Clamp(Math.Round(n), MinSpawnRate, MaxSpawnRate);
+            _adjusting = true;
+            try { OreSpawnRate = v; }
+            finally { _adjusting = false; }
+            OnPropertyChanged(nameof(PlanetDiameterKm));
+            OnPropertyChanged(nameof(PlanetRadiusKm));
+            OnPropertyChanged(nameof(SpawnInfo));
+        }
+
+        int _oreSpawnRate = DefaultSpawnRate;
         public int OreSpawnRate
         {
             get => _oreSpawnRate;
-            set => SetProp(ref _oreSpawnRate, value);
+            set
+            {
+                if (!SetProp(ref _oreSpawnRate, value)) return;
+                if (!_adjusting) _gap = value * Scale(PlanetRadius, _tileWidth); // typed by the user: this is the new wanted distance
+                OnPropertyChanged(nameof(SpawnInfo));
+            }
+        }
+
+        /// <summary>The distance between ore patches in meters that the number means for this planet size.</summary>
+        public string SpawnInfo
+        {
+            get
+            {
+                double pixel = PlanetRadius * Math.Sqrt(2 * Math.PI / 3) / _tileWidth; // a cube face covers 4 pi r^2 / 6
+                double gap = Math.Sqrt(Math.Max(1, _oreSpawnRate)) * pixel;
+                string g = gap >= 1000 ? $"{gap / 1000:0.0} km" : $"{gap:0} m";
+                return $"= about {g} between ore patches ({pixel:0.#} m per pixel)";
+            }
         }
 
         int _seed;

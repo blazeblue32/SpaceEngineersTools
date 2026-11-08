@@ -1089,6 +1089,7 @@ namespace SpaceEngineersOreRedistribution
 
             // Collect ore info
             var setup = new RedistributionSetup();
+            setup.ViewModel.TileWidth = TileWidth;
             setup.ViewModel.Water = Water;
             setup.ViewModel.PlanetName = SelectedPlanetDefinition?.Name;
             foreach (var oredef in OreTypes)

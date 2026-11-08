@@ -123,6 +123,18 @@ off the maps are identical to before. The switches are saved with *Export* / loa
 - **Setup window**: compact columns (long names as tooltips), all ten layers visible, the help text in a collapsible *Help*, and the reason why Confirm is
   not possible (too many values, no ore) in red under the buttons.
 
+## Planet size and the distance between ore patches
+*Randomly spawn ore every N pixels* used to mean the same number of pixels on every planet, but a pixel is about 42 m wide on a 60 km radius
+planet and four times that on a 240 km one, so ore was far apart on big planets and close together on small ones. The number is now tied to the
+**planet diameter** shown in the redistribution window (the same value as the planet radius in the Water window, remembered per planet):
+**1000 is the default for the EarthLike size, 120 km diameter / 60 km radius**, and when you change the diameter (Enter or click elsewhere) N is
+recalculated so the patches stay the same distance apart in meters (240 km: 250, 60 km: 4000). A line shows the resulting distance, about 1.3 km at the
+default. A number you type yourself is kept as the wanted distance when you change the size and back, so nothing drifts; the tile width is
+included the same way (4096 pixel tiles: 4 times as many pixels). Saved setups (autosave, Export) remember the size they were made for and are converted
+to the planet they are loaded on. The engine is unchanged: it uses the number shown. At the default size the maps are identical to before.
+(The 100 km in the original code was a *radius* and only used for the slope map; the spawn number never had a size.) The lowest allowed value is now 20
+(was 100) because planets larger than about 190 km radius need it. Not scaled: the size of the veins themselves (pixels per vein) and *Small Planet Mode*.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

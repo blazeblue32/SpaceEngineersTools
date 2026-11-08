@@ -98,6 +98,14 @@ namespace SpaceEngineersOreRedistribution
             }
         }
 
+        /// <summary>Enter in a text box that applies on focus loss: take the focus away so the value is applied.</summary>
+        private void ApplyOnEnter(object sender, Avalonia.Input.KeyEventArgs e)
+        {
+            if (e.Key != Avalonia.Input.Key.Enter) return;
+            GetTopLevel(this)?.FocusManager?.ClearFocus();
+            e.Handled = true;
+        }
+
         private void ButtonAbort_Click(object sender, RoutedEventArgs e) => CloseWithResult(false);
 
         private void ConfirmAction()

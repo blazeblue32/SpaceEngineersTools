@@ -127,11 +127,21 @@
                     <TextBlock Text="Standard Deviation for depth (default 4): " VerticalAlignment="Center"/>
                     <TextBox Width="60" Text="{Binding StdDevDepth, UpdateSourceTrigger=PropertyChanged}"/>
                 </WrapPanel>
-                <WrapPanel Orientation="Horizontal" Grid.Row="6">
-                    <TextBlock Text="Randomly spawn ore every " VerticalAlignment="Center"/>
-                    <TextBox Width="70" Text="{Binding OreSpawnRate, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" Margin="3,0,3,0"/>
-                    <TextBlock Text="pixels on average. (Default: 1000) " VerticalAlignment="Center"/>
-                </WrapPanel>
+                <StackPanel Grid.Row="6">
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="Planet diameter " VerticalAlignment="Center"/>
+                        <TextBox Width="80" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Text="{Binding PlanetDiameterKm, UpdateSourceTrigger=LostFocus}" HorizontalContentAlignment="Center" Margin="3,0,3,0" KeyDown="ApplyOnEnter"
+                                 ToolTip.Tip="Diameter of the planet in km (same value as the planet radius in the Water window). Press Enter or click elsewhere to apply."/>
+                        <TextBlock Text="{Binding PlanetRadiusKm, StringFormat='km  (radius {0:0.###} km). Default: EarthLike, 120 km diameter / 60 km radius.'}" VerticalAlignment="Center"/>
+                    </WrapPanel>
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="Randomly spawn ore every " VerticalAlignment="Center"/>
+                        <TextBox Width="80" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Text="{Binding OreSpawnRate}" HorizontalContentAlignment="Center" Margin="3,0,3,0"
+                                 ToolTip.Tip="Pixels between ore patches on average. 1000 is the default for the EarthLike size. Changing the planet size recalculates this number so the patches stay the same distance apart in meters."/>
+                        <TextBlock Text="pixels on average (1000 = default for 120 km diameter / 60 km radius). " VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SpawnInfo}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    </WrapPanel>
+                </StackPanel>
                 <WrapPanel Orientation="Horizontal" Grid.Row="7">
                     <TextBlock Text="Seed" VerticalAlignment="Center"/>
                     <TextBox Width="70" Text="{Binding Seed, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" Margin="3,0,3,0"/>

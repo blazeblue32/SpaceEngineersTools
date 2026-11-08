@@ -189,8 +189,8 @@ namespace SpaceEngineersOreRedistribution
             var setup = _c.Setup;
             int spawnRate = setup.OreSpawnRate; // Default 3000
             if (setup.SmallPlanetMode) spawnRate *= 2;
-            if (spawnRate < 100) spawnRate = 100;
-            else if (spawnRate > 2000000) spawnRate = 2000000;
+            if (spawnRate < RedistributionSetupViewModel.MinSpawnRate) spawnRate = RedistributionSetupViewModel.MinSpawnRate;
+            else if (spawnRate > RedistributionSetupViewModel.MaxSpawnRate) spawnRate = RedistributionSetupViewModel.MaxSpawnRate;
 
             double prop = 1.0 / spawnRate;
             double nBaseMin = 0.72; // This is just a random number I picked
