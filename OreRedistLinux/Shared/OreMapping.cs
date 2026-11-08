@@ -21,6 +21,14 @@ namespace SpaceEngineersToolsShared
             set { if (SetProp(ref _value, value)) OnPropertyChanged(nameof(ValueText)); }
         }
 
+        double? _landShare;
+        /// <summary>
+        /// Land / seabed override for this layer of an ore set to "Land + seabed" (UI only, never written to the game files).
+        /// null = use the ore's value or the baseline. Percent of the veins that start on land:
+        /// 0 = seabed only, 100 = land only, in between = preference (the other kind of ground is the fallback).
+        /// </summary>
+        public double? LandShare { get => _landShare; set => SetProp(ref _landShare, value.HasValue ? Math.Clamp(value.Value, 0, 100) : null); }
+
         bool _layerEnabled = true;
         /// <summary>Switch for this layer. Off: the layer gets no number and is not used (UI only, never written to the game files).</summary>
         public bool LayerEnabled

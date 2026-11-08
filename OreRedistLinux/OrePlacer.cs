@@ -212,7 +212,7 @@ namespace SpaceEngineersOreRedistribution
                     int siteX = x, siteY = y, idx = depth;
                     if (mode != OreWaterMode.Anywhere)
                     {
-                        if (!FindSite(fw, source, image, mode, mappings, x, y, depth, minIdx, spawnSize, row, out siteX, out siteY, out idx, out bool sea))
+                        if (!FindSite(fw, source, image, mode, mappings, x, y, depth, minIdx, spawnSize, ShareFor(info, mappings, depth), row, out siteX, out siteY, out idx, out bool sea))
                         {
                             ++row.Dropped;
                             continue;
@@ -220,7 +220,7 @@ namespace SpaceEngineersOreRedistribution
                         if (sea) ++row.VeinsSea; else ++row.VeinsLand;
                     }
                     ++row.Placed;
-                    DrawVein(image, fw, source, row, mode, mappings, siteX, siteY, idx, minIdx, maxIdx, spawnSize, null);
+                    DrawVein(image, fw, source, row, mode, mappings, siteX, siteY, idx, minIdx, maxIdx, spawnSize, info.LandShare, null);
                 }
             }
             return image;
@@ -325,6 +325,10 @@ namespace SpaceEngineersOreRedistribution
         // ------------------------------------------------------------------------------------------------
         // Water rules: where may a vein start, which layer fits where
 
+        /// <summary>Land share override for a layer: the layer's own value, else the ore's, else none (baseline of the Water window).</summary>
+        static double? ShareFor(RedistributionSetupViewModel.OreInfo info, IList<OreMapping> mappings, int idx) =>
+            mappings[idx].LandShare ?? info.LandShare;
+
         /// <summary>Dry depth the layer needs (its lower end). With AllowShallower the shallowest usable layer counts.</summary>
         double Need(IList<OreMapping> mappings, int idx, int minIdx)
         {
@@ -361,7 +365,7 @@ namespace SpaceEngineersOreRedistribution
         /// goes to the seabed ("diverted").
         /// </summary>
         bool FindSite(FaceWater fw, ImageData source, ImageData image, OreWaterMode mode, IList<OreMapping> mappings,
-            int diceX, int diceY, int idx, int minIdx, int veinSize, OreReportRow row,
+            int diceX, int diceY, int idx, int minIdx, int veinSize, double? landShare, OreReportRow row,
             out int siteX, out int siteY, out int siteIdx, out bool siteIsSea)
         {
             siteX = diceX; siteY = diceY; siteIdx = idx; siteIsSea = false;
@@ -373,7 +377,15 @@ namespace SpaceEngineersOreRedistribution
             bool landFirst = true;
             if (mode == OreWaterMode.LandAndSeabed)
             {
-                if (W.SeabedShare.HasValue) landFirst = !(_rnd.NextDouble() * 100 < W.SeabedShare.Value);
+                if (landShare.HasValue)
+                {
+                    // Override of the ore or its layer: 100 = land only, 0 = seabed only, in between a preference
+                    if (landShare.Value >= 100) seaOk = false;
+                    else if (landShare.Value <= 0) landOk = false;
+                    else landFirst = _rnd.NextDouble() * 100 < landShare.Value;
+                    if (landShare.Value <= 0) landFirst = false;
+                }
+                else if (W.SeabedShare.HasValue) landFirst = !(_rnd.NextDouble() * 100 < W.SeabedShare.Value);
                 else
                 {
                     // by area, land counts LandPreference times: p(land) = f * land / (f * land + sea)
@@ -447,10 +459,16 @@ namespace SpaceEngineersOreRedistribution
         /// Layer to draw at a pixel of a vein that is on its way (the vein keeps its own layer on land,
         /// only the small ups and downs of the walk are clamped), or -1 if the pixel cannot be used.
         /// </summary>
-        int PixelIndex(FaceWater fw, OreWaterMode mode, IList<OreMapping> mappings, int x, int y, int lastIdx, int defaultIdx, int minIdx)
+        int PixelIndex(FaceWater fw, OreWaterMode mode, IList<OreMapping> mappings, int x, int y, int lastIdx, int defaultIdx, int minIdx, double? oreShare)
         {
             var h = fw.H[x, y];
             bool sea = W.IsUnderwater(h);
+            if (mode == OreWaterMode.LandAndSeabed)
+            {
+                // A layer set to 100 (land only) or 0 (seabed only) is also kept on that kind of ground pixel by pixel
+                var share = mappings[lastIdx].LandShare ?? oreShare;
+                if (share.HasValue && ((sea && share.Value >= 100) || (!sea && share.Value <= 0))) return -1;
+            }
             if (sea) return (mode == OreWaterMode.AboveWater) ? -1 : lastIdx;
             if (mode == OreWaterMode.UnderwaterOnly) return -1;
             if (!W.AllowShallower)
@@ -472,7 +490,7 @@ namespace SpaceEngineersOreRedistribution
 
         /// <summary>Draws one vein into the image. placedPerValue (optional) counts the pixels written per value.</summary>
         void DrawVein(ImageData image, FaceWater fw, ImageData source, OreReportRow row, OreWaterMode mode, IList<OreMapping> mappings,
-            int siteX, int siteY, int defaultDepthIndex, int minDepthIndex, int maxDepthIndex, int spawnSize, long[] placedPerValue)
+            int siteX, int siteY, int defaultDepthIndex, int minDepthIndex, int maxDepthIndex, int spawnSize, double? oreShare, long[] placedPerValue)
         {
             int tw = _c.TileWidth;
             bool gaps = HasGap(mappings, minDepthIndex, maxDepthIndex);
@@ -635,7 +653,7 @@ namespace SpaceEngineersOreRedistribution
                     nextOreToDraw.Value = mappings[drawIdx].Value;
                 else
                 {
-                    int idxHere = PixelIndex(fw, mode, mappings, nextOreToDraw.X, nextOreToDraw.Y, drawIdx, defaultDepthIndex, minDepthIndex);
+                    int idxHere = PixelIndex(fw, mode, mappings, nextOreToDraw.X, nextOreToDraw.Y, drawIdx, defaultDepthIndex, minDepthIndex, oreShare);
                     if (idxHere < 0)
                     {
                         nextOreToDraw.Value = -1; ++row.SkippedPixels;
@@ -747,14 +765,14 @@ namespace SpaceEngineersOreRedistribution
             {
                 int dx = _rnd.Next(tw), dy = _rnd.Next(tw);
                 int size = RollSize(info);
-                if (!FindSite(fw, source, image, mode, mappings, dx, dy, layer, minIdx, size, row, out int sx, out int sy, out int idx, out bool sea))
+                if (!FindSite(fw, source, image, mode, mappings, dx, dy, layer, minIdx, size, ShareFor(info, mappings, layer), row, out int sx, out int sy, out int idx, out bool sea))
                 {
                     if (++fails >= 12) break; // no room for this ore and layer on this face
                     continue;
                 }
                 ++row.TopUpVeins;
                 Array.Clear(counts, 0, counts.Length);
-                DrawVein(image, fw, source, row, mode, mappings, sx, sy, idx, minIdx, maxIdx, size, counts);
+                DrawVein(image, fw, source, row, mode, mappings, sx, sy, idx, minIdx, maxIdx, size, info.LandShare, counts);
                 long got = counts.Sum();
                 placed += counts[mappings[layer].Value];
                 row.TopUpPixels += got;

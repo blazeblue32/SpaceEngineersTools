@@ -508,9 +508,28 @@ namespace SpaceEngineersOreRedistribution
                 get => _waterMode;
                 set
                 {
-                    if (SetProp(ref _waterMode, value)) OnPropertyChanged(nameof(WaterModeIndex));
+                    if (SetProp(ref _waterMode, value))
+                    {
+                        OnPropertyChanged(nameof(WaterModeIndex));
+                        OnPropertyChanged(nameof(LandShareEnabled));
+                    }
                 }
             }
+
+            double? _landShare;
+            /// <summary>
+            /// Land / seabed override of this ore (Land + seabed only): percent of its veins that start on land.
+            /// null = the baseline of the Water window. 0 = seabed only, 100 = land only, in between = preference.
+            /// A layer can override this again (see OreMapping.LandShare).
+            /// </summary>
+            public double? LandShare
+            {
+                get => _landShare;
+                set => SetProp(ref _landShare, value.HasValue ? Math.Clamp(value.Value, 0, 100) : null);
+            }
+
+            /// <summary>The overrides only matter for ores set to Land + seabed.</summary>
+            public bool LandShareEnabled => _waterMode == OreWaterMode.LandAndSeabed;
 
             /// <summary>For the combo box, see OreWaterModes.Order.</summary>
             public int WaterModeIndex
@@ -615,6 +634,13 @@ namespace SpaceEngineersOreRedistribution
                 info.OreMappings[6].Tier = info.OreMappings[7].Tier = info.OreMappings[8].Tier = 3;
                 info.OreMappings[9].Tier = 4;
 
+                // Land / seabed overrides
+                static double? Share(string t) => double.TryParse(t?.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : null;
+                info.LandShare = Share(node.Element("LandShare")?.Value);
+                var layerShares = node.Element("LayerLandShares")?.Value?.Split(';');
+                if (layerShares != null && layerShares.Length == info.OreMappings.Count)
+                    for (int i = 0; i < layerShares.Length; ++i) info.OreMappings[i].LandShare = Share(layerShares[i]);
+
                 // Switched off layers (flags in layer order)
                 var flags = node.Element("Layers")?.Value?.Trim();
                 if (flags != null && flags.Length == info.OreMappings.Count)
@@ -635,7 +661,9 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("PreferredDepth", PreferredDepth),
                     new XElement("VeryDeepOre", VeryDeepOre),
                     new XElement("WaterMode", WaterMode),
-                    new XElement("Layers", string.Concat(OreMappings.Select(m => m.LayerEnabled ? '1' : '0'))));
+                    new XElement("Layers", string.Concat(OreMappings.Select(m => m.LayerEnabled ? '1' : '0'))),
+                    new XElement("LandShare", LandShare.HasValue ? LandShare.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),
+                    new XElement("LayerLandShares", string.Join(";", OreMappings.Select(m => m.LandShare.HasValue ? m.LandShare.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""))));
 
                 if (OreMappings.Count > 0)
                 {

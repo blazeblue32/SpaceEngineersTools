@@ -66,6 +66,13 @@ so ore below it can only be reached by digging into water. The new **Water** men
   **land preference** (default 1.5: land counts 1.5 times in the dice; 1 = purely by area; below 1 favors the seabed). On EarthLike with
   44% water the land share of the veins is 54% at 1, 63% at 1.5, 71% at 4. *Fixed* sends a chosen share of the veins to the seabed.
   Deep layers still end up on the seabed wherever the land is too low for them. If a cube face lacks one kind of ground the other is used.
+- **Per ore and per layer overrides** (*Land %*, only for ores set to *Land + seabed*): the **Land %** column in the ore table overrides the
+  baseline above for that ore, the **Land %** column in the layer list overrides it again for one layer (layer, else ore, else baseline).
+  Empty = inherit, **100 = land only, 0 = seabed only**, anything in between = the share of veins that start on land, with the other kind of
+  ground as fallback. 0 and 100 are also enforced pixel by pixel, so a "seabed only" layer does not creep onto the shore. Example: layers 0-2 at 0
+  and layers 6-9 at 100 gives shallow ore under the sea and deep ore under the land (EarthLike with 44% water: those layers came out at exactly
+  0% / 100% land); 95 on a whole ore gave 93% of its ore on land, 5 gave 6%. If a strict layer finds no suitable ground the vein is dropped
+  and shows in the report. Saved with *Export* / *Import*.
 - **Keeping the ore ratios** (Water window, on by default): the tool first works out what it would place *without* water rules
   (target pixels per ore and layer, and the normal ore density = ore pixels per surface pixel). Then:
   - a vein keeps the layer the dice chose and looks for a site where that layer is dry (land pixels sorted by height, so deep layers
