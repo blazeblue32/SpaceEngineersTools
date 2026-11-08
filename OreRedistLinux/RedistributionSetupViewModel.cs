@@ -57,7 +57,7 @@ namespace SpaceEngineersOreRedistribution
             info.AddDefaultMapping();
             OreInfos.Add(info);
             SelectedInfo = info;
-            OnPropertyChanged(nameof(ValuesCount));
+            RaiseCount();
         });
 
         public ICommand ShowOverviewCommand => new RelayCommand(o =>
@@ -89,6 +89,40 @@ namespace SpaceEngineersOreRedistribution
             SelectedInfo = null;
         }, o => SelectedInfo != null);
 
+        /// <summary>Planet this setup is for (names the autosave folder).</summary>
+        public string PlanetName { get; set; }
+
+        /// <summary>The whole setup as xml: Export file, last run and autosaves all use this.</summary>
+        public XDocument BuildDocument(bool withTimestamp = true)
+        {
+            var root = new XElement("OreInfos");
+            root.Add(new XAttribute("StdDev", StdDev));
+            root.Add(new XAttribute("StdDevDepth", StdDevDepth));
+            root.Add(new XAttribute("OreSpawnRate", OreSpawnRate));
+            root.Add(new XAttribute("Seed", Seed));
+            root.Add(new XAttribute("SmallPlanet", SmallPlanetMode));
+            if (withTimestamp) root.Add(new XAttribute("Saved", DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture)));
+            foreach (var oreInfo in OreInfos)
+                root.Add(oreInfo.ToXElement());
+            return new XDocument(root);
+        }
+
+        /// <summary>Replaces the current setup with a saved one.</summary>
+        public void LoadDocument(XDocument doc)
+        {
+            var root = doc.Root;
+            if (root?.Name != "OreInfos") throw new Exception("Invalid file!");
+            if (int.TryParse(root.Attribute("StdDev")?.Value, out var stdDev)) StdDev = stdDev;
+            if (int.TryParse(root.Attribute("StdDevDepth")?.Value, out var stdDevDepth)) StdDevDepth = stdDevDepth;
+            if (int.TryParse(root.Attribute("OreSpawnRate")?.Value, out var oresp)) OreSpawnRate = oresp;
+            if (int.TryParse(root.Attribute("Seed")?.Value, out var seed)) Seed = seed;
+            if (bool.TryParse(root.Attribute("SmallPlanet")?.Value, out var spm)) SmallPlanetMode = spm;
+            OreInfos.Clear();
+            foreach (var node in root.Elements("OreInfo"))
+                OreInfos.Add(OreInfo.FromXElement(node));
+            SelectedInfo = OreInfos.FirstOrDefault();
+        }
+
         public ICommand ExportCommand => new RelayCommand(o =>
         {
             SaveFileDialog dlg = new SaveFileDialog
@@ -99,19 +133,7 @@ namespace SpaceEngineersOreRedistribution
             if (dlg.ShowDialog() != true) return;
             try
             {
-                var root = new XElement("OreInfos");
-                root.Add(new XAttribute("StdDev", StdDev));
-                root.Add(new XAttribute("StdDevDepth", StdDevDepth));
-                root.Add(new XAttribute("OreSpawnRate", OreSpawnRate));
-                root.Add(new XAttribute("Seed", Seed));
-                root.Add(new XAttribute("SmallPlanet", SmallPlanetMode));
-                foreach (var oreInfo in OreInfos)
-                {
-                    root.Add(oreInfo.ToXElement());
-                }
-
-                var doc = new XDocument(root);
-                doc.Save(dlg.FileName);
+                BuildDocument().Save(dlg.FileName);
             }
             catch (Exception ex)
             {
@@ -129,19 +151,7 @@ namespace SpaceEngineersOreRedistribution
             if (dlg.ShowDialog() != true) return;
             try
             {
-                var doc = XDocument.Load(dlg.FileName);
-                var root = doc.Root;
-                if (root?.Name != "OreInfos") throw new Exception("Invalid file!");
-                if (int.TryParse(root.Attribute("StdDev")?.Value, out var stdDev)) StdDev = stdDev;
-                if (int.TryParse(root.Attribute("StdDevDepth")?.Value, out var stdDevDepth)) StdDevDepth = stdDevDepth;
-                if (int.TryParse(root.Attribute("OreSpawnRate")?.Value, out var oresp)) OreSpawnRate = oresp;
-                if (int.TryParse(root.Attribute("Seed")?.Value, out var seed)) Seed= seed;
-                if (bool.TryParse(root.Attribute("SmallPlanet")?.Value, out var spm)) SmallPlanetMode = spm;
-                OreInfos.Clear();
-                foreach (var node in root.Elements("OreInfo"))
-                {
-                    OreInfos.Add(OreInfo.FromXElement(node));
-                }
+                LoadDocument(XDocument.Load(dlg.FileName));
             }
             catch (Exception ex)
             {
@@ -209,12 +219,35 @@ namespace SpaceEngineersOreRedistribution
             ConfirmAction?.Invoke();
         },
         // TODO: Value should be buffered
-        o=>ValuesCount <= 254);
+        o => OreInfos.Count > 0 && ValuesCount >= 1 && ValuesCount <= 254);
 
         public int ValuesCount
         {
             get { return FinalizeList(); }
         }
+
+        void RaiseCount()
+        {
+            OnPropertyChanged(nameof(ValuesCount));
+            OnPropertyChanged(nameof(ConfirmProblem));
+            OnPropertyChanged(nameof(ValuesCountBrush));
+        }
+
+        /// <summary>Why Confirm is not possible (empty = it is).</summary>
+        public string ConfirmProblem
+        {
+            get
+            {
+                if (OreInfos.Count == 0) return "Add at least one ore.";
+                int n = ValuesCount;
+                if (n > 254) return $"Too many values: {n}, the maximum is 254. Switch layers off or remove ores.";
+                if (n == 0) return "No layer is switched on.";
+                return "";
+            }
+        }
+
+        /// <summary>Red when over the limit.</summary>
+        public Avalonia.Media.IBrush ValuesCountBrush => ValuesCount > 254 ? Avalonia.Media.Brushes.Red : Avalonia.Media.Brushes.Black;
 
         public class OreTierItem
         {
@@ -391,14 +424,14 @@ namespace SpaceEngineersOreRedistribution
                 }
             }
             CalcRatios();
-            OnPropertyChanged(nameof(ValuesCount));
+            RaiseCount();
         }
 
         private void OreItem_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             // "Layers" is only the display of the result of FinalizeList, reacting to it would loop
             if (e.PropertyName == nameof(OreInfo.Layers)) return;
-            OnPropertyChanged(nameof(ValuesCount));
+            RaiseCount();
             CalcRatios();
         }
 

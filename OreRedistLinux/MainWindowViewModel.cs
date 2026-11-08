@@ -432,6 +432,44 @@ namespace SpaceEngineersOreRedistribution
             }
         }
 
+        /// <summary>One line about a map pixel for the status bar: height, water, ore, biome, material.</summary>
+        public string DescribePixel(CubeMapFace face, int x, int y)
+        {
+            ImageData img;
+            lock (_images) { if (!_images.TryGetValue(face, out img) || img == null || img.B == null) return ""; }
+            if (x < 0 || y < 0 || x >= img.TileWidth || y >= img.TileWidth) return "";
+            var parts = new List<string> { $"{face}  x {x}  y {y}" };
+
+            if (img.HasHeightMap)
+            {
+                var h = img.H16[x, y];
+                string hs = $"height {h / 655.35:0.#}%";
+                var w = Water;
+                if (w != null && w.HasUsableHills)
+                {
+                    hs += $" = {w.PlanetRadius * (w.HillMax - w.HillMin) * h / 65535.0:0} m above the lowest terrain";
+                    if (w.Enabled)
+                    {
+                        double above = w.HeightAboveWater(h);
+                        hs += above >= 0 ? $", {above:0} m above the water" : $", {-above:0} m under water";
+                    }
+                }
+                parts.Add(hs);
+            }
+
+            byte b = img.B[x, y];
+            var mapping = SelectedPlanetDefinition?.OreMappings.FirstOrDefault(m => m.Value == b);
+            parts.Add(mapping != null ? $"ore {mapping.Type}, {mapping.Start}-{mapping.Start + mapping.Depth} m deep (value {b})" : "no ore");
+
+            byte g = img.G[x, y];
+            var env = SelectedPlanetDefinition?.EnvironmentItems.FirstOrDefault(e => e.Biome == g);
+            parts.Add(env != null ? $"biome {g} ({env.Material?.Name})" : $"biome {g}");
+            byte r = img.R[x, y];
+            var cm = SelectedPlanetDefinition?.ComplexMaterials.FirstOrDefault(c => c.Value == r);
+            if (cm != null && r != 0) parts.Add($"material {r} ({cm.Name})");
+            return string.Join("   |   ", parts);
+        }
+
         // ------------------------------------------------------------------ water (Water Mod)
         WaterSettings _water;
         /// <summary>Water rules of the selected planet, null while no planet is selected.</summary>
@@ -544,6 +582,8 @@ namespace SpaceEngineersOreRedistribution
             dlg.Filter = "sbc Files|*.sbc";
             dlg.FileName = "PlanetGeneratorDefinitions.sbc";
             dlg.Multiselect = false;
+            var lastFile = AppSettings.RecentFiles.FirstOrDefault();
+            if (lastFile != null) dlg.InitialDirectory = Path.GetDirectoryName(lastFile);
             var res = dlg.ShowDialog();
             if (res != true) return;
             OpenPlanetDefinition(dlg.FileName);
@@ -592,6 +632,7 @@ namespace SpaceEngineersOreRedistribution
                         ReadPlanetDefinition(subDef);
                     }
                 }
+                if (PlanetDefinitions.Count > 0) AppSettings.AddRecent(file);
 
             }
             catch (Exception e)
@@ -1010,19 +1051,46 @@ namespace SpaceEngineersOreRedistribution
             //ng.Show();
         });
 
-        public ICommand RedistributeOreCommand => new RelayCommand(o =>
+        bool _redistributing;
+
+        public ICommand RedistributeOreCommand => new RelayCommand(o => { _ = RedistributeAsync(); },
+            o => SelectedPlanetDefinition != null && !_redistributing);
+
+        async System.Threading.Tasks.Task RedistributeAsync()
+        {
+            if (_redistributing) return;
+            _redistributing = true;
+            RelayCommand.RequestRequery();
+            try { await RedistributeCoreAsync(); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                CrashLog.Write(ex, "Redistribute");
+                MessageBox.Show("The redistribution failed:\r\n" + ex.Message + "\r\n\r\nDetails: " + CrashLog.FilePath, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _redistributing = false;
+                RelayCommand.RequestRequery();
+            }
+        }
+
+        /// <summary>Outcome of the background work, shown to the user afterwards.</summary>
+        class RunResult
+        {
+            public string Message;
+            public List<string> Failed = new();
+        }
+
+        async System.Threading.Tasks.Task RedistributeCoreAsync()
         {
             // Command line arg -ignoretiers to not reduce tier jumps
             bool ignoreTiers = Environment.GetCommandLineArgs().Any(x => x.Equals("-ignoretiers", StringComparison.InvariantCultureIgnoreCase));
 
-            var folderDlg = new FolderDialog { Title = "Select output folder for the new material maps (*_mat.png) and oremappings.xml" };
-            if (folderDlg.ShowDialog() != true)
-                return;
-
             // Collect ore info
             var setup = new RedistributionSetup();
             setup.ViewModel.Water = Water;
-            //var existingOreDefs = SelectedPlanetDefinition.OreMappings.Select(o => o.Type).Distinct().ToList();
+            setup.ViewModel.PlanetName = SelectedPlanetDefinition?.Name;
             foreach (var oredef in OreTypes)
             {
                 var info = new RedistributionSetupViewModel.OreInfo { Name = oredef.OreType, SpawnWeight = (int)(oredef.Percentage + .5) };
@@ -1034,7 +1102,6 @@ namespace SpaceEngineersOreRedistribution
 
             // Update ore mapping values
             var nextOreValue = setup.ViewModel.FinalizeList();
-
             if (nextOreValue >= 256)
             {
                 MessageBox.Show("Too many ore definitions in oremappings.xml. This will not work!",
@@ -1042,54 +1109,36 @@ namespace SpaceEngineersOreRedistribution
                 return;
             }
 
+            // Output folder: asked now (after the setup), starts where the last run went
+            var folderDlg = new FolderDialog
+            {
+                Title = "Select output folder for the new material maps (*_mat.png) and oremappings.xml",
+                InitialDirectory = AppSettings.LastOutputFolder,
+            };
+            if (folderDlg.ShowDialog() != true)
+                return;
             var directory = folderDlg.SelectedPath;
+            AppSettings.LastOutputFolder = directory;
 
             Dictionary<string, List<OreMapping>> mappingsDictionary = new();
-
-            // Save ore mappings as XML
-            var xmlFileName = Path.Combine(directory, "oremappings.xml");
-            if (File.Exists(xmlFileName))
+            foreach (var info in setup.ViewModel.OreInfos)
             {
-                if (MessageBox.Show("File \r\n'" + xmlFileName + "'\r\n already exists. " +
-                        "Override?\r\nProcess will abort if 'No' is selected.", "File found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
-                    return;
+                var list = new List<OreMapping>();
+                list.AddRange(info.OreMappings);
+                mappingsDictionary[info.Name] = list;
+                foreach (var mapping in list)
+                    if (mapping.Value > 0) mapping.Type = info.Name;
             }
-            try
-            {
-                var node = new XElement("OreMappings");
-                foreach (var info in setup.ViewModel.OreInfos)
-                {
-                    var list = new List<OreMapping>();
-                    list.AddRange(info.OreMappings);
-                    mappingsDictionary[info.Name] = list;
-
-                    foreach (var mapping in list)
-                    {
-                        if (mapping.Value > 0)
-                        {
-                            mapping.Type = info.Name;
-                            node.Add(mapping.ToXElement());
-                        }
-                    }
-                }
-                var doc = new XDocument(node);
-                doc.Save(xmlFileName);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
 
             // Fixed face order: the faces load in parallel and the dictionary order depends on who finished first,
             // which changed the random number stream and made the same seed give different maps.
-            var keys = Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>().Where(f => _images.ContainsKey(f)).ToList();
+            var keys = Enum.GetValues(typeof(CubeMapFace)).Cast<CubeMapFace>().Where(f => _images.ContainsKey(f) && _images[f] != null).ToList();
+            var sources = keys.ToDictionary(k => k, k => _images[k]);
 
             // Water Mod rules
             var water = Water;
             bool useWater = water != null && water.Enabled;
-            if (useWater && (!water.HasUsableHills || !_images.Values.All(i => i != null && i.HasHeightMap)))
+            if (useWater && (!water.HasUsableHills || !sources.Values.All(i => i.HasHeightMap)))
             {
                 MessageBox.Show("The water rules are switched on, but they cannot be used:\r\n" +
                                 (water.HasUsableHills ? "a height map is missing for this planet." : "the hill range (HillParams Min/Max) is empty.") +
@@ -1099,14 +1148,15 @@ namespace SpaceEngineersOreRedistribution
             var report = new Dictionary<string, OreReportRow>();
             foreach (var oi in setup.ViewModel.OreInfos)
                 report[oi.Name] = new OreReportRow { Name = oi.Name, Mode = useWater ? oi.WaterMode : OreWaterMode.Anywhere };
-            keys = keys.Where(k => _images[k] != null).ToList();
 
             // Existing files: ask once, before anything is generated
-            var existing = keys.Select(k => Path.Combine(directory, k.ToString().ToLower() + "_mat.png")).FirstOrDefault(File.Exists);
-            if (existing != null)
+            var xmlFileName = Path.Combine(directory, "oremappings.xml");
+            var existing = new[] { xmlFileName }.Concat(keys.Select(k => Path.Combine(directory, k.ToString().ToLower() + "_mat.png")))
+                .Where(File.Exists).Select(Path.GetFileName).ToList();
+            if (existing.Count > 0)
             {
-                if (MessageBox.Show("File \r\n'" + existing + "'\r\n already exists. " +
-                    "Override this and any other PNG files?\r\nProcess will abort if 'No' is selected.", "File found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                if (MessageBox.Show("These files already exist in\r\n" + directory + "\r\n\r\n" + string.Join("\r\n", existing) +
+                        "\r\n\r\nOverwrite them?\r\nNothing is changed if you choose No.", "Files found", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                     return;
             }
 
@@ -1115,56 +1165,160 @@ namespace SpaceEngineersOreRedistribution
                 Setup = setup.ViewModel, Mappings = mappingsDictionary, TileWidth = TileWidth,
                 IgnoreTiers = ignoreTiers, Water = water, UseWater = useWater,
             };
-            int seed = setup.ViewModel.Seed; // Seed 0 is better for debugging.
-            bool waterRules = useWater && setup.ViewModel.OreInfos.Any(i => i.WaterMode != OreWaterMode.Anywhere);
+
+            // The heavy part runs in the background with a progress window; files are written at the very end,
+            // so cancelling leaves the output folder untouched.
+            var progress = new ProgressWindow();
+            var cts = new System.Threading.CancellationTokenSource();
+            progress.CancelRequested += () => cts.Cancel();
+            var owner = UiBlocking.MainWindow;
+            System.Threading.Tasks.Task modal = owner != null && owner.IsVisible ? progress.ShowDialog(owner) : ShowAndWait(progress);
+
+            long lastPost = 0;
+            void Post(double fraction, string status, bool force = false)
+            {
+                long now = Environment.TickCount64;
+                if (!force && now - lastPost < 80) return; // do not flood the UI thread
+                lastPost = now;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => progress.Report(fraction, status));
+            }
+
+            RunResult result = null;
+            bool cancelled = false;
+            try
+            {
+                result = await System.Threading.Tasks.Task.Run(() =>
+                    Redistribute(ctx, sources, report, directory, xmlFileName, setup.ViewModel.Seed, keys, Post,
+                        () => Avalonia.Threading.Dispatcher.UIThread.Post(() => progress.DisableCancel("Writing the files...")), cts.Token));
+            }
+            catch (OperationCanceledException) { cancelled = true; }
+            finally
+            {
+                progress.Finish();
+                try { await modal; } catch { }
+            }
+            if (cancelled)
+            {
+                MessageBox.Show("Cancelled. No files were changed.", "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string failed = result.Failed.Count > 0 ? "\r\n\r\nThese files could not be written:\r\n" + string.Join("\r\n", result.Failed) : "";
+            MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section." + result.Message + failed,
+                "Ore Redistribution", MessageBoxButton.OK, result.Failed.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            if (AppSettings.OpenFolderWhenFinished) PathHelper.RevealInFileManager(xmlFileName);
+        }
+
+        static System.Threading.Tasks.Task ShowAndWait(Avalonia.Controls.Window w)
+        {
+            var tcs = new System.Threading.Tasks.TaskCompletionSource();
+            w.Closed += (_, _) => tcs.TrySetResult();
+            w.Show();
+            return tcs.Task;
+        }
+
+        /// <summary>
+        /// The actual work, on a background thread: optional reference run, the real run, top-up, then writes
+        /// oremappings.xml, the six maps and the report. Throws OperationCanceledException if cancelled before the writing starts.
+        /// </summary>
+        RunResult Redistribute(PlacementContext ctx, Dictionary<CubeMapFace, ImageData> sources, Dictionary<string, OreReportRow> report,
+            string directory, string xmlFileName, int seed, List<CubeMapFace> keys,
+            Action<double, string, bool> post, Action beforeWriting, System.Threading.CancellationToken token)
+        {
+            var setupVm = ctx.Setup;
+            var water = ctx.Water;
+            bool useWater = ctx.UseWater;
+            bool waterRules = useWater && setupVm.OreInfos.Any(i => i.WaterMode != OreWaterMode.Anywhere);
+            bool useReference = waterRules && water.KeepRatios;
+            int n = keys.Count;
+
+            // progress units: reference faces + real faces + top-up (2) + writing (n * 0.5)
+            double total = (useReference ? n : 0) + n + (useReference ? 2 : 0) + n * 0.5;
+            double done = 0;
+            void Rep(string status, double fraction, bool force = false) => post((done + fraction) / total, status, force);
 
             // Reference: what the tool places without water rules. Gives the target per ore and layer
             // and the normal ore density (the land density limit is a multiple of it).
             Dictionary<CubeMapFace, long[]> reference = null;
             double normalDensity = 0;
-            if (waterRules && water.KeepRatios)
+            if (useReference)
             {
-                var dummyReport = setup.ViewModel.OreInfos.ToDictionary(oi => oi.Name, oi => new OreReportRow { Name = oi.Name });
-                var refPlacer = new OrePlacer(ctx, seed, false, dummyReport);
+                var dummyReport = setupVm.OreInfos.ToDictionary(oi => oi.Name, oi => new OreReportRow { Name = oi.Name });
+                var refPlacer = new OrePlacer(ctx, seed, false, dummyReport) { Token = token };
                 reference = new();
                 long orePixels = 0, allPixels = 0;
+                int i = 0;
                 foreach (var key in keys)
                 {
-                    var refImage = refPlacer.GenerateFace(_images[key], key);
+                    int face = ++i;
+                    refPlacer.Progress = f => Rep($"Reference run without water rules: face {face} of {n}", f);
+                    var refImage = refPlacer.GenerateFace(sources[key], key);
                     var counts = OrePlacer.CountValues(refImage);
                     reference[key] = counts;
                     orePixels += counts.Sum() - counts[255];
-                    allPixels += (long)TileWidth * TileWidth;
+                    allPixels += (long)ctx.TileWidth * ctx.TileWidth;
+                    done += 1;
                 }
                 normalDensity = allPixels > 0 ? (double)orePixels / allPixels : 0;
             }
 
-            var placer = new OrePlacer(ctx, seed, waterRules, report) { ReferenceDensity = normalDensity };
+            var placer = new OrePlacer(ctx, seed, waterRules, report) { ReferenceDensity = normalDensity, Token = token };
             var results = new Dictionary<CubeMapFace, ImageData>();
-            foreach (var key in keys)
-                results[key] = placer.GenerateFace(_images[key], key);
-            if (reference != null) placer.TopUp(results, reference);
+            {
+                int i = 0;
+                foreach (var key in keys)
+                {
+                    int face = ++i;
+                    placer.Progress = f => Rep($"Placing ore: face {face} of {n}", f);
+                    results[key] = placer.GenerateFace(sources[key], key);
+                    done += 1;
+                }
+            }
+            if (reference != null)
+            {
+                placer.Progress = f => Rep("Making up for ore the water rules took away", f);
+                placer.TopUp(results, reference);
+                done += 2;
+            }
+            placer.Progress = null;
             placer.FillLayerStats(results, reference);
             string densityLine = placer.DensityLine(results);
+            token.ThrowIfCancellationRequested();
+
+            // From here on nothing can be cancelled: write everything
+            beforeWriting();
+            var run = new RunResult();
+            try
+            {
+                var node = new XElement("OreMappings");
+                foreach (var info in setupVm.OreInfos)
+                    foreach (var mapping in ctx.Mappings[info.Name])
+                        if (mapping.Value > 0) node.Add(mapping.ToXElement());
+                new XDocument(node).Save(xmlFileName);
+            }
+            catch (Exception ex) { run.Failed.Add("oremappings.xml (" + ex.Message + ")"); }
             foreach (var key in keys)
-                results[key].SaveMaterialMap(Path.Combine(directory, key.ToString().ToLower() + "_mat.png"));
+            {
+                Rep($"Writing {key.ToString().ToLower()}_mat.png", 0, true);
+                if (!results[key].SaveMaterialMap(Path.Combine(directory, key.ToString().ToLower() + "_mat.png")))
+                    run.Failed.Add(key.ToString().ToLower() + "_mat.png");
+                done += 0.5;
+            }
 
             string reportText = WaterPlacement.BuildReport(water, useWater, report.Values, densityLine, reference != null);
             try { File.WriteAllText(Path.Combine(directory, "placement_report.txt"), reportText); } catch { }
-            string extra = "";
             if (useWater)
             {
                 var shortfalls = WaterPlacement.Shortfalls(report.Values, reference != null);
-                extra = "\r\n\r\nWater rules were applied. " + (shortfalls.Count == 0
+                run.Message = "\r\n\r\nWater rules were applied. " + (shortfalls.Count == 0
                     ? "Ore ratios were kept."
                     : "Some ores stay below their target:\r\n" + string.Join("\r\n", shortfalls) +
                       "\r\nLower the water radius, raise the density limit, or set these ores to Land + seabed.") +
                     "\r\nDetails: placement_report.txt in the output folder.";
             }
-            MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section." + extra, "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
-            if (AppSettings.OpenFolderWhenFinished) PathHelper.RevealInFileManager(xmlFileName);
-        },
-        o => SelectedPlanetDefinition != null);
+            Rep("Done", 1, true);
+            return run;
+        }
 
         public ICommand DeselectOreTypeCommand => new RelayCommand(o =>
         {

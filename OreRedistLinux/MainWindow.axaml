@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
         x:Class="SpaceEngineersOreRedistribution.MainWindow"
-        Title="SE Ore Redistribution (Linux)" Height="450" Width="1000">
+        Title="SE Ore Redistribution (Linux)" Height="450" Width="1000" DragDrop.AllowDrop="True">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -10,6 +10,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" MinWidth="202"/>
@@ -18,8 +19,9 @@
         </Grid.ColumnDefinitions>
         <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
             <Menu DockPanel.Dock="Left">
-                <MenuItem Header="_File">
-                    <MenuItem Header="Open Planet Definition" Command="{Binding OpenPlanetDefinitionCommand}" />
+                <MenuItem x:Name="FileMenu" Header="_File">
+                    <MenuItem Header="Open Planet Definition" Command="{Binding OpenPlanetDefinitionCommand}" InputGesture="Ctrl+O" />
+                    <MenuItem x:Name="RecentMenu" Header="Open _Recent" />
                     <MenuItem Header="Open output folder when finished" ToggleType="CheckBox" IsChecked="{Binding OpenFolderWhenFinished, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Map">
@@ -27,6 +29,9 @@
                     <MenuItem Header="Show Gradients" ToggleType="CheckBox" IsChecked="{Binding ShowGradients, Mode=TwoWay}" />
                     <MenuItem Header="Show Lakes (Complex Materials)" ToggleType="CheckBox" IsChecked="{Binding ShowLakes, Mode=TwoWay}" />
                     <MenuItem Header="Show Biomes" ToggleType="CheckBox" IsChecked="{Binding ShowBiomes, Mode=TwoWay}" />
+                    <MenuItem Header="Fit to window" Click="Fit_Click" InputGesture="Ctrl+0" />
+                    <MenuItem Header="Zoom 100%" Click="Actual_Click" InputGesture="Ctrl+1" />
+                    <Separator/>
                     <MenuItem Header="Show Water (tint underwater terrain)" ToggleType="CheckBox" IsChecked="{Binding ShowWater, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Water" Command="{Binding OpenWaterSettingsCommand}" ToolTip.Tip="Water Mod settings: keep ore out of the water" />
@@ -46,6 +51,8 @@
                 <TextBlock Text="{Binding OreInspectorSize}" VerticalAlignment="Center" IsHitTestVisible="False"/>
                 <Button Content="-" Command="{Binding MinusCommand}" MinWidth="28" HorizontalContentAlignment="Center"/>
                 <Button Content="+" Command="{Binding PlusCommand}" MinWidth="28" HorizontalContentAlignment="Center"/>
+                <Button Content="Fit" Click="Fit_Click" MinWidth="40" HorizontalContentAlignment="Center" ToolTip.Tip="Show the whole map (Ctrl+0)"/>
+                <Button Content="100%" Click="Actual_Click" MinWidth="48" HorizontalContentAlignment="Center" ToolTip.Tip="Zoom to full size (Ctrl+1)"/>
                 <TextBlock Text="Tile Width:" VerticalAlignment="Center" IsHitTestVisible="False"/>
                 <ComboBox x:Name="TileWidthCb" Width="90" ItemsSource="{Binding TileWidths}" SelectedItem="{Binding TileWidth}"/>
                 <Button x:Name="LinkButton" Content="github.com/michi84o/SpaceEngineersTools" Background="Transparent"
@@ -260,5 +267,8 @@
                 </Canvas>
             </Border>
         </local:GroupBox>
+        <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" BorderBrush="#40808080" BorderThickness="0,1,0,0" Padding="8,3">
+            <TextBlock x:Name="StatusText" FontSize="12" TextTrimming="CharacterEllipsis"/>
+        </Border>
     </Grid>
 </local:DialogWindow>

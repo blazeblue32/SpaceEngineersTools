@@ -145,6 +145,19 @@ namespace SpaceEngineersOreRedistribution
         public string Filter { get; set; }
         public string FileName { get; set; }
         public string Title { get; set; }
+        /// <summary>Folder the picker starts in (ignored if it does not exist).</summary>
+        public string InitialDirectory { get; set; }
+
+        protected async System.Threading.Tasks.Task<IStorageFolder> StartFolderAsync(IStorageProvider provider)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(InitialDirectory) && Directory.Exists(InitialDirectory))
+                    return await provider.TryGetFolderFromPathAsync(InitialDirectory);
+            }
+            catch { }
+            return null;
+        }
 
         protected IReadOnlyList<FilePickerFileType> ParseFilter()
         {
@@ -179,6 +192,7 @@ namespace SpaceEngineersOreRedistribution
                 AllowMultiple = false,
                 FileTypeFilter = ParseFilter(),
                 SuggestedFileName = FileName,
+                SuggestedStartLocation = await StartFolderAsync(owner.StorageProvider),
             });
             var path = files.Count > 0 ? LocalPath(files[0]) : null;
             if (path == null) return false;
@@ -201,6 +215,7 @@ namespace SpaceEngineersOreRedistribution
                 FileTypeChoices = ParseFilter(),
                 SuggestedFileName = FileName,
                 ShowOverwritePrompt = false, // the callers ask on their own
+                SuggestedStartLocation = await StartFolderAsync(owner.StorageProvider),
             });
             var path = LocalPath(file);
             if (path == null) return false;
@@ -213,11 +228,24 @@ namespace SpaceEngineersOreRedistribution
     {
         public string Title { get; set; }
         public string SelectedPath { get; set; }
+        /// <summary>Folder the picker starts in (ignored if it does not exist).</summary>
+        public string InitialDirectory { get; set; }
 
         /// <summary>For automated UI tests only: skips the native picker.</summary>
         internal static Func<string> TestPathOverride;
 
         public bool? ShowDialog() => UiBlocking.Run(ShowAsync);
+
+        async Task<IStorageFolder> TryStartFolderAsync(IStorageProvider provider)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(InitialDirectory) && Directory.Exists(InitialDirectory))
+                    return await provider.TryGetFolderFromPathAsync(InitialDirectory);
+            }
+            catch { }
+            return null;
+        }
 
         async Task<bool?> ShowAsync()
         {
@@ -232,6 +260,7 @@ namespace SpaceEngineersOreRedistribution
             {
                 Title = Title ?? "Select folder",
                 AllowMultiple = false,
+                SuggestedStartLocation = await TryStartFolderAsync(owner.StorageProvider),
             });
             var path = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
             if (path == null) return false;

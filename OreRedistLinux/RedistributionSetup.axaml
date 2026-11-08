@@ -3,28 +3,38 @@
         xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
         x:Class="SpaceEngineersOreRedistribution.RedistributionSetup"
         Title="Redistribution Setup"
-        x:Name="SetupRoot" MaxHeight="900" Height="800" Width="1250" CanResize="True">
-    <Grid RowDefinitions="*,Auto,Auto" Margin="4">
+        x:Name="SetupRoot" MaxHeight="950" Height="880" Width="960" CanResize="True">
+    <Grid RowDefinitions="*,Auto,Auto,Auto" Margin="4">
         <local:GroupBox Grid.Row="0" Header="Ores" MinWidth="320" MinHeight="240" >
-            <Grid RowDefinitions="*,Auto,Auto,*,Auto,Auto,Auto,Auto">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="110"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <Grid Grid.Row="0" RowDefinitions="Auto,*" Margin="3" MinHeight="50">
-                    <Grid ColumnDefinitions="100,105,105,110,115,115,115,105,60,170,75" HorizontalAlignment="Left" Margin="4,0,0,0">
-                        <TextBlock Grid.Column="0" Text="Name" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="1" Text="Spawn Weight" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="2" Text="Typical Size" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="3" Text="Expected Ratio" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="4" Text="Typ. Depth Min" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="5" Text="Typ. Depth Max" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="6" Text="Preferred Depth" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="7" Text="Very Deep Ore" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="8" Text="Layers" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="9" Text="Water" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="10" Text="Land %" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Land + seabed ores: share of this ore's veins that start on land. Empty = baseline of the Water window, 0 = seabed only, 100 = land only, in between = preference."/>
+                    <Grid ColumnDefinitions="100,70,60,70,75,75,80,55,55,150,65" HorizontalAlignment="Left" Margin="4,0,0,0">
+                        <TextBlock Grid.Column="0" Text="Name" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="1" Text="Weight" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Spawn weight: relative probability of this ore"/><TextBlock Grid.Column="2" Text="Size" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Typical size: ore patches per vein (0 = random 5-30)"/><TextBlock Grid.Column="3" Text="Ratio" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Expected ratio of all ore"/><TextBlock Grid.Column="4" Text="Depth min" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Typical depth min: shallowest layer this ore may use (-1 = no limit)"/><TextBlock Grid.Column="5" Text="Depth max" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Typical depth max: deepest layer this ore may use (-1 = no limit)"/><TextBlock Grid.Column="6" Text="Pref. depth" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Preferred depth: layer the veins cluster around (-1 = random)"/><TextBlock Grid.Column="7" Text="Deep" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Very deep ore: allow layer 9 (370 m and deeper)"/><TextBlock Grid.Column="8" Text="Layers" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="9" Text="Water" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="10" Text="Land %" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Land + seabed ores: share of this ore's veins that start on land. Empty = baseline of the Water window, 0 = seabed only, 100 = land only, in between = preference."/>
                     </Grid>
                     <ListBox Grid.Row="1" ItemsSource="{Binding OreInfos}" SelectedItem="{Binding SelectedInfo}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="100,105,105,110,115,115,115,105,60,170,75">
-                                    <TextBox Grid.Column="0" Margin="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="1" Margin="1" Text="{Binding SpawnWeight, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="2" Margin="1" Text="{Binding TypicalSize, UpdateSourceTrigger=PropertyChanged}" />
+                                <Grid ColumnDefinitions="100,70,60,70,75,75,80,55,55,150,65">
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="0" Margin="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="1" Margin="1" Text="{Binding SpawnWeight, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="2" Margin="1" Text="{Binding TypicalSize, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBlock Grid.Column="3" Margin="4,0" VerticalAlignment="Center" Text="{Binding ExpectedRatio, StringFormat={}{0:P1}}" />
-                                    <TextBox Grid.Column="4" Margin="1" Text="{Binding TypicalDepthMin, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="5" Margin="1" Text="{Binding TypicalDepthMax, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="6" Margin="1" Text="{Binding PreferredDepth, UpdateSourceTrigger=PropertyChanged}" />
-                                    <CheckBox Grid.Column="7" HorizontalAlignment="Center" IsChecked="{Binding VeryDeepOre}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="4" Margin="1" Text="{Binding TypicalDepthMin, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="5" Margin="1" Text="{Binding TypicalDepthMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="6" Margin="1" Text="{Binding PreferredDepth, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox Grid.Column="7" MinHeight="0" Height="24" HorizontalAlignment="Center" IsChecked="{Binding VeryDeepOre}" />
                                     <TextBlock Grid.Column="8" Margin="4,0" VerticalAlignment="Center" Text="{Binding Layers}" ToolTip.Tip="Layers of this ore that get a number (switch layers off in the list below)."/>
-                                    <ComboBox Grid.Column="9" Margin="1" HorizontalAlignment="Stretch" MinHeight="22" Padding="6,1"
+                                    <ComboBox Grid.Column="9" Margin="1" HorizontalAlignment="Stretch" MinHeight="0" Height="26" Padding="6,1"
                                               SelectedIndex="{Binding WaterModeIndex, Mode=TwoWay}"
                                               IsEnabled="{Binding DataContext.WaterEnabled, ElementName=SetupRoot}"
                                               ToolTip.Tip="Land only: the whole ore layer stays above the water (layers get shallower where needed).&#x0a;Land + seabed: that rule on land, anything under standing water.&#x0a;Seabed only: sea floor and lake beds.&#x0a;Anywhere: ignore the water.">
@@ -33,7 +43,7 @@
                                         <ComboBoxItem Content="Seabed only"/>
                                         <ComboBoxItem Content="Anywhere (ignore water)"/>
                                     </ComboBox>
-                                    <TextBox Grid.Column="10" Margin="1" Watermark="base" Text="{Binding LandShare, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="10" Margin="1" Watermark="base" Text="{Binding LandShare, UpdateSourceTrigger=PropertyChanged}"
                                              IsEnabled="{Binding LandShareEnabled}"
                                              ToolTip.Tip="Land + seabed ores: percent of this ore's veins that start on land. Empty = baseline of the Water window. 0 = seabed only, 100 = land only, in between = preference. A layer can override it again."/>
                                 </Grid>
@@ -46,6 +56,8 @@
                     <Button Content="Remove" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding RemoveOreCommand}"/>
                     <Button Content="Import" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding ImportCommand}"/>
                     <Button Content="Export" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding ExportCommand}"/>
+                    <Button x:Name="LoadButton" Content="Load saved ▾" Margin="3" Width="110" HorizontalContentAlignment="Center" Click="LoadButton_Click"
+                            ToolTip.Tip="Load the setup of the last run or one of the autosaves (every 5 minutes, newest 5 kept). Nothing is loaded automatically."/>
                     <Button Content="Update Ore Mapping Diagram" Margin="3" Click="UpdateDiagramClick"/>
                     <Button Content="Ore Overview" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding ShowOverviewCommand}"/>
                     <Button Content="Sort" Margin="3" Width="80" HorizontalContentAlignment="Center" Command="{Binding SortCommand}"/>
@@ -61,8 +73,8 @@
                     </StackPanel>
                 </WrapPanel>
                 <TextBlock Grid.Row="2" Text="Ore Mapping for selected Ore: Depths 0-9 refer to these 10 mappings. Left gray bar in diagram is spawn probability." />
-                <Grid Grid.Row="3" RowDefinitions="*,Auto" ColumnDefinitions="*,*">
-                    <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,*" Margin="3" MinHeight="50">
+                <Grid Grid.Row="3" RowDefinitions="*,Auto" ColumnDefinitions="*,*" Height="370">
+                    <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,*" Margin="3">
                         <Grid ColumnDefinitions="40,64,60,90,90,80" HorizontalAlignment="Left" Margin="4,0,0,0">
                             <TextBlock Grid.Column="0" Text="On" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Switch a layer off: it gets no number and is not used."/><TextBlock Grid.Column="1" Text="Number" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="2" Text="Tier" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="3" Text="Start" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="4" Text="Depth" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="5" Text="Land %" FontWeight="SemiBold" Margin="4,0" ToolTip.Tip="Land + seabed ores: overrides the ore's Land % for this layer. Empty = inherit, 0 = seabed only, 100 = land only. Example: layers 0-2 at 0 and layers 6-9 at 100 = shallow ore under the sea, deep ore under the land."/>
                         </Grid>
@@ -70,13 +82,13 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid ColumnDefinitions="40,64,60,90,90,80">
-                                    <CheckBox Grid.Column="0" Margin="4,0,0,0" MinWidth="0" VerticalAlignment="Center" IsChecked="{Binding LayerEnabled}"/>
+                                    <CheckBox Grid.Column="0" Margin="4,0,0,0" MinWidth="0" MinHeight="0" Height="24" VerticalAlignment="Center" IsChecked="{Binding LayerEnabled}"/>
                                     <TextBlock Grid.Column="1" Margin="4,0" VerticalAlignment="Center" Text="{Binding ValueText}"
                                                ToolTip.Tip="Number in oremappings.xml. off = switched off here, cut = removed by Very Deep Ore or Typ. Depth Min/Max."/>
                                     <TextBlock Grid.Column="2" Margin="4,0" VerticalAlignment="Center" Text="{Binding Tier}" />
-                                    <TextBox Grid.Column="3" Margin="1" Text="{Binding Start, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="4" Margin="1" Text="{Binding Depth, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="5" Margin="1" Watermark="ore" Text="{Binding LandShare, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="3" Margin="1" Text="{Binding Start, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="4" Margin="1" Text="{Binding Depth, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Grid.Column="5" Margin="1" Watermark="ore" Text="{Binding LandShare, UpdateSourceTrigger=PropertyChanged}"
                                              IsEnabled="{Binding DataContext.SelectedInfo.LandShareEnabled, ElementName=SetupRoot}"/>
                                     </Grid>
                                 </DataTemplate>
@@ -106,7 +118,9 @@
                         <Button Content="Save current values as Preset" Margin="3"  Command="{Binding SavePresetCommand}" />
                     </StackPanel>
                 </Grid>
-                <TextBlock Grid.Row="4" TextWrapping="Wrap" Text="Multiple definition of same ore allowed. Vanilla ore detectors have a maximum range of 150m.&#x0d;&#x0a;First start value of tier 3 (depth 6) should be within range. If ore spawns deeper it will dive from there to target depth. &#x0d;&#x0a;Weight: Spawn probability relative to other ore. Weights will be summed up to use relative %.&#x0d;&#x0a;Size: 1-500 ore patches per vein, 0 for random (5-30), default: 15&#x0d;&#x0a;Depth: 0-9 (9 only if deep ore enabled!), -1 for random (0-9), default: -1, set preferred depth to Gauss distribute around that value (std dev 4).&#x0d;&#x0a;Size will still be randomized using a Gauss distribution."/>
+                <Expander Grid.Row="4" Header="Help: how these settings work" Margin="0,4,0,0" IsExpanded="False">
+                    <TextBlock TextWrapping="Wrap" Margin="12,4,0,4" Text="Multiple definition of same ore allowed. Vanilla ore detectors have a maximum range of 150m.&#x0d;&#x0a;First start value of tier 3 (depth 6) should be within range. If ore spawns deeper it will dive from there to target depth. &#x0d;&#x0a;Weight: Spawn probability relative to other ore. Weights will be summed up to use relative %.&#x0d;&#x0a;Size: 1-500 ore patches per vein, 0 for random (5-30), default: 15&#x0d;&#x0a;Depth: 0-9 (9 only if deep ore enabled!), -1 for random (0-9), default: -1, set preferred depth to Gauss distribute around that value (std dev 4).&#x0d;&#x0a;Size will still be randomized using a Gauss distribution."/>
+                </Expander>
                 <WrapPanel Orientation="Horizontal" Grid.Row="5">
                     <TextBlock Text="Standard Deviation for patch size (0-50% rel. to max, default: 10%, 0=fixed): " VerticalAlignment="Center"/>
                     <TextBox Width="60" Text="{Binding StdDev, UpdateSourceTrigger=PropertyChanged}"/>
@@ -127,11 +141,13 @@
         </local:GroupBox>
         <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Content="Abort" Width="150" Height="32" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Click="ButtonAbort_Click" />
-            <Button Content="Confirm" Width="150" Height="32" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Command="{Binding ConfirmCommand}" />
+            <Button Content="Confirm" Width="150" Height="32" Margin="5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Command="{Binding ConfirmCommand}"
+                    ToolTip.Tip="{Binding ConfirmProblem}" />
             <TextBlock Text="Values Count (max: 254):" VerticalAlignment="Center" Margin="5,3,3,3"/>
-            <TextBlock Text="{Binding ValuesCount}" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding ValuesCount}" Foreground="{Binding ValuesCountBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
             <TextBlock Text="{Binding OreInfos.Count, StringFormat='   Ores: {0}'}" VerticalAlignment="Center"/>
         </StackPanel>
-        <TextBlock Grid.Row="2" Text="{Binding WaterInfo}" TextWrapping="Wrap" FontSize="12" Foreground="Gray" Margin="6,0,6,4"/>
+        <TextBlock Grid.Row="2" Text="{Binding ConfirmProblem}" Foreground="Red" FontWeight="SemiBold" TextWrapping="Wrap" Margin="8,0,6,2"/>
+        <TextBlock Grid.Row="3" Text="{Binding WaterInfo}" TextWrapping="Wrap" FontSize="12" Foreground="Gray" Margin="6,0,6,4"/>
     </Grid>
 </local:DialogWindow>

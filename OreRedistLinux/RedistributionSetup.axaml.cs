@@ -3,14 +3,22 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Threading;
 using System;
 using System.Collections.Generic;
+using System.Xml.Linq;
 
 namespace SpaceEngineersOreRedistribution
 {
     public partial class RedistributionSetup : DialogWindow
     {
         internal RedistributionSetupViewModel ViewModel { get; } = new RedistributionSetupViewModel();
+
+        /// <summary>How often the setup is autosaved while this window is open (static so tests can shorten it).</summary>
+        public static TimeSpan AutosaveInterval = TimeSpan.FromMinutes(5);
+
+        DispatcherTimer _autosaveTimer;
+        string _lastSavedKey;
 
         public RedistributionSetup()
         {
@@ -19,6 +27,67 @@ namespace SpaceEngineersOreRedistribution
             ViewModel.ConfirmAction = ConfirmAction;
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             ViewModel.Parent = this;
+            Opened += (_, _) => StartAutosave();
+            Closed += (_, _) =>
+            {
+                _autosaveTimer?.Stop();
+                if (DialogResult != true) Autosave(); // closed without confirming: keep what was typed
+            };
+        }
+
+        string SetupKey() => ViewModel.BuildDocument(false).ToString(SaveOptions.DisableFormatting);
+
+        void StartAutosave()
+        {
+            _lastSavedKey = SetupKey(); // what is on screen now is not worth saving until something changes
+            _autosaveTimer = new DispatcherTimer { Interval = AutosaveInterval };
+            _autosaveTimer.Tick += (_, _) => Autosave();
+            _autosaveTimer.Start();
+        }
+
+        /// <summary>Saves the setup as new autosave if it changed since the last save.</summary>
+        void Autosave()
+        {
+            if (ViewModel.OreInfos.Count == 0) return;
+            var key = SetupKey();
+            if (key == _lastSavedKey) return;
+            SetupStore.SaveAutosave(ViewModel.PlanetName, ViewModel.BuildDocument());
+            _lastSavedKey = key;
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            var items = new List<Control>();
+            var saved = SetupStore.List(ViewModel.PlanetName);
+            foreach (var sv in saved)
+            {
+                var path = sv.Path;
+                var mi = new MenuItem { Header = sv.Title };
+                mi.Click += (_, _) => LoadSaved(path);
+                items.Add(mi);
+            }
+            if (saved.Count == 0) items.Add(new MenuItem { Header = "Nothing saved yet for this planet", IsEnabled = false });
+            items.Add(new Separator());
+            var fromFile = new MenuItem { Header = "From a file..." };
+            fromFile.Click += (_, _) => ViewModel.ImportCommand.Execute(null);
+            items.Add(fromFile);
+            var cm = new ContextMenu { ItemsSource = items };
+            LoadButton.ContextMenu = cm;
+            cm.Open(LoadButton);
+        }
+
+        internal void LoadSaved(string path)
+        {
+            try
+            {
+                Autosave(); // the current setup is replaced, do not lose it
+                ViewModel.LoadDocument(XDocument.Load(path));
+                _lastSavedKey = SetupKey();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Could not load the saved setup", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -31,7 +100,11 @@ namespace SpaceEngineersOreRedistribution
 
         private void ButtonAbort_Click(object sender, RoutedEventArgs e) => CloseWithResult(false);
 
-        private void ConfirmAction() => CloseWithResult(true);
+        private void ConfirmAction()
+        {
+            SetupStore.SaveLastRun(ViewModel.PlanetName, ViewModel.BuildDocument()); // the "last run"
+            CloseWithResult(true);
+        }
 
         private void UpdateDiagramClick(object sender, RoutedEventArgs e)
         {

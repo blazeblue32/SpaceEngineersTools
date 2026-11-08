@@ -109,6 +109,20 @@ Very Deep Ore or Typ. Depth Min/Max shows `cut`. The *Layers* column shows how m
 picks only use layers that are on, and a vein that wanders onto a switched-off layer uses the nearest one that is on. With nothing switched
 off the maps are identical to before. The switches are saved with *Export* / loaded with *Import*.
 
+## Convenience
+- **Autosave** (`~/.config/OreRedistLinux/Setups/<planet>/`): while the redistribution window is open the setup is autosaved every 5 minutes (only when
+  something changed), when the window is closed without confirming, and before a saved setup replaces it. Confirming saves the **last run**.
+  The last run and the newest 5 autosaves are kept per planet. Nothing is ever loaded by itself: *Load saved* in the setup window lists them
+  (and *From a file...*); Export / Import use the same format.
+- **Open Recent** in the File menu (last 10 planet definitions), **drag and drop** a `.sbc` onto the window, **Ctrl+O**. File pickers start in the
+  last used folder, the output folder picker in the last output folder.
+- **Redistribute Ore** asks for the output folder after you confirm the setup, runs in the background with a progress bar and a Cancel button, and
+  writes all files only at the end (cancelling leaves the folder untouched). The window stays usable-looking and never "freezes".
+- **Map**: the whole map is fitted when a planet's maps load (**Fit** / **100%** buttons, Ctrl+0 / Ctrl+1), and the status bar shows what is under the
+  mouse: face and pixel, height (and in meters / above or under water when the hill range is known), ore and layer, biome and material.
+- **Setup window**: compact columns (long names as tooltips), all ten layers visible, the help text in a collapsible *Help*, and the reason why Confirm is
+  not possible (too many values, no ore) in red under the buttons.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

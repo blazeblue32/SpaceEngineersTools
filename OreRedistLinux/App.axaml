@@ -21,6 +21,9 @@
         </Style>
     </Application.Styles>
     <Application.Resources>
+        <!-- compact text boxes (Fluent default is 32 px) -->
+        <x:Double x:Key="TextControlThemeMinHeight">24</x:Double>
+        <Thickness x:Key="ListBoxItemPadding">4,2,4,2</Thickness>
         <ControlTheme x:Key="{x:Type local:GroupBox}" TargetType="local:GroupBox">
             <Setter Property="Template">
                 <ControlTemplate>

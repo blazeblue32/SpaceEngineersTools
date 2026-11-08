@@ -4,8 +4,11 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using SpaceEngineersToolsShared;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
@@ -27,7 +30,7 @@ namespace SpaceEngineersOreRedistribution
             BorderView.PointerPressed += ImageView_MouseLeftButtonDown;
             BorderView.PointerReleased += ImageView_PointerReleased;
             BorderView.PointerMoved += ImageView_MouseMove;
-            BorderView.PointerExited += (_, _) => UpdateOreInspectRect(new Point(-1, -1));
+            BorderView.PointerExited += (_, _) => { UpdateOreInspectRect(new Point(-1, -1)); StatusText.Text = StatusHint; };
             OreInspectorCb.IsCheckedChanged += OreInspectorCb_Checked;
             // Overlay pixels are changed in place; Avalonia does not notice, so repaint the images
             ViewModel.OverlaysChanged += () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -35,6 +38,131 @@ namespace SpaceEngineersOreRedistribution
                 foreach (var img in ImageView.Children.OfType<Image>()) img.InvalidateVisual();
             });
             LinkButton.Click += Hyperlink_Click;
+
+            // Fit the map once when the maps of a planet show up; status bar hint
+            StatusText.Text = StatusHint;
+            ViewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainWindowViewModel.SelectedPlanetDefinition)) _fitPending = true;
+                else if (e.PropertyName == nameof(MainWindowViewModel.TileUp) && _fitPending && ViewModel.TileUp != null)
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (FitToWindow()) _fitPending = false; });
+            };
+            KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.D0, KeyModifiers.Control), Command = new RelayCommand(_ => FitToWindow()) });
+            KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.D1, KeyModifiers.Control), Command = new RelayCommand(_ => ZoomActual()) });
+
+            // Recent files (rebuilt every time the File menu opens) and drag and drop of .sbc files
+            FileMenu.SubmenuOpened += (_, _) => RebuildRecentMenu();
+            RebuildRecentMenu();
+            AddHandler(DragDrop.DragOverEvent, OnDragOver);
+            AddHandler(DragDrop.DropEvent, OnDrop);
+            // Ctrl+O opens a planet definition
+            KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control), Command = ViewModel.OpenPlanetDefinitionCommand });
+        }
+
+        const string StatusHint = "Left mouse: move the map   Wheel: zoom   Right click: 3D view of the ore at the violet square   Ctrl+0: fit   Ctrl+1: 100%";
+        bool _fitPending;
+
+        /// <summary>Scales and centers the whole map (4 x 3 tiles of 2048) in the view. False if the view has no size yet.</summary>
+        internal bool FitToWindow()
+        {
+            double bw = BorderView.Bounds.Width, bh = BorderView.Bounds.Height;
+            if (bw < 10 || bh < 10) return false;
+            double sc = Math.Min(bw / ImageView.Width, bh / ImageView.Height);
+            ImageView.RenderTransform = new MatrixTransform(new Matrix(sc, 0, 0, sc, (bw - ImageView.Width * sc) / 2, (bh - ImageView.Height * sc) / 2));
+            UpdateOreInspectRect(new Point(-1, -1));
+            return true;
+        }
+
+        void ZoomActual()
+        {
+            ImageView.RenderTransform = new MatrixTransform(Matrix.Identity);
+            UpdateOreInspectRect(new Point(-1, -1));
+        }
+
+        private void Fit_Click(object sender, RoutedEventArgs e) => FitToWindow();
+        private void Actual_Click(object sender, RoutedEventArgs e) => ZoomActual();
+
+        /// <summary>Tile layout of the map: which face is under a canvas point, and the pixel in it (scaled to the tile width).</summary>
+        internal bool TryFace(double cx, double cy, out CubeMapFace face, out int px, out int py)
+        {
+            face = CubeMapFace.Up; px = py = 0;
+            int col = (int)Math.Floor(cx / 2048), row = (int)Math.Floor(cy / 2048);
+            if (cx < 0 || cy < 0) return false;
+            if (row == 0 && col == 0) face = CubeMapFace.Up;
+            else if (row == 1 && col == 0) face = CubeMapFace.Front;
+            else if (row == 1 && col == 1) face = CubeMapFace.Right;
+            else if (row == 1 && col == 2) face = CubeMapFace.Back;
+            else if (row == 1 && col == 3) face = CubeMapFace.Left;
+            else if (row == 2 && col == 2) face = CubeMapFace.Down;
+            else return false;
+            double scale = ViewModel.TileWidth / 2048.0;
+            px = (int)((cx - col * 2048) * scale);
+            py = (int)((cy - row * 2048) * scale);
+            return true;
+        }
+
+        void UpdateStatus(Point canvasPoint)
+        {
+            if (ViewModel.SelectedPlanetDefinition == null || !TryFace(canvasPoint.X, canvasPoint.Y, out var face, out int x, out int y))
+            {
+                StatusText.Text = StatusHint;
+                return;
+            }
+            var text = ViewModel.DescribePixel(face, x, y);
+            StatusText.Text = string.IsNullOrEmpty(text) ? StatusHint : text;
+        }
+
+        void RebuildRecentMenu()
+        {
+            var items = new List<Control>();
+            foreach (var path in AppSettings.RecentFiles.Where(File.Exists))
+            {
+                var dir = Path.GetDirectoryName(path) ?? "";
+                var parts = dir.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+                var where = parts.Length > 0 ? string.Join("/", parts.TakeLast(2)) : dir;
+                var p = path;
+                var mi = new MenuItem { Header = Path.GetFileName(path) + "   (" + where + ")" };
+                mi.Click += (_, _) => ViewModel.OpenPlanetDefinition(p);
+                items.Add(mi);
+            }
+            if (items.Count == 0) items.Add(new MenuItem { Header = "(none yet)", IsEnabled = false });
+            RecentMenu.ItemsSource = items;
+        }
+
+        static IEnumerable<string> DroppedPaths(DragEventArgs e)
+        {
+            try
+            {
+                return e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).Where(p => p != null).ToList() ?? new List<string>();
+            }
+            catch { return new List<string>(); }
+        }
+
+        private void OnDragOver(object sender, DragEventArgs e)
+        {
+            e.DragEffects = DroppedPaths(e).Any(IsPlanetFile) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void OnDrop(object sender, DragEventArgs e)
+        {
+            HandleDroppedFiles(DroppedPaths(e));
+            e.Handled = true;
+        }
+
+        static bool IsPlanetFile(string path) => path.EndsWith(".sbc", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Opens the first dropped .sbc file as planet definition.</summary>
+        internal void HandleDroppedFiles(IEnumerable<string> paths)
+        {
+            var sbc = paths.FirstOrDefault(IsPlanetFile);
+            if (sbc == null)
+            {
+                MessageBox.Show("Drop a planet definition file (.sbc) here, for example PlanetGeneratorDefinitions.sbc.", "Not a planet definition");
+                return;
+            }
+            ViewModel.OpenPlanetDefinition(sbc);
+            RebuildRecentMenu();
         }
 
         Matrix CurrentMatrix => ImageView.RenderTransform?.Value ?? Matrix.Identity;
@@ -145,6 +273,7 @@ namespace SpaceEngineersOreRedistribution
             if (e.Pointer.Captured != BorderView)
             {
                 UpdateOreInspectRect(e.GetPosition(BorderView));
+                UpdateStatus(e.GetPosition(ImageView));
                 return;
             }
             if (!_moved)

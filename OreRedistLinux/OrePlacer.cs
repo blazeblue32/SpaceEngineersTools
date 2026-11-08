@@ -108,6 +108,12 @@ namespace SpaceEngineersOreRedistribution
         /// <summary>Ore pixels per surface pixel without water rules (set before the real pass).</summary>
         public double ReferenceDensity;
 
+        /// <summary>Cancels a long run (checked between columns / veins, never changes the random draws).</summary>
+        public System.Threading.CancellationToken Token;
+
+        /// <summary>Progress of the current step, 0..1.</summary>
+        public Action<double> Progress;
+
         public OrePlacer(PlacementContext ctx, int seed, bool rulesOn, Dictionary<string, OreReportRow> report)
         {
             _c = ctx;
@@ -191,6 +197,11 @@ namespace SpaceEngineersOreRedistribution
             double nBaseMax = nBaseMin + prop;
             for (int x = 0; x < tw; ++x)
             {
+                if ((x & 15) == 0)
+                {
+                    Token.ThrowIfCancellationRequested();
+                    Progress?.Invoke(x / (double)tw);
+                }
                 for (int y = 0; y < tw; ++y)
                 {
                     // Check if ore spawns at this location
@@ -715,8 +726,11 @@ namespace SpaceEngineersOreRedistribution
             var target = new long[256];
             foreach (var f in faces) for (int v = 0; v < 256; ++v) target[v] += reference[f][v];
 
+            int infoIndex = 0, infoCount = Math.Max(1, _c.Setup.OreInfos.Count);
             foreach (var info in _c.Setup.OreInfos)
             {
+                Token.ThrowIfCancellationRequested();
+                Progress?.Invoke(infoIndex++ / (double)infoCount);
                 var mode = ModeOf(info);
                 if (mode == OreWaterMode.Anywhere) continue;
                 var mappings = _c.Mappings[info.Name];
@@ -763,6 +777,7 @@ namespace SpaceEngineersOreRedistribution
             var counts = new long[256];
             for (int e = 0; e < 20000 && placed < wantPixels; ++e)
             {
+                if ((e & 15) == 0) Token.ThrowIfCancellationRequested();
                 int dx = _rnd.Next(tw), dy = _rnd.Next(tw);
                 int size = RollSize(info);
                 if (!FindSite(fw, source, image, mode, mappings, dx, dy, layer, minIdx, size, ShareFor(info, mappings, layer), row, out int sx, out int sy, out int idx, out bool sea))
