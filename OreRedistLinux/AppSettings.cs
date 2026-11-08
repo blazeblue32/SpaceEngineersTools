@@ -20,6 +20,8 @@ namespace SpaceEngineersOreRedistribution
         static bool _openFolderWhenFinished;
         static readonly List<string> _recent = new();
         static string _lastOutputFolder;
+        static List<string> _dataPacks; // file names of the selected data packs (null = never chosen)
+        static bool _packRocks = true, _packRarity = true;
 
         public const int MaxRecent = 10;
 
@@ -34,6 +36,15 @@ namespace SpaceEngineersOreRedistribution
             _recent.Insert(0, file);
             if (_recent.Count > MaxRecent) _recent.RemoveRange(MaxRecent, _recent.Count - MaxRecent);
             Save();
+        }
+
+        /// <summary>Selected data packs (file names). Null until the user chose; the caller then selects vanilla.xml.</summary>
+        public static IReadOnlyList<string> SelectedDataPacks { get { Load(); return _dataPacks?.ToList(); } }
+        public static bool PackRocks { get { Load(); return _packRocks; } }
+        public static bool PackRarity { get { Load(); return _packRarity; } }
+        public static void SetDataPackChoice(IEnumerable<string> files, bool rocks, bool rarity)
+        {
+            Load(); _dataPacks = files.Take(OrePacks.MaxPacks).ToList(); _packRocks = rocks; _packRarity = rarity; Save();
         }
 
         /// <summary>Folder of the last "Redistribute Ore" output, the folder picker starts there.</summary>
@@ -82,6 +93,13 @@ namespace SpaceEngineersOreRedistribution
                 bool.TryParse(root?.Element("LegacyVeryDeepRange")?.Value, out _legacyVeryDeepRange);
                 bool.TryParse(root?.Element("OpenFolderWhenFinished")?.Value, out _openFolderWhenFinished);
                 _lastOutputFolder = root?.Element("LastOutputFolder")?.Value;
+                var packs = root?.Element("DataPacks");
+                if (packs != null)
+                {
+                    _dataPacks = packs.Elements("File").Select(f => f.Value).Where(f => !string.IsNullOrWhiteSpace(f)).Take(OrePacks.MaxPacks).ToList();
+                    if (bool.TryParse(packs.Attribute("Rocks")?.Value, out var pr)) _packRocks = pr;
+                    if (bool.TryParse(packs.Attribute("Rarity")?.Value, out var pw)) _packRarity = pw;
+                }
                 foreach (var f in root?.Element("Recent")?.Elements("File") ?? Enumerable.Empty<XElement>())
                     if (!string.IsNullOrWhiteSpace(f.Value) && _recent.Count < MaxRecent) _recent.Add(f.Value);
             }
@@ -97,7 +115,8 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("LegacyVeryDeepRange", _legacyVeryDeepRange),
                     new XElement("OpenFolderWhenFinished", _openFolderWhenFinished),
                     new XElement("LastOutputFolder", _lastOutputFolder ?? ""),
-                    new XElement("Recent", _recent.Select(f => new XElement("File", f))))).Save(FilePath);
+                    new XElement("Recent", _recent.Select(f => new XElement("File", f))),
+                    _dataPacks == null ? null : new XElement("DataPacks", new XAttribute("Rocks", _packRocks), new XAttribute("Rarity", _packRarity), _dataPacks.Select(f => new XElement("File", f))))).Save(FilePath);
             }
             catch { }
         }

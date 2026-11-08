@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ore data pack for OreRedistLinux. Packs are plain data: nothing in them is ever executed.
+  Only files in this folder whose root element is <OreDataPack Format="1" Tool="OreRedistLinux"> are loaded.
+
+  Ore Name     Ore name as in the planet definition. "Iron" matches Iron_02, Iron_01... ("Iron_02" matches only that one).
+  Abundance    Optional. How common the ore is in the Earth's crust (ppm by mass). Used by "Set weights from rarity".
+  Rocks        Optional. Five numbers 0-1000 separated by ; = suitability for
+               Sedimentary ; Metamorphic low grade ; Metamorphic high grade ; Igneous extrusive ; Igneous intrusive.
+               0 = never forms in this rock, 100 = normal, higher = prefers it. Used by the geology placement mode.
+  Order        Packs are applied in order (lowest first); a later pack overrides an ore of an earlier one.
+-->
+<OreDataPack Format="1" Tool="OreRedistLinux" Name="Vanilla" Author="OreRedistLinux" Order="0"
+             Description="The nine vanilla ores and Ice: abundance in the Earth's crust and the rock types they form in.">
+  <Ore Name="Silicon"   Abundance="282000" Rocks="80;60;50;40;70"  />
+  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40"  />
+  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" />
+  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" />
+  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70"  />
+  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60"  />
+  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60"  />
+  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100"   />
+  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" />
+  <!-- Ice is not a crust ore: no abundance, no rock preference -->
+  <Ore Name="Ice" Rocks="100;100;100;100;100" />
+</OreDataPack>

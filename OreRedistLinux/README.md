@@ -165,12 +165,27 @@ sedimentary, metamorphic (low / high grade), igneous extrusive (volcanic surface
 * Stored per planet in `~/.config/OreRedistLinux/Geology/<planet>/` (`geology.xml`, `paint.png`). The placement report gets a geology section.
 * Water rules, ratios and density limits still apply; veins are counted by the rock layer they start in. Output with Globbing / geology off is unchanged.
 
-## Earth rarity (ore weights from real abundance)
-The **Earth rarity** button in the redistribution window sets the Weight of every ore with a known name (the vanilla ores plus common mod ores like Copper,
-Aluminium, Titanium, Lead, Tin...) from its abundance in the Earth's continental crust, relative to the other ores of the list: weight = (abundance /
-highest abundance) ^ strength. The box next to the button is the strength: 1 = the real ratios (iron is about 14 million times as common as gold), 0 = all
-equal, the default 0.25 compresses the range so rare ores still appear (iron about 67 % of silicon, gold about 1 %). Ores with unknown names are scaled along
-so their share stays the same. Ice is not a crust ore and is not changed.
+## Ore data packs (rock types and rarity per ore)
+The **Data packs...** button in the redistribution window applies ore data from pack files: the rock types an ore forms in (used by the geology mode)
+and / or the Weight of each ore from its abundance in the Earth's crust, relative to the other ores of the list: weight = (abundance / highest abundance)
+^ strength. Strength 1 = the real ratios (iron about 14 million times as common as gold), 0 = all equal, the default 0.25 compresses the range so rare ores
+still appear. Tick the packs to use; where two packs have the same ore, the later one (lower *Order*) wins. Ores that no selected pack knows are left alone
+(their Weight is scaled along so the share stays the same). Your choice is remembered.
+
+Packs are plain XML files in `~/.config/OreRedistLinux/DataPacks/`. The three built-in packs (**Vanilla**, **Better Resources** workshop 2841960221,
+**Better Stone** workshop 406244471) are exported there on first run and again whenever they are missing; an edited pack is never overwritten. To make your
+own, copy one, change its `Name` and the ores, and save it in that folder (*Reload packs* in the window picks it up). Format (`vanilla.xml` explains it too):
+
+```xml
+<OreDataPack Format="1" Tool="OreRedistLinux" Name="My pack" Author="me" Order="30" Description="...">
+  <Ore Name="Iron" Abundance="56300" Rocks="80;60;50;15;40" />   <!-- Sed;MetL;MetH;Extr;Intr, 0-1000 -->
+</OreDataPack>
+```
+`Name` matches the ore name from the planet definition (`Iron` matches `Iron_02`, `Iron_02` only that one); `Abundance` (ppm) and `Rocks` are both optional.
+
+Packs are data only. A file is loaded only if its root element is `OreDataPack` with `Format="1"` and `Tool="OreRedistLinux"`; files with DOCTYPE or
+external entities, over 1 MB, symbolic links and anything malformed are skipped (and listed in the window). Ore names must match a strict pattern, numbers are
+range checked, text is only displayed, and nothing in a pack is ever executed or used as a path.
 
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.

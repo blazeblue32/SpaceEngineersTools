@@ -27,6 +27,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- built-in ore data packs: exported to ~/.config/OreRedistLinux/DataPacks on first run (and again if missing) -->
+    <EmbeddedResource Include="DataPacks\*.xml" LogicalName="DataPacks.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="ingotmap.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

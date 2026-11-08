@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ore data pack for OreRedistLinux. See vanilla.xml for the format. -->
+<OreDataPack Format="1" Tool="OreRedistLinux" Name="Better Resources" Author="OreRedistLinux" Order="10"
+             Description="Ores added by the Better Resources mod (workshop 2841960221). Use together with Vanilla.">
+  <Ore Name="Aluminium"  Abundance="82300" Rocks="90;40;30;50;40"   />
+  <Ore Name="Titanium"   Abundance="5650"  Rocks="40;40;60;40;90"   />
+  <Ore Name="Petroleum"  Abundance="100"   Rocks="100;5;0;0;0"      />
+  <Ore Name="Nitre"      Abundance="30"    Rocks="100;5;0;5;0"      />
+  <Ore Name="Copper"     Abundance="60"    Rocks="30;30;30;70;100"  />
+  <Ore Name="Lithium"    Abundance="20"    Rocks="40;20;30;40;100"  />
+  <Ore Name="Galena"     Abundance="16"    Rocks="70;40;20;50;60"   />
+  <Ore Name="Wolframite" Abundance="2"     Rocks="5;30;40;10;100"   />
+</OreDataPack>
