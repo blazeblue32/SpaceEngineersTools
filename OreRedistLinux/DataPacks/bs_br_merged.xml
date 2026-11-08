@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Merged ore data pack for OreRedistLinux: Better Stone + Better Resources with the repurposed slots (see MODPACK_COMPOSITES.md and MODPACK_DISTRIBUTION.md).
+  Ore Name is the voxel material id (exact), e.g. Cobalt_01 is Azurite in this pack. Label is the mineral it stands for. Order 30: overrides the other packs for these ids.
+  Planet sections: the ore list of a planet. Share = target share of the ore pixels in percent (fitted to the ingot rates of vanilla / Better Stone), Layers = the 10 depth layers that are switched on.
+  Data Packs window > Planet profile > Apply.
+-->
+<OreDataPack Format="1" Tool="OreRedistLinux" Name="Better Stone + Better Resources (merged)" Author="OreRedistLinux" Order="30"
+             Description="Composite minerals in the repurposed slots, ore data for every Better Stone and Better Resources ore, and ore lists with shares and layers for the eight vanilla planets.">
+  <Ore Name="Iron_02" Label="Magnetite (Dense Iron)" Abundance="16000" Rocks="30;40;60;30;80" Glob="40" GlobSize="37.5" GlobCoverage="6" Size="49" />
+  <Ore Name="Iron_01" Label="Hematite (Iron)" Abundance="40000" Rocks="100;60;40;10;20" Glob="40" GlobSize="37.5" GlobCoverage="6" Size="49" />
+  <Ore Name="Hapkeite_01" Label="Hapkeite" Abundance="0.001" Rocks="0;0;30;20;100" Glob="85" GlobSize="50" GlobCoverage="0.5" Size="4" />
+  <Ore Name="Heazlewoodite_01" Label="Heazlewoodite" Abundance="1" Rocks="5;70;50;30;90" Glob="70" GlobSize="30" GlobCoverage="0.5" Size="15" />
+  <Ore Name="Porphyry_01" Label="Porphyry" Abundance="0.01" Rocks="10;30;20;40;100" Glob="65" GlobSize="32.5" GlobCoverage="1" Size="26" />
+  <Ore Name="Dolomite_01" Label="Dolomite" Abundance="20000" Rocks="100;60;40;5;20" Glob="25" GlobSize="35" GlobCoverage="3.5" Size="75" />
+  <Ore Name="Cattierite_01" Label="Cattierite" Abundance="0.1" Rocks="60;50;30;30;60" Glob="70" GlobSize="50" GlobCoverage="0.5" Size="22" />
+  <Ore Name="Niggliite_01" Label="Niggliite" Abundance="0.001" Rocks="5;5;20;20;100" Glob="90" GlobSize="60" GlobCoverage="1" Size="59" />
+  <Ore Name="Carnotite_01" Label="Carnotite" Abundance="0.3" Rocks="100;30;20;30;20" Glob="75" GlobSize="32.5" GlobCoverage="0.5" Size="15" />
+  <Ore Name="Glaucodot_01" Label="Glaucodot" Abundance="0.5" Rocks="10;70;60;20;60" Glob="60" GlobSize="32.5" GlobCoverage="0.5" Size="7" />
+  <Ore Name="Sinoite_01" Label="Sinoite" Abundance="0.001" Rocks="0;0;30;20;100" Glob="85" GlobSize="50" GlobCoverage="0.5" Size="4" />
+  <Ore Name="Pyrite_01" Label="Pyrite" Abundance="1000" Rocks="50;60;50;70;70" Glob="10" GlobSize="27.5" GlobCoverage="3" Size="26" />
+  <Ore Name="Olivine_01" Label="Olivine" Abundance="30000" Rocks="0;10;40;70;100" Glob="35" GlobSize="27.5" GlobCoverage="1" Size="49" />
+  <Ore Name="Cooperite_01" Label="Cooperite" Abundance="0.002" Rocks="5;5;20;20;100" Glob="90" GlobSize="60" GlobCoverage="1" Size="59" />
+  <Ore Name="Quartz_01" Label="Quartz" Abundance="120000" Rocks="80;60;60;40;80" Glob="0" Size="49" />
+  <Ore Name="Galena_01" Label="Galena" Abundance="16" Rocks="70;40;20;50;60" Glob="40" GlobSize="27.5" GlobCoverage="1.5" Size="22" />
+  <Ore Name="Chlorargyrite_01" Label="Chlorargyrite" Abundance="0.01" Rocks="30;30;10;80;50" Glob="60" GlobSize="30" GlobCoverage="0.5" Size="9" />
+  <Ore Name="Electrum_01" Label="Electrum" Abundance="0.002" Rocks="20;50;20;90;60" Glob="70" GlobSize="20" GlobCoverage="0.5" Size="10" />
+  <Ore Name="Sperrylite_01" Label="Sperrylite" Abundance="0.002" Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="1" Size="59" />
+  <Ore Name="Autunite_01" Label="Autunite" Abundance="0.3" Rocks="100;30;20;20;60" Glob="70" GlobSize="32.5" GlobCoverage="0.5" Size="10" />
+  <Ore Name="Akimotoite_01" Label="Akimotoite" Abundance="0.01" Rocks="0;0;70;10;100" Glob="85" GlobSize="50" GlobCoverage="0.5" Size="4" />
+  <Ore Name="Wadsleyite_01" Label="Wadsleyite" Abundance="0.01" Rocks="0;0;70;10;100" Glob="85" GlobSize="50" GlobCoverage="0.5" Size="4" />
+  <Ore Name="Taenite_01" Label="Taenite" Abundance="0.3" Rocks="20;20;40;20;70" Glob="60" GlobSize="32.5" GlobCoverage="0.5" Size="5" />
+  <Ore Name="Cohenite_01" Label="Cohenite" Abundance="0.1" Rocks="20;20;30;20;70" Glob="60" GlobSize="32.5" GlobCoverage="0.5" Size="5" />
+  <Ore Name="Kamacite_01" Label="Kamacite" Abundance="0.5" Rocks="20;20;40;20;70" Glob="60" GlobSize="32.5" GlobCoverage="0.5" Size="5" />
+  <Ore Name="Uraniaurite_01" Label="Uraniaurite" Abundance="0.001" Rocks="40;60;30;20;60" Glob="85" GlobSize="50" GlobCoverage="0.5" Size="5" />
+  <Ore Name="Petzite_01" Label="Petzite" Abundance="0.001" Rocks="20;50;20;90;60" Glob="70" GlobSize="20" GlobCoverage="0.5" Size="10" />
+  <Ore Name="Gold_01" Label="Gold (native)" Abundance="0.004" Rocks="25;100;50;40;50" Glob="75" GlobSize="32.5" GlobCoverage="2" Size="15" />
+  <Ore Name="Silver_01" Label="Silver (native)" Abundance="0.075" Rocks="20;40;20;90;60" Glob="55" GlobSize="27.5" GlobCoverage="1" Size="10" />
+  <Ore Name="Platinum_01" Label="Platinum (native)" Abundance="0.005" Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="1.5" Size="75" />
+  <Ore Name="Uraninite_01" Label="Uraninite" Abundance="1" Rocks="70;50;40;20;80" Glob="65" GlobSize="32.5" GlobCoverage="1" Size="19" />
+  <Ore Name="Ice_01" Label="Ice" Rocks="100;100;100;100;100" Glob="0" />
+  <Ore Name="Cobalt_01" Label="Azurite" Abundance="30" Rocks="50;20;10;60;90" Glob="65" GlobSize="35" GlobCoverage="3" Size="25" />
+  <Ore Name="Nickel_01" Label="Sphalerite" Abundance="70" Rocks="70;40;20;50;60" Glob="40" GlobSize="27.5" GlobCoverage="1.5" Size="22" />
+  <Ore Name="Magnesium_01" Label="Ilmenite" Abundance="3000" Rocks="20;30;60;70;100" Glob="45" GlobSize="32.5" GlobCoverage="1" Size="26" />
+  <Ore Name="Silicon_01" Label="Spodumene" Abundance="150" Rocks="5;30;40;5;100" Glob="80" GlobSize="30" GlobCoverage="0.5" Size="12" />
+  <Ore Name="Aluminium_01" Label="Bauxite" Abundance="30000" Rocks="90;40;30;50;40" Glob="50" GlobSize="40" GlobCoverage="5" Size="43" />
+  <Ore Name="Copper_01" Label="Native Copper" Abundance="30" Rocks="30;30;30;70;100" Glob="65" GlobSize="35" GlobCoverage="3" Size="31" />
+  <Ore Name="Titanium_01" Label="Rutile" Abundance="400" Rocks="40;40;60;40;90" Glob="45" GlobSize="32.5" GlobCoverage="1" Size="26" />
+  <Ore Name="Lithium_01" Label="Lepidolite" Abundance="60" Rocks="40;20;30;40;100" Glob="80" GlobSize="30" GlobCoverage="0.5" Size="12" />
+  <Ore Name="Wolframite_01" Label="Wolframite" Abundance="2" Rocks="5;30;40;10;100" Glob="75" GlobSize="50" GlobCoverage="1" Size="12" />
+  <Ore Name="Nitre_01" Label="Niter" Abundance="30" Rocks="100;5;0;5;0" Glob="90" GlobSize="50" GlobCoverage="0.5" Size="49" />
+  <Ore Name="Sulfur_01" Label="Sulfur (native)" Abundance="350" Rocks="60;10;5;100;20" Glob="70" GlobSize="30" GlobCoverage="0.5" Size="26" />
+  <Ore Name="Petroleum_01" Label="Oil shale (Petroleum)" Abundance="100" Rocks="100;5;0;0;0" Glob="80" GlobSize="42.5" GlobCoverage="7" Size="59" />
+
+  <Planet Name="EarthLike" Description="33 ores, 254 values (max 254)">
+    <Ore Name="Olivine_01" Share="16.551" Layers="1111111111" />
+    <Ore Name="Quartz_01" Share="10.587" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="9.350" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="8.089" Layers="1111111111" />
+    <Ore Name="Glaucodot_01" Share="6.461" Layers="1111111110" />
+    <Ore Name="Silicon_01" Share="6.125" Layers="1111111110" />
+    <Ore Name="Aluminium_01" Share="5.265" Layers="1111111110" />
+    <Ore Name="Galena_01" Share="5.001" Layers="1111111110" />
+    <Ore Name="Iron_02" Share="4.969" Layers="1111111110" />
+    <Ore Name="Dolomite_01" Share="4.758" Layers="1111111110" />
+    <Ore Name="Pyrite_01" Share="2.532" Layers="1111111110" />
+    <Ore Name="Magnesium_01" Share="2.507" Layers="1111111110" />
+    <Ore Name="Petroleum_01" Share="2.214" Layers="1111111110" />
+    <Ore Name="Iron_01" Share="1.797" Layers="1111111110" />
+    <Ore Name="Titanium_01" Share="1.789" Layers="1111111110" />
+    <Ore Name="Sulfur_01" Share="1.402" Layers="1111011110" />
+    <Ore Name="Nickel_01" Share="1.367" Layers="1111011110" />
+    <Ore Name="Copper_01" Share="1.279" Layers="1111011110" />
+    <Ore Name="Cobalt_01" Share="1.213" Layers="1111011110" />
+    <Ore Name="Lithium_01" Share="1.087" Layers="1111011110" />
+    <Ore Name="Silver_01" Share="0.916" Layers="1011011010" />
+    <Ore Name="Wolframite_01" Share="0.807" Layers="1011011010" />
+    <Ore Name="Nitre_01" Share="0.779" Layers="1011011010" />
+    <Ore Name="Ice_01" Share="0.771" Layers="1110000000" />
+    <Ore Name="Cattierite_01" Share="0.624" Layers="1011011010" />
+    <Ore Name="Porphyry_01" Share="0.488" Layers="1011011010" />
+    <Ore Name="Chlorargyrite_01" Share="0.348" Layers="1011011010" />
+    <Ore Name="Electrum_01" Share="0.267" Layers="1011011010" />
+    <Ore Name="Petzite_01" Share="0.214" Layers="1011011010" />
+    <Ore Name="Kamacite_01" Share="0.168" Layers="1011011010" />
+    <Ore Name="Taenite_01" Share="0.148" Layers="1011011010" />
+    <Ore Name="Akimotoite_01" Share="0.063" Layers="1011011010" />
+    <Ore Name="Wadsleyite_01" Share="0.063" Layers="1011011010" />
+  </Planet>
+
+  <Planet Name="Alien" Description="37 ores, 254 values (max 254)">
+    <Ore Name="Olivine_01" Share="16.412" Layers="1111111111" />
+    <Ore Name="Quartz_01" Share="9.527" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="9.472" Layers="1111111111" />
+    <Ore Name="Silicon_01" Share="5.968" Layers="1111011110" />
+    <Ore Name="Aluminium_01" Share="5.130" Layers="1111011110" />
+    <Ore Name="Glaucodot_01" Share="5.038" Layers="1111011110" />
+    <Ore Name="Gold_01" Share="4.962" Layers="1111011110" />
+    <Ore Name="Iron_02" Share="4.924" Layers="1111011110" />
+    <Ore Name="Dolomite_01" Share="4.635" Layers="1111011110" />
+    <Ore Name="Galena_01" Share="4.321" Layers="1111011110" />
+    <Ore Name="Uraninite_01" Share="4.095" Layers="1111011110" />
+    <Ore Name="Magnesium_01" Share="2.843" Layers="1111011110" />
+    <Ore Name="Pyrite_01" Share="2.731" Layers="1111011110" />
+    <Ore Name="Sulfur_01" Share="2.360" Layers="1111011110" />
+    <Ore Name="Titanium_01" Share="1.965" Layers="1111011110" />
+    <Ore Name="Iron_01" Share="1.851" Layers="1111011110" />
+    <Ore Name="Nickel_01" Share="1.531" Layers="1111011110" />
+    <Ore Name="Copper_01" Share="1.381" Layers="1111011110" />
+    <Ore Name="Nitre_01" Share="1.342" Layers="1111011110" />
+    <Ore Name="Cobalt_01" Share="1.342" Layers="1111011110" />
+    <Ore Name="Lithium_01" Share="1.190" Layers="1111011110" />
+    <Ore Name="Petroleum_01" Share="1.079" Layers="1110110110" />
+    <Ore Name="Wolframite_01" Share="0.854" Layers="1010101010" />
+    <Ore Name="Ice_01" Share="0.802" Layers="1110000000" />
+    <Ore Name="Autunite_01" Share="0.710" Layers="1010101010" />
+    <Ore Name="Cattierite_01" Share="0.638" Layers="1010101010" />
+    <Ore Name="Silver_01" Share="0.576" Layers="1010101010" />
+    <Ore Name="Porphyry_01" Share="0.495" Layers="1010101010" />
+    <Ore Name="Carnotite_01" Share="0.449" Layers="1010101010" />
+    <Ore Name="Chlorargyrite_01" Share="0.309" Layers="1010101010" />
+    <Ore Name="Electrum_01" Share="0.246" Layers="1010101010" />
+    <Ore Name="Petzite_01" Share="0.200" Layers="1010101010" />
+    <Ore Name="Uraniaurite_01" Share="0.191" Layers="1010101010" />
+    <Ore Name="Kamacite_01" Share="0.164" Layers="1010101010" />
+    <Ore Name="Taenite_01" Share="0.144" Layers="1010101010" />
+    <Ore Name="Akimotoite_01" Share="0.062" Layers="1010101010" />
+    <Ore Name="Wadsleyite_01" Share="0.062" Layers="1010101010" />
+  </Planet>
+
+  <Planet Name="Mars" Description="25 ores, 243 values (max 254)">
+    <Ore Name="Quartz_01" Share="17.244" Layers="1111111111" />
+    <Ore Name="Olivine_01" Share="12.189" Layers="1111111111" />
+    <Ore Name="Sulfur_01" Share="10.727" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="6.909" Layers="1111111111" />
+    <Ore Name="Dolomite_01" Share="6.414" Layers="1111111111" />
+    <Ore Name="Iron_01" Share="5.121" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="4.752" Layers="1111111111" />
+    <Ore Name="Nitre_01" Share="4.366" Layers="1111111111" />
+    <Ore Name="Glaucodot_01" Share="3.937" Layers="1111111111" />
+    <Ore Name="Uraninite_01" Share="3.868" Layers="1111111111" />
+    <Ore Name="Galena_01" Share="3.756" Layers="1111111111" />
+    <Ore Name="Ice_01" Share="3.660" Layers="1110000000" />
+    <Ore Name="Magnesium_01" Share="3.375" Layers="1111111111" />
+    <Ore Name="Pyrite_01" Share="3.040" Layers="1111111111" />
+    <Ore Name="Iron_02" Share="2.299" Layers="1111111111" />
+    <Ore Name="Nickel_01" Share="1.913" Layers="1111111111" />
+    <Ore Name="Kamacite_01" Share="1.684" Layers="1111111111" />
+    <Ore Name="Taenite_01" Share="1.483" Layers="1111111111" />
+    <Ore Name="Copper_01" Share="1.151" Layers="1111111111" />
+    <Ore Name="Silver_01" Share="0.682" Layers="1111111111" />
+    <Ore Name="Cohenite_01" Share="0.563" Layers="1111111111" />
+    <Ore Name="Carnotite_01" Share="0.266" Layers="1111111111" />
+    <Ore Name="Akimotoite_01" Share="0.238" Layers="1111111111" />
+    <Ore Name="Wadsleyite_01" Share="0.238" Layers="1111111111" />
+    <Ore Name="Electrum_01" Share="0.124" Layers="1111111111" />
+  </Planet>
+
+  <Planet Name="Moon" Description="22 ores, 213 values (max 254)">
+    <Ore Name="Hapkeite_01" Share="11.755" Layers="1111111111" />
+    <Ore Name="Magnesium_01" Share="9.598" Layers="1111111111" />
+    <Ore Name="Olivine_01" Share="9.334" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="8.980" Layers="1111111111" />
+    <Ore Name="Cohenite_01" Share="8.883" Layers="1111111111" />
+    <Ore Name="Wadsleyite_01" Share="7.431" Layers="1111111111" />
+    <Ore Name="Kamacite_01" Share="5.686" Layers="1111111111" />
+    <Ore Name="Cooperite_01" Share="4.896" Layers="1111111111" />
+    <Ore Name="Silver_01" Share="4.682" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="4.522" Layers="1111111111" />
+    <Ore Name="Uraninite_01" Share="3.818" Layers="1111111111" />
+    <Ore Name="Taenite_01" Share="3.367" Layers="1111111111" />
+    <Ore Name="Pyrite_01" Share="3.185" Layers="1111111111" />
+    <Ore Name="Iron_01" Share="2.916" Layers="1111111111" />
+    <Ore Name="Akimotoite_01" Share="2.899" Layers="1111111111" />
+    <Ore Name="Ice_01" Share="2.118" Layers="1110000000" />
+    <Ore Name="Glaucodot_01" Share="1.493" Layers="1111111111" />
+    <Ore Name="Niggliite_01" Share="1.485" Layers="1111111111" />
+    <Ore Name="Platinum_01" Share="1.216" Layers="1111111111" />
+    <Ore Name="Sperrylite_01" Share="0.686" Layers="1111111111" />
+    <Ore Name="Sinoite_01" Share="0.587" Layers="1111111111" />
+    <Ore Name="Electrum_01" Share="0.462" Layers="1111111111" />
+  </Planet>
+
+  <Planet Name="Europa" Description="19 ores, 183 values (max 254)">
+    <Ore Name="Heazlewoodite_01" Share="17.651" Layers="1111111111" />
+    <Ore Name="Dolomite_01" Share="16.029" Layers="1111111111" />
+    <Ore Name="Quartz_01" Share="11.072" Layers="1111111111" />
+    <Ore Name="Sulfur_01" Share="10.283" Layers="1111111111" />
+    <Ore Name="Iron_02" Share="7.596" Layers="1111111111" />
+    <Ore Name="Glaucodot_01" Share="6.051" Layers="1111111111" />
+    <Ore Name="Pyrite_01" Share="5.875" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="4.588" Layers="1111111111" />
+    <Ore Name="Platinum_01" Share="4.274" Layers="1111111111" />
+    <Ore Name="Uraninite_01" Share="3.683" Layers="1111111111" />
+    <Ore Name="Kamacite_01" Share="3.039" Layers="1111111111" />
+    <Ore Name="Galena_01" Share="2.527" Layers="1111111111" />
+    <Ore Name="Olivine_01" Share="2.275" Layers="1111111111" />
+    <Ore Name="Silver_01" Share="2.121" Layers="1111111111" />
+    <Ore Name="Nickel_01" Share="1.184" Layers="1111111111" />
+    <Ore Name="Ice_01" Share="1.163" Layers="1110000000" />
+    <Ore Name="Wadsleyite_01" Share="0.247" Layers="1111111111" />
+    <Ore Name="Akimotoite_01" Share="0.194" Layers="1111111111" />
+    <Ore Name="Cooperite_01" Share="0.148" Layers="1111111111" />
+  </Planet>
+
+  <Planet Name="Titan" Description="17 ores, 163 values (max 254)">
+    <Ore Name="Olivine_01" Share="20.893" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="15.233" Layers="1111111111" />
+    <Ore Name="Petroleum_01" Share="15.098" Layers="1111111111" />
+    <Ore Name="Kamacite_01" Share="6.691" Layers="1111111111" />
+    <Ore Name="Iron_02" Share="5.704" Layers="1111111111" />
+    <Ore Name="Glaucodot_01" Share="4.953" Layers="1111111111" />
+    <Ore Name="Dolomite_01" Share="4.732" Layers="1111111111" />
+    <Ore Name="Silver_01" Share="4.658" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="4.491" Layers="1111111111" />
+    <Ore Name="Platinum_01" Share="4.249" Layers="1111111111" />
+    <Ore Name="Uraninite_01" Share="3.622" Layers="1111111111" />
+    <Ore Name="Sulfur_01" Share="3.442" Layers="1111111111" />
+    <Ore Name="Pyrite_01" Share="2.616" Layers="1111111111" />
+    <Ore Name="Wadsleyite_01" Share="1.510" Layers="1111111111" />
+    <Ore Name="Ice_01" Share="0.995" Layers="1110000000" />
+    <Ore Name="Nickel_01" Share="0.759" Layers="1111111111" />
+    <Ore Name="Akimotoite_01" Share="0.354" Layers="1111111111" />
+  </Planet>
+
+  <Planet Name="Pertam" Description="30 ores, 254 values (max 254)">
+    <Ore Name="Quartz_01" Share="21.421" Layers="1111111111" />
+    <Ore Name="Iron_02" Share="20.237" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="17.845" Layers="1111111111" />
+    <Ore Name="Glaucodot_01" Share="12.529" Layers="1111111111" />
+    <Ore Name="Iron_01" Share="4.516" Layers="1111111111" />
+    <Ore Name="Aluminium_01" Share="3.049" Layers="1111111111" />
+    <Ore Name="Magnesium_01" Share="2.545" Layers="1111111111" />
+    <Ore Name="Pyrite_01" Share="2.434" Layers="1111111111" />
+    <Ore Name="Sulfur_01" Share="2.430" Layers="1111111111" />
+    <Ore Name="Dolomite_01" Share="2.190" Layers="1111111111" />
+    <Ore Name="Titanium_01" Share="1.486" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="1.449" Layers="1111111111" />
+    <Ore Name="Galena_01" Share="1.242" Layers="1111111111" />
+    <Ore Name="Nitre_01" Share="1.235" Layers="1111111111" />
+    <Ore Name="Nickel_01" Share="1.058" Layers="1111111110" />
+    <Ore Name="Copper_01" Share="0.906" Layers="1110110110" />
+    <Ore Name="Cobalt_01" Share="0.889" Layers="1110110110" />
+    <Ore Name="Wolframite_01" Share="0.501" Layers="1110110110" />
+    <Ore Name="Petroleum_01" Share="0.401" Layers="1110110110" />
+    <Ore Name="Cattierite_01" Share="0.311" Layers="1110110110" />
+    <Ore Name="Porphyry_01" Share="0.263" Layers="1110110110" />
+    <Ore Name="Silver_01" Share="0.257" Layers="1110110110" />
+    <Ore Name="Olivine_01" Share="0.244" Layers="1110110110" />
+    <Ore Name="Chlorargyrite_01" Share="0.147" Layers="1110110110" />
+    <Ore Name="Electrum_01" Share="0.118" Layers="1110110110" />
+    <Ore Name="Petzite_01" Share="0.095" Layers="1110110110" />
+    <Ore Name="Kamacite_01" Share="0.077" Layers="1110110110" />
+    <Ore Name="Taenite_01" Share="0.068" Layers="1110110110" />
+    <Ore Name="Akimotoite_01" Share="0.029" Layers="1110110110" />
+    <Ore Name="Wadsleyite_01" Share="0.029" Layers="1110110110" />
+  </Planet>
+
+  <Planet Name="Triton" Description="16 ores, 160 values (max 254)">
+    <Ore Name="Quartz_01" Share="23.138" Layers="1111111111" />
+    <Ore Name="Dolomite_01" Share="15.769" Layers="1111111111" />
+    <Ore Name="Heazlewoodite_01" Share="14.481" Layers="1111111111" />
+    <Ore Name="Iron_02" Share="10.620" Layers="1111111111" />
+    <Ore Name="Sulfur_01" Share="8.603" Layers="1111111111" />
+    <Ore Name="Gold_01" Share="8.265" Layers="1111111111" />
+    <Ore Name="Glaucodot_01" Share="4.238" Layers="1111111111" />
+    <Ore Name="Silver_01" Share="3.759" Layers="1111111111" />
+    <Ore Name="Pyrite_01" Share="3.690" Layers="1111111111" />
+    <Ore Name="Galena_01" Share="2.486" Layers="1111111111" />
+    <Ore Name="Olivine_01" Share="2.184" Layers="1111111111" />
+    <Ore Name="Kamacite_01" Share="1.258" Layers="1111111111" />
+    <Ore Name="Nickel_01" Share="0.834" Layers="1111111111" />
+    <Ore Name="Sinoite_01" Share="0.378" Layers="1111111111" />
+    <Ore Name="Wadsleyite_01" Share="0.153" Layers="1111111111" />
+    <Ore Name="Akimotoite_01" Share="0.145" Layers="1111111111" />
+  </Planet>
+</OreDataPack>

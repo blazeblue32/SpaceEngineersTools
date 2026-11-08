@@ -22,6 +22,25 @@ namespace SpaceEngineersOreRedistribution
         public double? Glob, GlobSize, GlobCoverage;
         /// <summary>Size of a vein in pixels on the reference planet (the Size column), 1-500. Null = not given.</summary>
         public int? Size;
+        /// <summary>The mineral this id stands for in the pack (display only).</summary>
+        public string Label;
+    }
+
+    /// <summary>One ore of a planet profile: its target share of the planet's ore pixels (percent) and the depth layers that are switched on.</summary>
+    public class ProfileOre
+    {
+        public string Name;
+        public double Share;
+        /// <summary>10 characters 0 / 1 (layer 1 first), null = leave the layers as they are.</summary>
+        public string Layers;
+    }
+
+    /// <summary>The ore list of a planet: which ores occur and in what shares.</summary>
+    public class PlanetProfile
+    {
+        public string Name, Description;
+        public List<ProfileOre> Ores = new();
+        public override string ToString() => Name;
     }
 
     /// <summary>A data pack: ore data loaded from an XML file of the DataPacks folder.</summary>
@@ -31,6 +50,7 @@ namespace SpaceEngineersOreRedistribution
         public string Name, Author, Description;
         public int Order;
         public List<OrePackOre> Ores = new();
+        public List<PlanetProfile> Planets = new();
         public override string ToString() => Name;
     }
 
@@ -41,6 +61,7 @@ namespace SpaceEngineersOreRedistribution
         public double[] Rocks;
         public double? Glob, GlobSize, GlobCoverage;
         public int? Size;
+        public string Label;
     }
 
     /// <summary>
@@ -53,7 +74,7 @@ namespace SpaceEngineersOreRedistribution
     {
         public const string Header = "OreDataPack", ToolName = "OreRedistLinux", FormatVersion = "1";
         public const long MaxFileBytes = 1_000_000;
-        public const int MaxOres = 5000, MaxPacks = 100;
+        public const int MaxOres = 5000, MaxPacks = 100, MaxPlanets = 64, MaxProfileOres = 400;
         const string ResourcePrefix = "DataPacks.";
 
         static readonly Regex OreNamePattern = new(@"^[A-Za-z0-9][A-Za-z0-9 _.\-+()]{0,63}$", RegexOptions.Compiled);
@@ -188,7 +209,26 @@ namespace SpaceEngineersOreRedistribution
                 if (gc.HasValue && gc.Value > 0) ore.GlobCoverage = Math.Clamp(gc.Value, 0.5, 90);
                 var sz = Num((string)e.Attribute("Size"));
                 if (sz.HasValue && sz.Value >= 1) ore.Size = (int)Math.Clamp(Math.Round(sz.Value), 1, 500);
+                ore.Label = Clean((string)e.Attribute("Label"), 60);
                 if (ore.Abundance.HasValue || ore.Rocks != null || ore.Glob.HasValue || ore.Size.HasValue) pack.Ores.Add(ore);
+            }
+            foreach (var pe in root.Elements("Planet"))
+            {
+                if (pack.Planets.Count >= MaxPlanets) break;
+                var pname = ((string)pe.Attribute("Name") ?? "").Trim();
+                if (!OreNamePattern.IsMatch(pname)) continue;
+                var prof = new PlanetProfile { Name = pname, Description = Clean((string)pe.Attribute("Description"), 200) };
+                foreach (var oe in pe.Elements("Ore"))
+                {
+                    if (prof.Ores.Count >= MaxProfileOres) break;
+                    var oname = ((string)oe.Attribute("Name") ?? "").Trim();
+                    var share = Num((string)oe.Attribute("Share"));
+                    if (!OreNamePattern.IsMatch(oname) || !share.HasValue || share.Value <= 0) continue;
+                    var lay = ((string)oe.Attribute("Layers") ?? "").Trim();
+                    if (lay.Length != 10 || lay.Any(c => c != '0' && c != '1')) lay = null;
+                    prof.Ores.Add(new ProfileOre { Name = oname, Share = Math.Clamp(share.Value, 0, 100), Layers = lay });
+                }
+                if (prof.Ores.Count > 0) pack.Planets.Add(prof);
             }
             return pack;
         }
@@ -220,6 +260,7 @@ namespace SpaceEngineersOreRedistribution
                 if (hit.Abundance.HasValue) result.Abundance = hit.Abundance;
                 if (hit.Rocks != null) result.Rocks = hit.Rocks;
                 if (hit.Size.HasValue) result.Size = hit.Size;
+                if (!string.IsNullOrEmpty(hit.Label)) result.Label = hit.Label;
                 if (hit.Glob.HasValue) { result.Glob = hit.Glob; result.GlobSize = hit.GlobSize; result.GlobCoverage = hit.GlobCoverage; }
             }
             return result;

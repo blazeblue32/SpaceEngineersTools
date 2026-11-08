@@ -184,6 +184,8 @@ and / or the Weight of each ore from its abundance in the Earth's crust, relativ
 still appear. Tick the packs to use; where two packs have the same ore, the later one (lower *Order*) wins. Ores that no selected pack knows are left alone
 (their Weight is scaled along so the share stays the same). Your choice is remembered.
 
+**Planet profiles.** A pack can also contain `<Planet Name="EarthLike">` sections: the ore list of a planet with `<Ore Name="Quartz_01" Share="10.6" Layers="1111011110"/>` (target share of the ore pixels in percent, and which of the 10 depth layers are on). *Planet profile > Apply profile* in the Data packs window adds the missing ores, removes the others (if ticked), sets the weights so that weight x vein size gives the share, switches the layers (and *Deep* for layer 10), and applies rock types, regions and vein sizes from the ticked packs. The built-in pack `bs_br_merged.xml` (Better Stone + Better Resources, repurposed slots; see `MODPACK_COMPOSITES.md`, `MODPACK_DISTRIBUTION.md`, `MODPACK_MA2_PLAN.md`) has profiles for the eight vanilla planets, fitted to the ingot rates of vanilla and Better Stone, each within the 254 values.
+
 Packs are plain XML files in `~/.config/OreRedistLinux/DataPacks/`. The three built-in packs (**Vanilla**, **Better Resources** workshop 2841960221,
 **Better Stone** workshop 406244471) are exported there on first run and again whenever they are missing; an edited pack is never overwritten. To make your
 own, copy one, change its `Name` and the ores, and save it in that folder (*Reload packs* in the window picks it up). Format (`vanilla.xml` explains it too):

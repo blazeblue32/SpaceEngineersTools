@@ -21,6 +21,9 @@ namespace SpaceEngineersOreRedistribution
         readonly CheckBox _sizes = new() { Content = "Set the vein size of each ore (Size column: few big or many small deposits)" };
         readonly CheckBox _rarity = new() { Content = "Set the Weight of each ore from its real abundance (relative to the other ores in the list)" };
         readonly List<(CheckBox box, OrePack pack)> _boxes = new();
+        readonly ComboBox _profiles = new() { MinWidth = 200 };
+        readonly CheckBox _replace = new() { Content = "Replace the ore list (remove ores that are not in the profile)", IsChecked = true };
+        readonly Dictionary<string, PlanetProfile> _profileByName = new(StringComparer.OrdinalIgnoreCase);
 
         internal DataPacksWindow(RedistributionSetupViewModel vm)
         {
@@ -53,6 +56,21 @@ namespace SpaceEngineersOreRedistribution
                 FontSize = 12, Foreground = Brushes.Gray, TextWrapping = TextWrapping.Wrap, MaxWidth = 430, VerticalAlignment = VerticalAlignment.Center
             });
             root.Children.Add(strength);
+
+            var profRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 6, 0, 0) };
+            profRow.Children.Add(new TextBlock { Text = "Planet profile", VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeight.SemiBold });
+            profRow.Children.Add(_profiles);
+            var applyProfile = new Button { Content = "Apply profile" };
+            applyProfile.Click += (_, _) => ApplyProfile();
+            profRow.Children.Add(applyProfile);
+            root.Children.Add(profRow);
+            root.Children.Add(_replace);
+            root.Children.Add(new TextBlock
+            {
+                Text = "A profile is the ore list of a planet: it adds the ores that are missing, sets the weights so the ores have the share of the profile (weight x vein size), and switches the depth layers. " +
+                       "Rock types, regions and vein sizes come from the ticked packs. Tick the merged pack (or one with profiles) first.",
+                FontSize = 12, Foreground = Brushes.Gray, TextWrapping = TextWrapping.Wrap
+            });
 
             root.Children.Add(new TextBlock { Text = "Pack files (edit them, or add your own):", FontSize = 12, Foreground = Brushes.Gray });
             root.Children.Add(new TextBox { Text = OrePacks.Folder, IsReadOnly = true, FontSize = 12 });
@@ -93,8 +111,24 @@ namespace SpaceEngineersOreRedistribution
                 _list.Children.Add(box);
                 _boxes.Add((box, p));
             }
+            var keep = (_profiles.SelectedItem as string) ?? _vm.PlanetName;
+            _profileByName.Clear();
+            foreach (var p in packs) foreach (var pl in p.Planets) _profileByName[pl.Name] = pl;
+            _profiles.ItemsSource = _profileByName.Keys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
+            var hit = _profileByName.Keys.FirstOrDefault(k => string.Equals(k, keep, StringComparison.OrdinalIgnoreCase));
+            if (hit != null) _profiles.SelectedItem = hit; else if (_profileByName.Count > 0) _profiles.SelectedIndex = 0;
             _skipped.Text = skipped.Count == 0 ? "" : "Not loaded (no valid pack header, too large or malformed): " + string.Join(", ", skipped);
             _skipped.IsVisible = skipped.Count > 0;
+        }
+
+        void ApplyProfile()
+        {
+            var packs = _boxes.Where(b => b.box.IsChecked == true).Select(b => b.pack).ToList();
+            if (_profiles.SelectedItem is not string name || !_profileByName.TryGetValue(name, out var prof)) { _result.Text = "No planet profile found in the packs."; return; }
+            if (packs.Count == 0) { _result.Text = "Tick at least one pack (the merged pack) first."; return; }
+            SaveChoice();
+            var r = _vm.ApplyPlanetProfile(packs, prof, _replace.IsChecked == true);
+            _result.Text = $"Profile {prof.Name}: {r.Added} ore(s) added, {r.Removed} removed, {r.Kept} kept; {r.Values} values (max 254)." + (r.Values > 254 ? " Too many: switch layers off." : "");
         }
 
         void SaveChoice() =>

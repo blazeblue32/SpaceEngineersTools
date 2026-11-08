@@ -155,6 +155,53 @@ namespace SpaceEngineersOreRedistribution
             return res;
         }
 
+        /// <summary>What applying a planet profile did.</summary>
+        public class ProfileResult { public int Added, Removed, Kept, Values; public List<string> Added_ = new(); }
+
+        /// <summary>
+        /// Applies the ore list of a planet profile: ores that are missing are added (with the default layers), with "replace" the ores that are not in the
+        /// profile are removed, the weights are set so that the share of every ore (weight x vein size) matches the profile, and the layers are switched as the
+        /// profile says. Rock types, regions and vein sizes come from the packs (ApplyDataPacks).
+        /// </summary>
+        public ProfileResult ApplyPlanetProfile(IList<OrePack> packs, PlanetProfile prof, bool replace)
+        {
+            var res = new ProfileResult();
+            var wanted = prof.Ores.ToDictionary(o => o.Name, o => o, StringComparer.OrdinalIgnoreCase);
+            if (replace)
+                foreach (var info in OreInfos.Where(i => !wanted.ContainsKey(i.Name ?? "")).ToList()) { OreInfos.Remove(info); ++res.Removed; }
+            foreach (var po in prof.Ores)
+            {
+                var info = OreInfos.FirstOrDefault(i => string.Equals(i.Name, po.Name, StringComparison.OrdinalIgnoreCase));
+                if (info == null)
+                {
+                    info = new OreInfo { Name = po.Name, SpawnWeight = 1 };
+                    info.AddDefaultMapping();
+                    OreInfos.Add(info); ++res.Added; res.Added_.Add(po.Name);
+                }
+                else ++res.Kept;
+            }
+            ApplyDataPacks(packs, true, false, true, true);
+            // weights: share = weight x vein size
+            var rows = prof.Ores.Select(po => (po, info: OreInfos.First(i => string.Equals(i.Name, po.Name, StringComparison.OrdinalIgnoreCase)))).ToList();
+            double Px(OreInfo i) => i.TypicalSize > 0 ? i.TypicalSize : 17;
+            double max = rows.Max(r => r.po.Share / Px(r.info));
+            foreach (var (po, info) in rows)
+            {
+                info.SpawnWeight = (int)Math.Max(1, Math.Round(1000 * (po.Share / Px(info)) / max));
+                if (po.Layers != null)
+                {
+                    for (int k = 0; k < 10 && k < info.OreMappings.Count; ++k) info.OreMappings[k].LayerEnabled = po.Layers[k] == '1';
+                    info.VeryDeepOre = po.Layers[9] == '1';
+                    info.TypicalDepthMin = -1; info.TypicalDepthMax = -1; info.PreferredDepth = -1;
+                }
+            }
+            // list order: biggest share first
+            var sorted = rows.OrderByDescending(r => r.po.Share).Select(r => r.info).Concat(OreInfos.Where(i => rows.All(r => r.info != i))).ToList();
+            OreInfos.Clear(); foreach (var i in sorted) OreInfos.Add(i);
+            res.Values = FinalizeList();
+            return res;
+        }
+
         public ICommand DataPacksCommand => new RelayCommand(o => new DataPacksWindow(this).ShowDialogBlocking(Parent), o => OreInfos.Count > 0);
 
         public ICommand SortCommand => new RelayCommand(o =>
