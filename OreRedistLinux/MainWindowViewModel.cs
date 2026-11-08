@@ -1249,13 +1249,14 @@ namespace SpaceEngineersOreRedistribution
                         if (waterMode != OreWaterMode.Anywhere)
                         {
                             if (!WaterPlacement.FindSite(water, waterMode, value, mappings, x, y, defaultDepthIndex, minDepthIndex, rnd, TileWidth,
-                                    out siteX, out siteY, out var siteIdx))
+                                    out siteX, out siteY, out var siteIdx, out var siteIsSea))
                             {
                                 ++row.Dropped;
                                 continue;
                             }
                             if (siteX != x || siteY != y) ++row.Moved;
                             if (siteIdx < defaultDepthIndex) ++row.ClampedVeins;
+                            if (siteIsSea) ++row.VeinsSea; else ++row.VeinsLand;
                             defaultDepthIndex = siteIdx;
                         }
                         ++row.Placed;

@@ -3,18 +3,18 @@
         xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
         x:Class="SpaceEngineersOreRedistribution.RedistributionSetup"
         Title="Redistribution Setup"
-        x:Name="SetupRoot" MaxHeight="900" Height="800" Width="1060" CanResize="True">
+        x:Name="SetupRoot" MaxHeight="900" Height="800" Width="1100" CanResize="True">
     <Grid RowDefinitions="*,Auto,Auto" Margin="4">
         <local:GroupBox Grid.Row="0" Header="Ores" MinWidth="320" MinHeight="240" >
             <Grid RowDefinitions="*,Auto,Auto,*,Auto,Auto,Auto,Auto">
                 <Grid Grid.Row="0" RowDefinitions="Auto,*" Margin="3" MinHeight="50">
-                    <Grid ColumnDefinitions="100,105,105,110,115,115,115,105,130" HorizontalAlignment="Left" Margin="4,0,0,0">
+                    <Grid ColumnDefinitions="100,105,105,110,115,115,115,105,170" HorizontalAlignment="Left" Margin="4,0,0,0">
                         <TextBlock Grid.Column="0" Text="Name" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="1" Text="Spawn Weight" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="2" Text="Typical Size" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="3" Text="Expected Ratio" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="4" Text="Typ. Depth Min" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="5" Text="Typ. Depth Max" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="6" Text="Preferred Depth" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="7" Text="Very Deep Ore" FontWeight="SemiBold" Margin="4,0"/><TextBlock Grid.Column="8" Text="Water" FontWeight="SemiBold" Margin="4,0"/>
                     </Grid>
                     <ListBox Grid.Row="1" ItemsSource="{Binding OreInfos}" SelectedItem="{Binding SelectedInfo}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="100,105,105,110,115,115,115,105,130">
+                                <Grid ColumnDefinitions="100,105,105,110,115,115,115,105,170">
                                     <TextBox Grid.Column="0" Margin="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBox Grid.Column="1" Margin="1" Text="{Binding SpawnWeight, UpdateSourceTrigger=PropertyChanged}" />
                                     <TextBox Grid.Column="2" Margin="1" Text="{Binding TypicalSize, UpdateSourceTrigger=PropertyChanged}" />
@@ -26,17 +26,18 @@
                                     <ComboBox Grid.Column="8" Margin="1" HorizontalAlignment="Stretch" MinHeight="22" Padding="6,1"
                                               SelectedIndex="{Binding WaterModeIndex, Mode=TwoWay}"
                                               IsEnabled="{Binding DataContext.WaterEnabled, ElementName=SetupRoot}"
-                                              ToolTip.Tip="Above water: the whole ore layer stays dry (layers get shallower where needed). Anywhere: ignore the water. Under water only: sea floor and lake beds.">
-                                        <ComboBoxItem Content="Above water"/>
-                                        <ComboBoxItem Content="Anywhere"/>
-                                        <ComboBoxItem Content="Under water only"/>
+                                              ToolTip.Tip="Land only: the whole ore layer stays above the water (layers get shallower where needed).&#x0a;Land + seabed: that rule on land, anything under standing water.&#x0a;Seabed only: sea floor and lake beds.&#x0a;Anywhere: ignore the water.">
+                                        <ComboBoxItem Content="Land only (dry)"/>
+                                        <ComboBoxItem Content="Land + seabed"/>
+                                        <ComboBoxItem Content="Seabed only"/>
+                                        <ComboBoxItem Content="Anywhere (ignore water)"/>
                                     </ComboBox>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
-                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                <WrapPanel Grid.Row="1" Orientation="Horizontal">
                     <Button Content="Add" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding AddOreCommand}"/>
                     <Button Content="Remove" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding RemoveOreCommand}"/>
                     <Button Content="Import" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding ImportCommand}"/>
@@ -44,7 +45,17 @@
                     <Button Content="Update Ore Mapping Diagram" Margin="3" Click="UpdateDiagramClick"/>
                     <Button Content="Ore Overview" Margin="3" Width="100" HorizontalContentAlignment="Center" Command="{Binding ShowOverviewCommand}"/>
                     <Button Content="Sort" Margin="3" Width="80" HorizontalContentAlignment="Center" Command="{Binding SortCommand}"/>
-                </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Water, all ores:" Margin="0,0,6,0" VerticalAlignment="Center" IsEnabled="{Binding WaterEnabled}"/>
+                        <ComboBox Margin="3" Width="190" SelectedIndex="{Binding BulkWaterModeIndex, Mode=TwoWay}" IsEnabled="{Binding WaterEnabled}">
+                            <ComboBoxItem Content="Land only (dry)"/>
+                            <ComboBoxItem Content="Land + seabed"/>
+                            <ComboBoxItem Content="Seabed only"/>
+                            <ComboBoxItem Content="Anywhere (ignore water)"/>
+                        </ComboBox>
+                        <Button Content="Apply" Margin="3" Width="70" HorizontalContentAlignment="Center" Command="{Binding ApplyWaterModeToAllCommand}"/>
+                    </StackPanel>
+                </WrapPanel>
                 <TextBlock Grid.Row="2" Text="Ore Mapping for selected Ore: Depths 0-9 refer to these 10 mappings. Left gray bar in diagram is spawn probability." />
                 <Grid Grid.Row="3" RowDefinitions="*,Auto" ColumnDefinitions="*,*">
                     <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,*" Margin="3" MinHeight="50">

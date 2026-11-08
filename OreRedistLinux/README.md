@@ -53,15 +53,21 @@ so ore below it can only be reached by digging into water. The new **Water** men
   meters below the surface and do not scale with the planet; the terrain height does, so the **planet radius** (not stored in any
   file, default 60 km = EarthLike) is needed.
 - **Safety margin**: tide + wave height by default (editable), because the water level moves.
-- **Per ore** (*Water* column in the redistribution window):
-  - *Above water* (default): the whole ore layer (`Start + Depth`) must end above water + margin. Where the wanted layer is too deep
+- **Per ore** (*Water* column in the redistribution window, *Water, all ores* + *Apply* sets every ore at once):
+  - *Land only (dry)* (default): the whole ore layer (`Start + Depth`) must end above water + margin. Where the wanted layer is too deep
     for a pixel the next shallower layer is used (clamped); if no layer fits, the pixel is not used. Veins that creep towards the sea
     step back and follow the shore, so they still reach their size.
-  - *Anywhere*: ignore the water.
-  - *Under water only*: only where the terrain is below the water line.
+  - *Land + seabed*: both rules at once, decided per pixel. On land the dry rule above applies, under standing water (oceans, lakes)
+    any layer is allowed. Veins cross the shore freely. This avoids the bunching on islands of water planets: on Typhoon the ore pixel
+    total is the same as without water rules (368.9k vs 368.9k) while every land layer stays dry.
+  - *Seabed only*: only where the terrain is below the water line.
+  - *Anywhere (ignore water)*.
+- **Land / seabed balance** (Water window, for *Land + seabed* ores): *By area* lets the dice decide, so an ocean world gets mostly
+  seabed ore (Typhoon: 97%); *Fixed* sends a chosen share of the veins to the seabed and the rest to land (30% fixed gave a 70/30 split
+  of the veins on Typhoon). If a cube face lacks one kind of ground the other is used.
 - **Not enough dry ground?** A vein whose first site is too wet looks for another site on the same cube face (up to 400 tries), so
   ore keeps its share. If nothing fits at all the vein is dropped and listed in the message and in `placement_report.txt`
-  (written next to the maps), together with how many veins moved or were made shallower. On a planet that is mostly ocean the ore
+  (written next to the maps), together with how many veins moved, were made shallower, or started on land / seabed. On a planet that is mostly ocean the ore
   ends up on the islands, deep layers only on high ground.
 - The water window shows how much of the planet is underwater and on how much of the surface a layer ending at 10 / 25 / 50 / 100 / 200 / 400 m
   stays dry. Not covered: the Perlin distortion some planets add to the terrain (use the safety margin) and the planet's own lake layer.

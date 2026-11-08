@@ -8,14 +8,29 @@ using System.Xml.Linq;
 namespace SpaceEngineersOreRedistribution
 {
     /// <summary>Where an ore may be placed relative to the water of the Water Mod.</summary>
+    /// <remarks>The numbers are kept stable for older files (they are saved by name anyway).</remarks>
     public enum OreWaterMode
     {
-        /// <summary>Default: the whole ore layer has to be above the water line (no need to dig into water).</summary>
+        /// <summary>Land only: the whole ore layer has to be above the water line (no need to dig into water).</summary>
         AboveWater = 0,
         /// <summary>Ignore the water.</summary>
         Anywhere = 1,
         /// <summary>Only where the terrain is below the water line (sea floor, lake bed).</summary>
         UnderwaterOnly = 2,
+        /// <summary>Both rules: on land the layer stays dry, under standing water anything goes.</summary>
+        LandAndSeabed = 3,
+    }
+
+    public static class OreWaterModes
+    {
+        /// <summary>Order shown in the combo boxes.</summary>
+        public static readonly OreWaterMode[] Order =
+            { OreWaterMode.AboveWater, OreWaterMode.LandAndSeabed, OreWaterMode.UnderwaterOnly, OreWaterMode.Anywhere };
+
+        public static readonly string[] Names =
+            { "Land only (dry)", "Land + seabed", "Seabed only", "Anywhere (ignore water)" };
+
+        public static string NameOf(OreWaterMode m) => Names[Math.Max(0, Array.IndexOf(Order, m))];
     }
 
     /// <summary>
@@ -66,6 +81,24 @@ namespace SpaceEngineersOreRedistribution
 
         double _hillMax;
         public double HillMax { get => _hillMax; set { if (SetProp(ref _hillMax, value)) Changed(); } }
+
+        bool _seabedByArea = true;
+        /// <summary>
+        /// For ores set to "Land + seabed": true = veins land where the dice put them (share follows the area of land and
+        /// sea), false = a fixed share of the veins goes to the seabed (SeabedPercent), the rest to land.
+        /// </summary>
+        public bool SeabedByArea
+        {
+            get => _seabedByArea;
+            set { if (SetProp(ref _seabedByArea, value)) { OnPropertyChanged(nameof(SeabedFixed)); Changed(); } }
+        }
+        public bool SeabedFixed { get => !_seabedByArea; set => SeabedByArea = !value; }
+
+        double _seabedPercent = 50;
+        public double SeabedPercent { get => _seabedPercent; set { if (SetProp(ref _seabedPercent, Math.Clamp(value, 0, 100))) Changed(); } }
+
+        /// <summary>Wanted share (0..100) of land+seabed veins on the seabed, null = by area.</summary>
+        public double? SeabedShare => _seabedByArea ? null : _seabedPercent;
 
         string _source = "";
         /// <summary>Human readable origin of the values, shown in the water window.</summary>
@@ -142,6 +175,8 @@ namespace SpaceEngineersOreRedistribution
             if (saved != null)
             {
                 w._planetRadius = D(saved, "PlanetRadius", DefaultPlanetRadius);
+                w._seabedByArea = saved.Attribute("SeabedByArea")?.Value != "false";
+                w._seabedPercent = D(saved, "SeabedPercent", 50);
                 if (saved.Attribute("Margin") != null) w._marginOverride = D(saved, "Margin", 0);
                 if (planet.HillMin == null && saved.Attribute("HillMin") != null) w._hillMin = D(saved, "HillMin", 0);
                 if (planet.HillMax == null && saved.Attribute("HillMax") != null) w._hillMax = D(saved, "HillMax", 0);
@@ -211,7 +246,9 @@ namespace SpaceEngineersOreRedistribution
                     new XAttribute("TideHeight", TideHeight.ToString(inv)),
                     new XAttribute("WaveHeight", WaveHeight.ToString(inv)),
                     new XAttribute("HillMin", HillMin.ToString(inv)),
-                    new XAttribute("HillMax", HillMax.ToString(inv)));
+                    new XAttribute("HillMax", HillMax.ToString(inv)),
+                    new XAttribute("SeabedByArea", SeabedByArea ? "true" : "false"),
+                    new XAttribute("SeabedPercent", SeabedPercent.ToString(inv)));
                 if (MarginOverride.HasValue) el.Add(new XAttribute("Margin", MarginOverride.Value.ToString(inv)));
                 doc.Root.Add(el);
                 doc.Save(UserFile);

@@ -28,6 +28,19 @@ namespace SpaceEngineersOreRedistribution
 
         public bool WaterEnabled => _water != null && _water.Enabled;
 
+        int _bulkWaterModeIndex = 1; // Land + seabed
+        /// <summary>Choice in the "all ores" combo box above the list.</summary>
+        public int BulkWaterModeIndex
+        {
+            get => _bulkWaterModeIndex;
+            set => SetProp(ref _bulkWaterModeIndex, value);
+        }
+
+        public ICommand ApplyWaterModeToAllCommand => new RelayCommand(o =>
+        {
+            foreach (var info in OreInfos) info.WaterModeIndex = _bulkWaterModeIndex;
+        }, o => OreInfos.Count > 0 && WaterEnabled);
+
         public string WaterInfo => _water == null ? "" :
             _water.Enabled ? "Water rules ON: " + _water.Describe() :
             "Water rules are off (menu Water in the main window). The Water column has no effect.";
@@ -497,11 +510,11 @@ namespace SpaceEngineersOreRedistribution
                 }
             }
 
-            /// <summary>For the combo box: 0 above water, 1 anywhere, 2 underwater only.</summary>
+            /// <summary>For the combo box, see OreWaterModes.Order.</summary>
             public int WaterModeIndex
             {
-                get => (int)_waterMode;
-                set => WaterMode = (OreWaterMode)Math.Clamp(value, 0, 2);
+                get => Math.Max(0, Array.IndexOf(OreWaterModes.Order, _waterMode));
+                set => WaterMode = OreWaterModes.Order[Math.Clamp(value, 0, OreWaterModes.Order.Length - 1)];
             }
 
             bool _veryDeepOre = true;

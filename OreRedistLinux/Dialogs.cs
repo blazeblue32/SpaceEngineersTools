@@ -250,6 +250,7 @@ namespace SpaceEngineersOreRedistribution
             // Commands re-evaluate CanExecute after user input (WPF did this via CommandManager)
             AddHandler(PointerReleasedEvent, (_, _) => RelayCommand.RequestRequery(), Avalonia.Interactivity.RoutingStrategies.Tunnel, true);
             AddHandler(KeyUpEvent, (_, _) => RelayCommand.RequestRequery(), Avalonia.Interactivity.RoutingStrategies.Tunnel, true);
+            Opened += (_, _) => RelayCommand.RequestRequery(); // buttons start with the right enabled state
         }
 
         public void CloseWithResult(bool result)

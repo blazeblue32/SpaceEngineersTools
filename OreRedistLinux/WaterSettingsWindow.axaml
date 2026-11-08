@@ -37,11 +37,25 @@
             <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding HillMax, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
 
+        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="4" Padding="8">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Ores set to &quot;Land + seabed&quot;" FontWeight="SemiBold"/>
+                <RadioButton GroupName="Balance" IsChecked="{Binding SeabedByArea}"
+                             Content="By area: veins land wherever the dice put them"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <RadioButton GroupName="Balance" IsChecked="{Binding SeabedFixed}" Content="Fixed: this share of the veins goes to the seabed"/>
+                    <Slider Width="180" Minimum="0" Maximum="100" Value="{Binding SeabedPercent}" IsEnabled="{Binding SeabedFixed}"/>
+                    <TextBlock Text="{Binding SeabedPercent, StringFormat={}{0:0}%}" VerticalAlignment="Center" Width="40"/>
+                </StackPanel>
+                <TextBlock FontSize="12" Foreground="Gray" TextWrapping="Wrap"
+                           Text="On land the ore layer has to stay above the water (+ margin), under water any layer is allowed. By area follows the size of land and sea, so an ocean world gets mostly seabed ore; a fixed share keeps more ore on land. If one kind of ground is missing on a cube face, the other one is used."/>
+            </StackPanel>
+        </Border>
         <Border Background="#11808080" CornerRadius="4" Padding="8">
             <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" FontSize="12" MinHeight="48"/>
         </Border>
         <TextBlock FontSize="12" Foreground="Gray" TextWrapping="Wrap"
-                   Text="Each ore chooses in the redistribution window what it does: stay above the water (default, the whole layer must be dry), ignore the water, or only appear under water. Map &gt; Show Water tints the underwater area."/>
+                   Text="Each ore chooses in the redistribution window: Land only (default, the whole layer must be dry), Land + seabed, Seabed only, or Anywhere. Map &gt; Show Water tints the underwater area."/>
         <Button Content="Close" HorizontalAlignment="Right" HorizontalContentAlignment="Center" Width="100" Click="Close_Click" IsDefault="True"/>
     </StackPanel>
 </local:DialogWindow>
