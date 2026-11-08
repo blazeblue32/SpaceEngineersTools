@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using SpaceEngineersToolsShared;
 
 namespace SpaceEngineersOreRedistribution
 {
@@ -117,6 +118,55 @@ namespace SpaceEngineersOreRedistribution
                 foreach (char c in text ?? "") { h ^= c; h *= 16777619u; }
                 return h;
             }
+        }
+    }
+
+    /// <summary>
+    /// Ore regions for the geology mode ("provinces"): like a glob, but the place of the region also follows the rock. The score of a place is the
+    /// glob noise (rank 0..1) times a rock factor, (1 - affinity) + affinity * suitability, where suitability is how well the rocks there suit the ore
+    /// (0..1). The provinces are the places with the highest scores (the top <c>coverage</c> share), so with a high affinity they lie where the ore's
+    /// rock is, and with 0 the rock plays no part (a plain glob). The rock still counts for the vein itself, a province only makes a place more likely.
+    /// </summary>
+    internal class ProvinceField
+    {
+        readonly GlobField _noise;
+        readonly double _affinity, _threshold, _width;
+
+        public ProvinceField(GlobField noise, double affinity, double coverage, int tileWidth, int seed, Func<CubeMapFace, int, int, double> suitability)
+        {
+            _noise = noise;
+            _affinity = Math.Clamp(affinity, 0, 1);
+            var rnd = new Random(seed ^ 0x5bd1e995);
+            var sc = new double[12000];
+            for (int i = 0; i < sc.Length; ++i)
+            {
+                var face = (CubeMapFace)rnd.Next(6); int x = rnd.Next(tileWidth), y = rnd.Next(tileWidth);
+                sc[i] = Score(face, x, y, tileWidth, suitability(face, x, y));
+            }
+            Array.Sort(sc);
+            coverage = Math.Clamp(coverage, 0.02, 0.9);
+            _threshold = Math.Max(1e-6, sc[(int)Math.Clamp((1 - coverage) * sc.Length, 0, sc.Length - 1)]);
+            double mean = sc.Average();
+            double sd = Math.Sqrt(sc.Sum(v => (v - mean) * (v - mean)) / sc.Length);
+            _width = Math.Max(0.005, 0.25 * sd);
+        }
+
+        public double Score(CubeMapFace face, int x, int y, int tileWidth, double suitability)
+        {
+            var p = CoordinateHelper.GetNormalizedSphereCoordinates(face, x, y, tileWidth);
+            double rank = _noise.Rank(_noise.Value(p.X, p.Y, p.Z));
+            return rank * ((1 - _affinity) + _affinity * Math.Clamp(suitability, 0, 1));
+        }
+
+        /// <summary>Chance (0..1) that a vein is accepted at a place with this score (same shape as GlobField.Acceptance).</summary>
+        public double Acceptance(double score, double strength)
+        {
+            if (strength <= 0) return 1;
+            strength = Math.Min(strength, 1);
+            double t = Math.Clamp((score - (_threshold - _width)) / (2 * _width), 0, 1);
+            t = t * t * (3 - 2 * t);
+            double background = Math.Pow(1 - strength, 3);
+            return background + (1 - background) * t;
         }
     }
 }

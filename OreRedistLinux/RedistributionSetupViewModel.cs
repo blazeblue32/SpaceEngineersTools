@@ -96,14 +96,14 @@ namespace SpaceEngineersOreRedistribution
         public double RarityStrength { get => _rarityStrength; set => SetProp(ref _rarityStrength, Math.Clamp(value, 0, 1)); }
 
         /// <summary>What applying data packs did (for the message).</summary>
-        public class DataPackResult { public int RockOres, RarityOres; public List<string> NoRocks = new(), NoRarity = new(); }
+        public class DataPackResult { public int RockOres, RarityOres, RegionOres; public List<string> NoRocks = new(), NoRarity = new(), NoRegion = new(); }
 
         /// <summary>
         /// Applies data packs to the ore list. Rocks: sets the rock weights of every ore a pack has rock data for. Rarity: sets the spawn weight from the
         /// abundance, relative to the other ores of the list: weight = (abundance / highest abundance) ^ strength, the most common ore gets 1000; ores without
         /// abundance data are scaled along so their share stays the same.
         /// </summary>
-        public DataPackResult ApplyDataPacks(IList<OrePack> packs, bool setRocks, bool setRarity)
+        public DataPackResult ApplyDataPacks(IList<OrePack> packs, bool setRocks, bool setRarity, bool setRegions = false)
         {
             var res = new DataPackResult();
             var data = OreInfos.Select(i => (info: i, d: OrePacks.Resolve(i.Name, packs))).ToList();
@@ -113,6 +113,13 @@ namespace SpaceEngineersOreRedistribution
                     if (d.Rocks == null) { res.NoRocks.Add(info.Name); continue; }
                     for (int k = 0; k < GeoInfo.Rocks; ++k) info.Rocks[k].Weight = d.Rocks[k];
                     ++res.RockOres;
+                }
+            if (setRegions)
+                foreach (var (info, d) in data)
+                {
+                    if (!d.Glob.HasValue) { res.NoRegion.Add(info.Name); continue; }
+                    info.Glob = d.Glob.Value; info.GlobSizeKm = d.GlobSize; info.GlobCoverage = d.GlobCoverage;
+                    ++res.RegionOres;
                 }
             if (setRarity)
             {
@@ -174,6 +181,7 @@ namespace SpaceEngineersOreRedistribution
             root.Add(new XAttribute("Placement", Placement.ToString()));
             root.Add(new XAttribute("GlobSizeKm", GlobSizeKm.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XAttribute("GlobCoverage", GlobCoverage.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            root.Add(new XAttribute("RegionRockAffinity", RegionRockAffinity.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             root.Add(new XAttribute("Seed", Seed));
             root.Add(new XAttribute("SmallPlanet", SmallPlanetMode));
             if (withTimestamp) root.Add(new XAttribute("Saved", DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture)));
@@ -203,6 +211,7 @@ namespace SpaceEngineersOreRedistribution
             if (Enum.TryParse<PlacementMode>(root.Attribute("Placement")?.Value, out var pm)) Placement = pm;
             if (double.TryParse(root.Attribute("GlobSizeKm")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gs)) GlobSizeKm = gs;
             if (double.TryParse(root.Attribute("GlobCoverage")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gc)) GlobCoverage = gc;
+            if (double.TryParse(root.Attribute("RegionRockAffinity")?.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ra)) RegionRockAffinity = ra;
             OreInfos.Clear();
             foreach (var node in root.Elements("OreInfo"))
                 OreInfos.Add(OreInfo.FromXElement(node));
@@ -357,6 +366,10 @@ namespace SpaceEngineersOreRedistribution
             get => _globSizeKm;
             set => SetProp(ref _globSizeKm, Math.Clamp(value, 0.5, 5000));
         }
+
+        double _regionRockAffinity = 70;
+        /// <summary>Geology mode: how much the places of an ore's regions follow the rock that suits the ore, in percent (0 = the rock plays no part in choosing a region).</summary>
+        public double RegionRockAffinity { get => _regionRockAffinity; set => SetProp(ref _regionRockAffinity, Math.Clamp(value, 0, 100)); }
 
         double _globCoverage = 20;
         /// <summary>Share of the planet in percent that lies inside the globs of an ore at full strength.</summary>
@@ -791,6 +804,12 @@ namespace SpaceEngineersOreRedistribution
                 foreach (var r in Rocks) r.PropertyChanged += (_, _) => OnPropertyChanged(nameof(RocksSummary));
             }
 
+            double? _globSizeKm, _globCoverage;
+            /// <summary>Size of this ore's globs / regions in km. Empty = the size of the setup.</summary>
+            public double? GlobSizeKm { get => _globSizeKm; set => SetProp(ref _globSizeKm, value.HasValue ? Math.Clamp(value.Value, 0.5, 5000) : null); }
+            /// <summary>Share of the planet in percent inside this ore's globs / regions at full strength. Empty = the share of the setup.</summary>
+            public double? GlobCoverage { get => _globCoverage; set => SetProp(ref _globCoverage, value.HasValue ? Math.Clamp(value.Value, 2, 90) : null); }
+
             double _glob;
             /// <summary>
             /// Globbing strength in percent: 0 = the ore is spread evenly (default), 100 = it only occurs inside its globs,
@@ -926,6 +945,8 @@ namespace SpaceEngineersOreRedistribution
                 static double? Share(string t) => double.TryParse(t?.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : null;
                 info.LandShare = Share(node.Element("LandShare")?.Value);
                 info.Glob = Share(node.Element("Glob")?.Value) ?? 0;
+                info.GlobSizeKm = Share(node.Element("GlobSize")?.Value);
+                info.GlobCoverage = Share(node.Element("GlobCoverage")?.Value);
                 var rockWeights = node.Element("Rocks")?.Value?.Split(';');
                 if (rockWeights != null && rockWeights.Length == info.Rocks.Count)
                     for (int i = 0; i < rockWeights.Length; ++i) info.Rocks[i].Weight = Share(rockWeights[i]) ?? 100;
@@ -955,6 +976,8 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("WaterMode", WaterMode),
                     new XElement("Layers", string.Concat(OreMappings.Select(m => m.LayerEnabled ? '1' : '0'))),
                     new XElement("Glob", Glob.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    new XElement("GlobSize", GlobSizeKm.HasValue ? GlobSizeKm.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),
+                    new XElement("GlobCoverage", GlobCoverage.HasValue ? GlobCoverage.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),
                     new XElement("Rocks", string.Join(";", Rocks.Select(r => r.Weight.ToString(System.Globalization.CultureInfo.InvariantCulture)))),
                     new XElement("LandShare", LandShare.HasValue ? LandShare.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),
                     new XElement("LayerLandShares", string.Join(";", OreMappings.Select(m => m.LandShare.HasValue ? m.LandShare.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""))));

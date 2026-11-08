@@ -2,12 +2,12 @@
 <!-- Ore data pack for OreRedistLinux. See vanilla.xml for the format. -->
 <OreDataPack Format="1" Tool="OreRedistLinux" Name="Better Resources" Author="OreRedistLinux" Order="10"
              Description="Ores added by the Better Resources mod (workshop 2841960221). Use together with Vanilla.">
-  <Ore Name="Aluminium"  Abundance="82300" Rocks="90;40;30;50;40"   />
-  <Ore Name="Titanium"   Abundance="5650"  Rocks="40;40;60;40;90"   />
-  <Ore Name="Petroleum"  Abundance="100"   Rocks="100;5;0;0;0"      />
-  <Ore Name="Nitre"      Abundance="30"    Rocks="100;5;0;5;0"      />
-  <Ore Name="Copper"     Abundance="60"    Rocks="30;30;30;70;100"  />
-  <Ore Name="Lithium"    Abundance="20"    Rocks="40;20;30;40;100"  />
-  <Ore Name="Galena"     Abundance="16"    Rocks="70;40;20;50;60"   />
-  <Ore Name="Wolframite" Abundance="2"     Rocks="5;30;40;10;100"   />
+  <Ore Name="Aluminium"  Abundance="82300" Rocks="90;40;30;50;40" Glob="50" GlobSize="25" GlobCoverage="25"   />
+  <Ore Name="Titanium"   Abundance="5650"  Rocks="40;40;60;40;90" Glob="45" GlobSize="15" GlobCoverage="20"   />
+  <Ore Name="Petroleum"  Abundance="100"   Rocks="100;5;0;0;0" Glob="80" GlobSize="20" GlobCoverage="15"      />
+  <Ore Name="Nitre"      Abundance="30"    Rocks="100;5;0;5;0" Glob="90" GlobSize="12" GlobCoverage="6"      />
+  <Ore Name="Copper"     Abundance="60"    Rocks="30;30;30;70;100" Glob="65" GlobSize="15" GlobCoverage="15"  />
+  <Ore Name="Lithium"    Abundance="20"    Rocks="40;20;30;40;100" Glob="80" GlobSize="12" GlobCoverage="10"  />
+  <Ore Name="Galena"     Abundance="16"    Rocks="70;40;20;50;60" Glob="40" GlobSize="15" GlobCoverage="20"   />
+  <Ore Name="Wolframite" Abundance="2"     Rocks="5;30;40;10;100" Glob="75" GlobSize="10" GlobCoverage="10"   />
 </OreDataPack>

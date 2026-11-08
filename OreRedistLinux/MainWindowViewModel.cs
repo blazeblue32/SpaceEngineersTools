@@ -1282,7 +1282,7 @@ namespace SpaceEngineersOreRedistribution
             {
                 Setup = setup.ViewModel, Mappings = mappingsDictionary, TileWidth = TileWidth,
                 IgnoreTiers = ignoreTiers, Water = water, UseWater = useWater,
-                GlobSize = setup.ViewModel.GlobSizeKm * 1000, GlobCoverage = setup.ViewModel.GlobCoverage / 100, PlanetRadius = setup.ViewModel.PlanetRadius,
+                GlobSize = setup.ViewModel.GlobSizeKm * 1000, GlobCoverage = setup.ViewModel.GlobCoverage / 100, PlanetRadius = setup.ViewModel.PlanetRadius, RegionAffinity = setup.ViewModel.RegionRockAffinity / 100,
             };
             if (setup.ViewModel.Placement == PlacementMode.Geology)
                 ctx.Geology = BuildGeologyModel(setup.ViewModel.Seed, setup.ViewModel.PlanetRadius);

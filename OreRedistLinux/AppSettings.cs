@@ -21,7 +21,7 @@ namespace SpaceEngineersOreRedistribution
         static readonly List<string> _recent = new();
         static string _lastOutputFolder;
         static List<string> _dataPacks; // file names of the selected data packs (null = never chosen)
-        static bool _packRocks = true, _packRarity = true;
+        static bool _packRocks = true, _packRarity = true, _packRegions = true;
 
         public const int MaxRecent = 10;
 
@@ -42,9 +42,10 @@ namespace SpaceEngineersOreRedistribution
         public static IReadOnlyList<string> SelectedDataPacks { get { Load(); return _dataPacks?.ToList(); } }
         public static bool PackRocks { get { Load(); return _packRocks; } }
         public static bool PackRarity { get { Load(); return _packRarity; } }
-        public static void SetDataPackChoice(IEnumerable<string> files, bool rocks, bool rarity)
+        public static bool PackRegions { get { Load(); return _packRegions; } }
+        public static void SetDataPackChoice(IEnumerable<string> files, bool rocks, bool rarity, bool regions = true)
         {
-            Load(); _dataPacks = files.Take(OrePacks.MaxPacks).ToList(); _packRocks = rocks; _packRarity = rarity; Save();
+            Load(); _dataPacks = files.Take(OrePacks.MaxPacks).ToList(); _packRocks = rocks; _packRarity = rarity; _packRegions = regions; Save();
         }
 
         /// <summary>Folder of the last "Redistribute Ore" output, the folder picker starts there.</summary>
@@ -99,6 +100,7 @@ namespace SpaceEngineersOreRedistribution
                     _dataPacks = packs.Elements("File").Select(f => f.Value).Where(f => !string.IsNullOrWhiteSpace(f)).Take(OrePacks.MaxPacks).ToList();
                     if (bool.TryParse(packs.Attribute("Rocks")?.Value, out var pr)) _packRocks = pr;
                     if (bool.TryParse(packs.Attribute("Rarity")?.Value, out var pw)) _packRarity = pw;
+                    if (bool.TryParse(packs.Attribute("Regions")?.Value, out var pg)) _packRegions = pg;
                 }
                 foreach (var f in root?.Element("Recent")?.Elements("File") ?? Enumerable.Empty<XElement>())
                     if (!string.IsNullOrWhiteSpace(f.Value) && _recent.Count < MaxRecent) _recent.Add(f.Value);
@@ -116,7 +118,7 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("OpenFolderWhenFinished", _openFolderWhenFinished),
                     new XElement("LastOutputFolder", _lastOutputFolder ?? ""),
                     new XElement("Recent", _recent.Select(f => new XElement("File", f))),
-                    _dataPacks == null ? null : new XElement("DataPacks", new XAttribute("Rocks", _packRocks), new XAttribute("Rarity", _packRarity), _dataPacks.Select(f => new XElement("File", f))))).Save(FilePath);
+                    _dataPacks == null ? null : new XElement("DataPacks", new XAttribute("Rocks", _packRocks), new XAttribute("Rarity", _packRarity), new XAttribute("Regions", _packRegions), _dataPacks.Select(f => new XElement("File", f))))).Save(FilePath);
             }
             catch { }
         }

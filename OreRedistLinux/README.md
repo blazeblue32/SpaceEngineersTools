@@ -163,6 +163,11 @@ sedimentary, metamorphic (low / high grade), igneous extrusive (volcanic surface
 * Menu **Geology**: *Show regions* (overlay on the map), *Paint regions...* (brush, eraser, brush size, undo / redo; left mouse paints, middle mouse moves the
   map) and *Geology settings...* (uplift share, size of the rock patches, the recipes). The hover text of the map shows the region.
 * Stored per planet in `~/.config/OreRedistLinux/Geology/<planet>/` (`geology.xml`, `paint.png`). The placement report gets a geology section.
+* **Ore regions** (like globbing, but rock aware): in geology mode the **Glob %** column of an ore means regional strength: 0 = the ore may occur anywhere its rock
+  is, 100 = it only occurs in a few regions (gold in a greenstone belt, platinum in one big intrusion). Each ore can have its own region size (**Glob km**) and
+  share of the planet (**Cov %**); empty = the values of the globbing row. The setting *ore regions follow the rock* (default 70 %) decides how much the place
+  of a region depends on the rock that suits the ore: at 0 a region is a plain glob wherever the noise puts it, at 100 regions lie where the ore's rock is.
+  The rock still decides what a vein can be made of, a region only makes a place more likely. Output with Glob 0 is unchanged.
 * Water rules, ratios and density limits still apply; veins are counted by the rock layer they start in. Output with Globbing / geology off is unchanged.
 
 ## Ore data packs (rock types and rarity per ore)
@@ -181,7 +186,7 @@ own, copy one, change its `Name` and the ores, and save it in that folder (*Relo
   <Ore Name="Iron" Abundance="56300" Rocks="80;60;50;15;40" />   <!-- Sed;MetL;MetH;Extr;Intr, 0-1000 -->
 </OreDataPack>
 ```
-`Name` matches the ore name from the planet definition (`Iron` matches `Iron_02`, `Iron_02` only that one); `Abundance` (ppm) and `Rocks` are both optional.
+`Name` matches the ore name from the planet definition (`Iron` matches `Iron_02`, `Iron_02` only that one); `Abundance` (ppm), `Rocks` and the regional values are all optional. `Glob` (0-100) is the regional strength, `GlobSize` (km) and `GlobCoverage` (% of the planet) size the regions, e.g. `Glob="75" GlobSize="12" GlobCoverage="12"`. The Data packs window has a checkbox for applying them. Built-in packs that were exported by an older version keep their old content (delete the file to get the new one back).
 
 Packs are data only. A file is loaded only if its root element is `OreDataPack` with `Format="1"` and `Tool="OreRedistLinux"`; files with DOCTYPE or
 external entities, over 1 MB, symbolic links and anything malformed are skipped (and listed in the window). Ore names must match a strict pattern, numbers are

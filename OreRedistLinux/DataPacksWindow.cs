@@ -17,6 +17,7 @@ namespace SpaceEngineersOreRedistribution
         readonly TextBlock _skipped = new() { Foreground = Brushes.Gray, FontSize = 12, TextWrapping = TextWrapping.Wrap };
         readonly TextBlock _result = new() { TextWrapping = TextWrapping.Wrap, FontWeight = FontWeight.SemiBold };
         readonly CheckBox _rocks = new() { Content = "Set rock types (used by the geology placement mode)" };
+        readonly CheckBox _regions = new() { Content = "Set the regions of each ore: Glob % strength and size (ores that occur in a few regions)" };
         readonly CheckBox _rarity = new() { Content = "Set the Weight of each ore from its real abundance (relative to the other ores in the list)" };
         readonly List<(CheckBox box, OrePack pack)> _boxes = new();
 
@@ -37,6 +38,7 @@ namespace SpaceEngineersOreRedistribution
             root.Children.Add(_skipped);
 
             root.Children.Add(_rocks);
+            root.Children.Add(_regions);
             root.Children.Add(_rarity);
             var strength = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(24, 0, 0, 0) };
             strength.Children.Add(new TextBlock { Text = "Strength", VerticalAlignment = VerticalAlignment.Center });
@@ -68,6 +70,7 @@ namespace SpaceEngineersOreRedistribution
 
             _rocks.IsChecked = AppSettings.PackRocks;
             _rarity.IsChecked = AppSettings.PackRarity;
+            _regions.IsChecked = AppSettings.PackRegions;
             Rebuild(AppSettings.SelectedDataPacks?.ToList() ?? new List<string> { "vanilla.xml" });
         }
 
@@ -92,17 +95,18 @@ namespace SpaceEngineersOreRedistribution
         }
 
         void SaveChoice() =>
-            AppSettings.SetDataPackChoice(_boxes.Where(b => b.box.IsChecked == true).Select(b => b.pack.FileName), _rocks.IsChecked == true, _rarity.IsChecked == true);
+            AppSettings.SetDataPackChoice(_boxes.Where(b => b.box.IsChecked == true).Select(b => b.pack.FileName), _rocks.IsChecked == true, _rarity.IsChecked == true, _regions.IsChecked == true);
 
         void Apply()
         {
             var packs = _boxes.Where(b => b.box.IsChecked == true).Select(b => b.pack).ToList();
             if (packs.Count == 0) { _result.Text = "Tick at least one pack."; return; }
-            if (_rocks.IsChecked != true && _rarity.IsChecked != true) { _result.Text = "Tick what to set: rock types and / or weights."; return; }
+            if (_rocks.IsChecked != true && _rarity.IsChecked != true && _regions.IsChecked != true) { _result.Text = "Tick what to set: rock types, regions and / or weights."; return; }
             SaveChoice();
-            var r = _vm.ApplyDataPacks(packs, _rocks.IsChecked == true, _rarity.IsChecked == true);
+            var r = _vm.ApplyDataPacks(packs, _rocks.IsChecked == true, _rarity.IsChecked == true, _regions.IsChecked == true);
             var lines = new List<string>();
             if (_rocks.IsChecked == true) lines.Add($"Rock types set for {r.RockOres} ore(s)." + (r.NoRocks.Count > 0 ? " No rock data for: " + string.Join(", ", r.NoRocks) + "." : ""));
+            if (_regions.IsChecked == true) lines.Add($"Regions set for {r.RegionOres} ore(s)." + (r.NoRegion.Count > 0 ? " No region data for: " + string.Join(", ", r.NoRegion) + "." : ""));
             if (_rarity.IsChecked == true) lines.Add($"Weights set for {r.RarityOres} ore(s), strength {_vm.RarityStrength:0.##}." + (r.NoRarity.Count > 0 ? " No abundance for (scaled along): " + string.Join(", ", r.NoRarity) + "." : ""));
             _result.Text = string.Join("\n", lines);
         }

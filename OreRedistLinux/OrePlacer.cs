@@ -16,6 +16,8 @@ namespace SpaceEngineersOreRedistribution
         public bool UseWater;
         /// <summary>Globbing: size of the globs in meters, share of the planet inside globs (0..1) and planet radius for the noise.</summary>
         public double GlobSize = 15000, GlobCoverage = 0.2, PlanetRadius = 60000;
+        /// <summary>Geology: how much the place of an ore's regions follows the rock that suits the ore (0..1).</summary>
+        public double RegionAffinity = 0.7;
         /// <summary>Geology placement (rock types per region). Null = off (globbing / evenly spread).</summary>
         internal GeologyModel Geology;
     }
@@ -270,8 +272,43 @@ namespace SpaceEngineersOreRedistribution
         GlobField FieldFor(RedistributionSetupViewModel.OreInfo info)
         {
             if (!_globs.TryGetValue(info.Name, out var f))
-                _globs[info.Name] = f = new GlobField(GlobField.StableHash(info.Name, _seed), _c.PlanetRadius, _c.GlobSize, _c.GlobCoverage);
+                _globs[info.Name] = f = new GlobField(GlobField.StableHash(info.Name, _seed), _c.PlanetRadius, GlobSizeOf(info), GlobCoverageOf(info));
             return f;
+        }
+
+        /// <summary>Glob size (m) and coverage (0..1) of an ore: its own values if it has them, else the ones of the setup.</summary>
+        double GlobSizeOf(RedistributionSetupViewModel.OreInfo info) => info.GlobSizeKm.HasValue && info.GlobSizeKm.Value > 0 ? info.GlobSizeKm.Value * 1000 : _c.GlobSize;
+        double GlobCoverageOf(RedistributionSetupViewModel.OreInfo info) => info.GlobCoverage.HasValue && info.GlobCoverage.Value > 0 ? info.GlobCoverage.Value / 100 : _c.GlobCoverage;
+
+        // Geology: ore regions that follow the rock (see ProvinceField)
+        readonly Dictionary<string, ProvinceField> _provinces = new();
+
+        /// <summary>Suitability 0..1 of a place for the ore: the mean over the three rock layers of its weight for the rock there / its best weight.</summary>
+        double Suitability(CubeMapFace face, int x, int y, double[] rw, double max)
+        {
+            double sum = 0;
+            for (int k = 0; k < GeoInfo.Tiers; ++k) sum += rw[(int)_c.Geology.RockAt(face, x, y, k)];
+            return sum / (GeoInfo.Tiers * max);
+        }
+
+        ProvinceField ProvinceFor(RedistributionSetupViewModel.OreInfo info, double[] rw, double max)
+        {
+            if (!_provinces.TryGetValue(info.Name, out var pf))
+                _provinces[info.Name] = pf = new ProvinceField(FieldFor(info), _c.RegionAffinity, GlobCoverageOf(info), _c.TileWidth,
+                    (int)GlobField.StableHash("prov" + info.Name, _seed), (f, x, y) => Suitability(f, x, y, rw, max));
+            return pf;
+        }
+
+        /// <summary>
+        /// Chance 0..1 of the ore's regional strength (Glob %) at a place, geology mode. rockSum = sum of the ore's weights for the rock of the three layers there.
+        /// 1 for ores without a regional strength.
+        /// </summary>
+        double ProvinceChance(RedistributionSetupViewModel.OreInfo info, CubeMapFace face, int x, int y, double rockSum, double[] rw, double max)
+        {
+            double strength = info.Glob / 100.0;
+            if (strength <= 0 || max <= 0) return 1;
+            var pf = ProvinceFor(info, rw, max);
+            return pf.Acceptance(pf.Score(face, x, y, _c.TileWidth, rockSum / (GeoInfo.Tiers * max)), strength);
         }
 
         /// <summary>Chance 0..1 that a vein of this ore is accepted at a pixel (1 for ores without globbing).</summary>
@@ -296,7 +333,13 @@ namespace SpaceEngineersOreRedistribution
                 var rw = RockW(info); double max = rw.Max();
                 if (max <= 0 || layer < 0) return null;
                 int tier = GeoInfo.TierOf(layer);
-                return (x, y) => _rnd.NextDouble() < rw[(int)geo.RockAt(face, x, y, tier)] / max;
+                if (info.Glob <= 0) return (x, y) => _rnd.NextDouble() < rw[(int)geo.RockAt(face, x, y, tier)] / max;
+                return (x, y) =>
+                {
+                    double here = 0, mine = 0;
+                    for (int k = 0; k < GeoInfo.Tiers; ++k) { double r = rw[(int)geo.RockAt(face, x, y, k)]; here += r; if (k == tier) mine = r; }
+                    return _rnd.NextDouble() < mine / max * ProvinceChance(info, face, x, y, here, rw, max);
+                };
             }
             return info.Glob > 0 ? (x, y) => _rnd.NextDouble() < GlobChance(info, face, x, y) : null;
         }
@@ -344,7 +387,7 @@ namespace SpaceEngineersOreRedistribution
             if (prefSum <= 0) return false;
 
             double possible = prefSum * maxRock;
-            var w = new double[10]; var bestW = new double[10]; double best = 0; int bx = diceX, by = diceY;
+            var w = new double[10]; var bestW = new double[10]; double best = 0, bestScore = 0; int bx = diceX, by = diceY;
             var rock = new double[GeoInfo.Tiers];
             for (int t = 0; t < 100; ++t)
             {
@@ -352,8 +395,11 @@ namespace SpaceEngineersOreRedistribution
                 for (int k = 0; k < GeoInfo.Tiers; ++k) rock[k] = rw[(int)geo.RockAt(face, x, y, k)];
                 double total = 0;
                 for (int i = 0; i < 10; ++i) { w[i] = pref[i] * rock[GeoInfo.TierOf(i)]; total += w[i]; }
-                if (total > best) { best = total; bx = x; by = y; Array.Copy(w, bestW, 10); }
-                if (total > 0 && _rnd.NextDouble() < total / possible)
+                // the ore's regions (Glob %): places inside a region are accepted more often
+                double chance = info.Glob > 0 && total > 0 ? ProvinceChance(info, face, x, y, rock[0] + rock[1] + rock[2], rw, maxRock) : 1;
+                double score = total * (chance + 1e-9);
+                if (score > bestScore) { bestScore = score; best = total; bx = x; by = y; Array.Copy(w, bestW, 10); }
+                if (total > 0 && _rnd.NextDouble() < total / possible * chance)
                 {
                     px = x; py = y; idx = Roulette(w, total);
                     return true;
