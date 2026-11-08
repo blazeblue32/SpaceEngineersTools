@@ -185,6 +185,44 @@ entries could be renamed to Better Stone's style (mineral names with the element
 or rutile (Ti), Lithium -> spodumene (Li), Wolframite (W, Sn), Nitre -> niter (N), Sulfur -> native sulfur (S). Petroleum stays (not a mineral). Where both mods overlap, use the Better Stone ore and
 carry the better refining recipe over (Galena above). The only voxel-material overlap is `Galena_01`; `Iron_01`/`Iron_02` are Better Stone's.
 
+## 11. Repurposing existing slots instead of adding materials
+
+Goal: no new voxel materials. A Better Resources ore takes over the slot (voxel material id) of an ore with a **similar texture** that the pack does not need, and only gets a new name (MinedOre / display name and refining recipe).
+Better Stone already reuses vanilla textures for its minerals (Pyrite and Electrum use the gold texture, Quartz the ice texture, Olivine the alien ice texture...), so the textures were compared by eye and by mean color / contrast
+(Lab) of the `ColorMetalXZnY` textures.
+
+**Which vanilla ores can be given up:** the ones with no native form: Cobalt, Nickel, Magnesium, Silicon, Uranium (and Iron, except meteoritic metal). The ones that *do* occur natively stay as pure ores, so the
+earlier advice to drop all pure vanilla ores is refined: **keep Gold_01, Silver_01 and Platinum_01** (native gold, silver, platinum), 3 more ores for the budget (about 12 layers).
+
+**Proposed assignment (8 Better Resources ores, none of them a new material):**
+
+| Better Resources ore | Takes over the slot of | Why this slot | Elements still covered |
+|---|---|---|---|
+| Copper | **Cobalt_01** (vanilla, cyan-blue veins) | nearest hue to copper's teal verdigris; native copper exists, native cobalt does not | Co: Cattierite, Glaucodot, Kamacite |
+| Titanium | **Silicon_01** (vanilla, light grey) | light grey speckled, like the Titanium texture | Si: Quartz, Olivine, Akimotoite, Wadsleyite |
+| Wolframite | **Nickel_01** (vanilla, tan-brown on dark) | brown / orange dark ore | Ni: Heazlewoodite, Cooperite, Taenite, Kamacite |
+| Petroleum | **Magnesium_01** (vanilla, dark blue-grey) | dark rough; Better Stone's Dolomite and Olivine carry the magnesium | Mg: Dolomite, Olivine, Akimotoite, Wadsleyite |
+| Sulfur | **Carnotite_01** (Better Stone, yellow-brown) | the only yellow texture; uranium stays via Uraninite, Autunite, Uraniaurite | U: Uraninite_01, Autunite, Uraniaurite |
+| Aluminium (bauxite) | **Cohenite_01** (Better Stone, tan-pink) | red-brown / pink-orange like bauxite; Cohenite duplicates Kamacite and Taenite | Fe, Ni, Co via Kamacite, Taenite |
+| Lithium | **Hapkeite_01** (Better Stone, lilac-grey) | mauve-grey, the closest to lepidolite pink; a rare Fe-Si mineral | Fe, Si via Taenite, Quartz... |
+| Nitre | **Petzite_01** (Better Stone, pale grey) | the palest texture; Petzite duplicates Electrum and Chlorargyrite | Ag: Galena, Chlorargyrite, Electrum; Au: Porphyry, Pyrite, Electrum, Uraniaurite |
+
+Other close matches if you want to swap: Copper <- Nickel_01 or BS Cohenite; Lithium <- Cattierite (same texture as Hapkeite); Titanium <- BS Sperrylite (white-grey, and unused on Better Stone's planets);
+Petroleum <- BS Porphyry or Kamacite (black rough, the nearest of all, but they carry gold / meteoritic iron); Aluminium <- BS Uraniaurite or Chlorargyrite (orange).
+`Galena_01` stays Better Stone's (lead + silver recipe).
+
+**Effect on the numbers:** voxel materials stay at vanilla 62 + Better Stone's 25 = **87** (Better Resources adds none). The ore count for the tool is unchanged (about 36-40 ores with Gold, Silver, Platinum back in).
+
+**Things to watch:**
+* Renaming a **vanilla** material changes it in every planet that uses it, also other mods' planets in the same save (a Typhoon or Teal map that places `Cobalt_01` would then place copper). Better Stone's own
+  slots are safe; vanilla slots are only safe if every planet you play on uses your pack.
+* The tool and the data packs refer to the **material id**, not the new name: the ore the tool lists as `Cobalt_01` is your copper. The built-in Vanilla pack still has Cobalt data under that name, so a merged
+  pack (a fourth data pack with a higher Order) must give `Cobalt_01`, `Silicon_01`, `Nickel_01`, `Magnesium_01`, `Carnotite_01`, `Cohenite_01`, `Hapkeite_01` and `Petzite_01` the data of the ore that now uses them
+  (an exact id in a later pack overrides the base-name entry of an earlier one).
+* The vanilla ore items (Cobalt ore, Silicon ore...) and their refining recipes stay in the game; only the voxel material is renamed. The refining recipes for the renamed ores come from Better Resources.
+* Textures stay those of the donor slot, so the renamed ores look like the old ones (a "Copper" that looks like cobalt). Better Resources' own textures would match better but are new texture files, not new materials: you
+  can keep the donor's id and use Better Resources' texture files in the override if you want that.
+
 ## 8. Tool changes made while writing this
 
 * The Vanilla data pack now also has an `Uraninite` entry: the vanilla uranium voxel material is `Uraninite_01`, so the old `Uranium` entry never matched a planet's ore name.
