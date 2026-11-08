@@ -28,6 +28,9 @@ namespace SpaceEngineersOreRedistribution
         // Additional 4+4 MB for height map and gradients (compressed, original is ushort)
         public byte[,] H { get; private set; }
         public byte[,] HGrad { get; private set; }
+        /// <summary>Full 16 bit height map. The 8 bit H above is too coarse for water line math (about 30 m steps).</summary>
+        public ushort[,] H16 { get; private set; }
+        public bool HasHeightMap { get; private set; }
 
         public List<(int, int, byte)> OrePixels { get; } = new();
 
@@ -57,10 +60,16 @@ namespace SpaceEngineersOreRedistribution
                 img1.Dispose();
             }
             if (!skipHeightMap && img2 is Image<L16>) hMap = (Image<L16>)img2;
+            else if (!skipHeightMap)
+            {
+                // 8 bit gray / palette height maps (some mods): the original replaced them with a blank map.
+                // Convert instead, so heights are real (needed for water line rules).
+                hMap = img2.CloneAs<L16>();
+                img2.Dispose();
+            }
             else
             {
-                hMap = new SixLabors.ImageSharp.Image<L16>(tileWidth, tileWidth); // img1.CloneAs<L16>();
-                img2?.Dispose();
+                hMap = new SixLabors.ImageSharp.Image<L16>(tileWidth, tileWidth);
             }
 
             if (matMap.Width != tileWidth)
@@ -76,6 +85,7 @@ namespace SpaceEngineersOreRedistribution
 
             if (token.IsCancellationRequested) return null;
             var retval = new ImageData(face, tileWidth);
+            retval.HasHeightMap = !skipHeightMap;
             Task t1 = Task.Run(() =>
             {
                 matMap.ProcessPixelRows(row =>
@@ -126,6 +136,7 @@ namespace SpaceEngineersOreRedistribution
                         {
                             var curentVal = pixelHRow[x].PackedValue;
                             retval.H[x, y] = (byte)(255.0 * curentVal / 65535.0 + .5);
+                            retval.H16[x, y] = curentVal;
 
                             if (y > 0 && x > 0)
                             {
@@ -171,16 +182,17 @@ namespace SpaceEngineersOreRedistribution
             B = new byte[tileWidth, tileWidth];
             H = new byte[tileWidth, tileWidth];
             HGrad = new byte[tileWidth, tileWidth];
+            H16 = new ushort[tileWidth, tileWidth];
             TileWidth = tileWidth;
         }
 
         public void Dispose()
         {
             // Might buffer images later
-            R = B = G = H = HGrad = null;
+            R = B = G = H = HGrad = null; H16 = null;
         }
 
-        public Bitmap CreateBitmapImage(bool heightMap, bool complexMaterials, int? selectedComplexMaterial, bool biomes, int? selectedBiome)
+        public Bitmap CreateBitmapImage(bool heightMap, bool complexMaterials, int? selectedComplexMaterial, bool biomes, int? selectedBiome, WaterSettings water = null)
         {
             int stride = TileWidth * 4;
             var pixels = new byte[stride * TileWidth]; // Bgra8888
@@ -223,6 +235,11 @@ namespace SpaceEngineersOreRedistribution
                             if (newRed > 255) newRed = 255;
                             r = (byte)newRed; g = 0; b = 0;
                         }
+                    }
+                    if (water != null && H16 != null && water.IsUnderwater(H16[x, y]))
+                    {
+                        // Underwater terrain: blue tint
+                        r = (byte)(r * 0.45); g = (byte)(g * 0.6 + 40); b = (byte)Math.Min(255, b * 0.5 + 150);
                     }
                     int i = y * stride + x * 4;
                     pixels[i] = b;

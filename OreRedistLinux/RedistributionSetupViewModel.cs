@@ -17,6 +17,20 @@ namespace SpaceEngineersOreRedistribution
     internal class RedistributionSetupViewModel : PropChangeNotifier
     {
         public ObservableCollection<OreInfo> OreInfos { get; } = new();
+
+        /// <summary>Water rules of the planet (shared with the main window). Null when none are loaded.</summary>
+        WaterSettings _water;
+        public WaterSettings Water
+        {
+            get => _water;
+            set { _water = value; OnPropertyChanged(); OnPropertyChanged(nameof(WaterEnabled)); OnPropertyChanged(nameof(WaterInfo)); }
+        }
+
+        public bool WaterEnabled => _water != null && _water.Enabled;
+
+        public string WaterInfo => _water == null ? "" :
+            _water.Enabled ? "Water rules ON: " + _water.Describe() :
+            "Water rules are off (menu Water in the main window). The Water column has no effect.";
         OreInfo _selectedInfo;
         public OreInfo SelectedInfo
         {
@@ -472,6 +486,24 @@ namespace SpaceEngineersOreRedistribution
                 }
             }
 
+            OreWaterMode _waterMode = OreWaterMode.AboveWater;
+            /// <summary>Only used when the planet has water rules enabled.</summary>
+            public OreWaterMode WaterMode
+            {
+                get => _waterMode;
+                set
+                {
+                    if (SetProp(ref _waterMode, value)) OnPropertyChanged(nameof(WaterModeIndex));
+                }
+            }
+
+            /// <summary>For the combo box: 0 above water, 1 anywhere, 2 underwater only.</summary>
+            public int WaterModeIndex
+            {
+                get => (int)_waterMode;
+                set => WaterMode = (OreWaterMode)Math.Clamp(value, 0, 2);
+            }
+
             bool _veryDeepOre = true;
             public bool VeryDeepOre
             {
@@ -524,6 +556,7 @@ namespace SpaceEngineersOreRedistribution
                 if (int.TryParse(node.Element("TypicalDepthMax")?.Value, out tmp)) info.TypicalDepthMax = tmp;
                 if (int.TryParse(node.Element("PreferredDepth")?.Value, out tmp)) info.PreferredDepth = tmp;
                 if (bool.TryParse(node.Element("VeryDeepOre")?.Value, out var bb)) info.VeryDeepOre = bb;
+                if (Enum.TryParse<OreWaterMode>(node.Element("WaterMode")?.Value, out var wm)) info.WaterMode = wm;
 
                 var mappings = node.Element("Mappings");
                 if (mappings != null)
@@ -559,7 +592,8 @@ namespace SpaceEngineersOreRedistribution
                     new XElement("TypicalDepthMin", TypicalDepthMin),
                     new XElement("TypicalDepthMax", TypicalDepthMax),
                     new XElement("PreferredDepth", PreferredDepth),
-                    new XElement("VeryDeepOre", VeryDeepOre));
+                    new XElement("VeryDeepOre", VeryDeepOre),
+                    new XElement("WaterMode", WaterMode));
 
                 if (OreMappings.Count > 0)
                 {

@@ -26,7 +26,9 @@
                     <MenuItem Header="Show Gradients" ToggleType="CheckBox" IsChecked="{Binding ShowGradients, Mode=TwoWay}" />
                     <MenuItem Header="Show Lakes (Complex Materials)" ToggleType="CheckBox" IsChecked="{Binding ShowLakes, Mode=TwoWay}" />
                     <MenuItem Header="Show Biomes" ToggleType="CheckBox" IsChecked="{Binding ShowBiomes, Mode=TwoWay}" />
+                    <MenuItem Header="Show Water (tint underwater terrain)" ToggleType="CheckBox" IsChecked="{Binding ShowWater, Mode=TwoWay}" />
                 </MenuItem>
+                <MenuItem Header="_Water" Command="{Binding OpenWaterSettingsCommand}" ToolTip.Tip="Water Mod settings: keep ore out of the water" />
                 <MenuItem Header="Redistribute Ore" Command="{Binding RedistributeOreCommand}" />
                 <MenuItem Header="Rewrite Biomes" Command="{Binding RewriteBiomesCommand}" />
                 <MenuItem Header="Create Occlusion Maps" Command="{Binding CreateOcclusionMapsCommand}" />

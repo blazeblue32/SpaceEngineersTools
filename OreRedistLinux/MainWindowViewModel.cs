@@ -144,8 +144,10 @@ namespace SpaceEngineersOreRedistribution
                 if (value == null)
                 {
                     _oreTypeOrder = new();
+                    Water = null;
                     return;
                 }
+                Water = WaterSettings.ForPlanet(value, _lastOpenedFile);
                 // Order of first appearance in the definition: keeps each ore's default color stable
                 _oreTypeOrder = value.OreMappings.Select(m => m.Type).Distinct().ToList();
                 //HashSet<string> types = new();
@@ -254,6 +256,7 @@ namespace SpaceEngineersOreRedistribution
                         {
                             if (token.IsCancellationRequested) return;
                             _updatingImages = false;
+                            AnalyzeWater();
                             UpdateImages();
                             UpdateOverlays(true);
                         });
@@ -429,6 +432,100 @@ namespace SpaceEngineersOreRedistribution
             }
         }
 
+        // ------------------------------------------------------------------ water (Water Mod)
+        WaterSettings _water;
+        /// <summary>Water rules of the selected planet, null while no planet is selected.</summary>
+        public WaterSettings Water
+        {
+            get => _water;
+            private set
+            {
+                if (_water != null) _water.SettingsChanged -= WaterChanged;
+                if (!SetProp(ref _water, value)) return;
+                if (_water != null) _water.SettingsChanged += WaterChanged;
+            }
+        }
+
+        bool _showWater;
+        public bool ShowWater
+        {
+            get => _showWater;
+            set
+            {
+                if (!SetProp(ref _showWater, value)) return;
+                if (!_updatingImages) UpdateImages();
+            }
+        }
+
+        DispatcherTimer _waterTimer;
+        void WaterChanged()
+        {
+            _water?.Save();
+            _waterTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _waterTimer.Tick -= WaterTimerTick;
+            _waterTimer.Tick += WaterTimerTick;
+            _waterTimer.Stop();
+            _waterTimer.Start();
+        }
+
+        void WaterTimerTick(object sender, EventArgs e)
+        {
+            _waterTimer.Stop();
+            AnalyzeWater();
+            if (ShowWater && !_updatingImages) UpdateImages();
+        }
+
+        /// <summary>
+        /// Looks at the height maps with the current water values: how much of the planet is underwater
+        /// and how deep one can dig on the rest before reaching the water (+ margin).
+        /// </summary>
+        public void AnalyzeWater()
+        {
+            var water = _water;
+            if (water == null) return;
+            List<ImageData> images;
+            lock (_images) images = _images.Values.Where(i => i != null && i.H16 != null).ToList();
+            if (images.Count == 0) { water.Summary = ""; return; }
+            if (!images.All(i => i.HasHeightMap)) { water.Summary = "A height map (front.png, ...) is missing for this planet. Water rules cannot be used."; return; }
+            if (!water.HasUsableHills) { water.Summary = "Hill range (HillParams Min/Max) is empty, the height map has no effect. Enter the values the planet uses."; return; }
+            int width = TileWidth;
+            Task.Run(() =>
+            {
+                double[] depths = { 10, 25, 50, 100, 200, 400 };
+                long under = 0, total = 0;
+                long[] fit = new long[depths.Length];
+                double best = double.MinValue;
+                object gate = new();
+                Parallel.ForEach(images, img =>
+                {
+                    long u = 0, t = 0; long[] f = new long[depths.Length]; double b = double.MinValue;
+                    for (int x = 0; x < width; ++x)
+                        for (int y = 0; y < width; ++y)
+                        {
+                            var h = img.H16[x, y];
+                            ++t;
+                            if (water.IsUnderwater(h)) ++u;
+                            var allowed = water.AllowedDepth(h);
+                            if (allowed > b) b = allowed;
+                            for (int i = 0; i < depths.Length; ++i) if (allowed >= depths[i]) ++f[i];
+                        }
+                    lock (gate) { under += u; total += t; for (int i = 0; i < f.Length; ++i) fit[i] += f[i]; if (b > best) best = b; }
+                });
+                string pct(long v) => (100.0 * v / Math.Max(1, total)).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+                var text = $"Underwater: {pct(under)} of the surface. Water line at {water.WaterLineFraction * 100:0.#}% of the height range. " +
+                           $"Deepest dry layer possible: {Math.Max(0, best):0} m (after {water.Margin:0.#} m margin).\n" +
+                           "Surface where a layer ending at this depth stays dry:  " +
+                           string.Join("   ", depths.Select((d, i) => $">= {d:0} m: {pct(fit[i])}"));
+                Dispatcher.UIThread.Post(() => water.Summary = text);
+            });
+        }
+
+        public ICommand OpenWaterSettingsCommand => new RelayCommand(o =>
+        {
+            var win = new WaterSettingsWindow { DataContext = Water };
+            win.ShowDialogBlocking();
+        }, o => Water != null);
+
         bool _showBiomes = false;
         public bool ShowBiomes
         {
@@ -509,6 +606,12 @@ namespace SpaceEngineersOreRedistribution
             if (id == null) return false;
             var def = new PlanetDefinition();
             def.Name = id;
+            var hill = definition.Element("HillParams");
+            if (hill != null)
+            {
+                if (double.TryParse(hill.Attribute("Min")?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var hMin)) def.HillMin = hMin;
+                if (double.TryParse(hill.Attribute("Max")?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var hMax)) def.HillMax = hMax;
+            }
             PlanetDefinitions.Add(def);
             var oreMappings = definition.Element("OreMappings");
             if (oreMappings != null)
@@ -822,6 +925,8 @@ namespace SpaceEngineersOreRedistribution
                             if (x >= fb.Size.Width || y >= fb.Size.Height) continue;
 
                             var mapping = byValue[v];
+                            // Value without an ore mapping = no ore (Typhoon and some other mods use 0 for "empty", not 255)
+                            if (mapping == null) continue;
                             byte a = 255;
                             if (UseOreDetectorRange && mapping != null && mapping.Start > OreDetectorRange)
                                 a = 32;
@@ -876,7 +981,7 @@ namespace SpaceEngineersOreRedistribution
                 if (SelectedEnvironmentItem != null) biome = SelectedEnvironmentItem.Biome;
                 int? complexMaterial = null;
                 if (SelectedComplexMaterial != null) complexMaterial = SelectedComplexMaterial.Value;
-                var image = value.CreateBitmapImage(!ShowGradients, ShowLakes, complexMaterial, ShowBiomes, biome);
+                var image = value.CreateBitmapImage(!ShowGradients, ShowLakes, complexMaterial, ShowBiomes, biome, ShowWater && Water != null && Water.Enabled && Water.HasUsableHills ? Water : null);
 
                 switch (key)
                 {
@@ -920,6 +1025,7 @@ namespace SpaceEngineersOreRedistribution
 
             // Collect ore info
             var setup = new RedistributionSetup();
+            setup.ViewModel.Water = Water;
             //var existingOreDefs = SelectedPlanetDefinition.OreMappings.Select(o => o.Type).Distinct().ToList();
             foreach (var oredef in OreTypes)
             {
@@ -987,6 +1093,21 @@ namespace SpaceEngineersOreRedistribution
 
 
             var keys = _images.Keys;
+
+            // Water Mod rules
+            var water = Water;
+            bool useWater = water != null && water.Enabled;
+            if (useWater && (!water.HasUsableHills || !_images.Values.All(i => i != null && i.HasHeightMap)))
+            {
+                MessageBox.Show("The water rules are switched on, but they cannot be used:\r\n" +
+                                (water.HasUsableHills ? "a height map is missing for this planet." : "the hill range (HillParams Min/Max) is empty.") +
+                                "\r\nOre will be placed without water rules.", "Water rules", MessageBoxButton.OK, MessageBoxImage.Warning);
+                useWater = false;
+            }
+            var report = new Dictionary<string, OreReportRow>();
+            foreach (var oi in setup.ViewModel.OreInfos)
+                report[oi.Name] = new OreReportRow { Name = oi.Name, Mode = useWater ? oi.WaterMode : OreWaterMode.Anywhere };
+
             var rnd = new Random(setup.ViewModel.Seed); // Seed 0 is better for debugging.
             var normal = new Normal(rnd);
             bool overridefiles = false;
@@ -1120,11 +1241,30 @@ namespace SpaceEngineersOreRedistribution
                         // Get mapping info for pixel value
                         var mappings = mappingsDictionary[info.Name];
 
+                        // Water rules: find a site where the wanted layer (or a shallower one) stays above the water
+                        var row = report[info.Name];
+                        var waterMode = useWater ? info.WaterMode : OreWaterMode.Anywhere;
+                        int siteX = x, siteY = y;
+                        ++row.Events;
+                        if (waterMode != OreWaterMode.Anywhere)
+                        {
+                            if (!WaterPlacement.FindSite(water, waterMode, value, mappings, x, y, defaultDepthIndex, minDepthIndex, rnd, TileWidth,
+                                    out siteX, out siteY, out var siteIdx))
+                            {
+                                ++row.Dropped;
+                                continue;
+                            }
+                            if (siteX != x || siteY != y) ++row.Moved;
+                            if (siteIdx < defaultDepthIndex) ++row.ClampedVeins;
+                            defaultDepthIndex = siteIdx;
+                        }
+                        ++row.Placed;
+
                         HashSet<OreToDraw> drawnOre = new();
-                        drawnOre.Add(new OreToDraw(TileWidth) { X = x, Y = y, Value = mappings[defaultDepthIndex].Value });
+                        drawnOre.Add(new OreToDraw(TileWidth) { X = siteX, Y = siteY, Value = mappings[defaultDepthIndex].Value });
                         int lastDepthIndex = defaultDepthIndex;
-                        int lastX = x;
-                        int lastY = y;
+                        int lastX = siteX;
+                        int lastY = siteY;
 
                         // Vanilla ore scanner max range is 150m
                         // Only index 6 is detectable from surface
@@ -1144,6 +1284,7 @@ namespace SpaceEngineersOreRedistribution
                         // - While drawing
                         // - If last drawn height is not starting height give a 30% to jump back to starting height. 20% Chance of getting further away.
                         //   50% of staying at same height.
+                        int extraSteps = 0;
                         for (int i=1;i<spawnSize;++i) // We already added one pixel at this point, so start with 1
                         {
                             var direction = rnd.Next(4);
@@ -1200,6 +1341,7 @@ namespace SpaceEngineersOreRedistribution
                             }
                             if (!foundFreePixel) break; // Bye bye. Don't hammer your head against a wall
 
+                            int prevX = lastX, prevY = lastY; // for water rules: step back if this pixel is too wet
                             lastX = nextOreToDraw.X;
                             lastY = nextOreToDraw.Y;
                             drawnOre.Add(nextOreToDraw);
@@ -1277,20 +1419,57 @@ namespace SpaceEngineersOreRedistribution
                             }
 
                             // Get value for depth
-                            nextOreToDraw.Value = mappings[lastDepthIndex].Value;
+                            if (waterMode == OreWaterMode.Anywhere)
+                                nextOreToDraw.Value = mappings[lastDepthIndex].Value;
+                            else
+                            {
+                                // Water rules per pixel: the vein may creep towards the sea, then it gets shallower or stops
+                                int idxHere = WaterPlacement.IndexAt(water, waterMode, value, mappings, nextOreToDraw.X, nextOreToDraw.Y, lastDepthIndex, minDepthIndex);
+                                if (idxHere < 0)
+                                {
+                                    nextOreToDraw.Value = -1; ++row.SkippedPixels;
+                                    // Wet pixel stays marked as used, the vein steps back and goes on along the shore,
+                                    // so it still reaches its size (limited, so it cannot loop forever)
+                                    if (extraSteps < spawnSize * 4)
+                                    {
+                                        ++extraSteps;
+                                        lastX = prevX; lastY = prevY;
+                                        --i;
+                                    }
+                                }
+                                else
+                                {
+                                    if (idxHere < lastDepthIndex) ++row.ClampedPixels;
+                                    nextOreToDraw.Value = mappings[idxHere].Value;
+                                }
+                            }
                         }
 
                         foreach (var drawn in drawnOre)
                         {
                             if (drawn.Value > 0 && drawn.Value < 256) // don't draw disabled entries which have value -1. See FinalizeList()
+                            {
                                 image.B[drawn.X, drawn.Y] = (byte)drawn.Value;
-
+                                ++row.Pixels;
+                            }
                         }
                     }
                 }
                 image.SaveMaterialMap(fileName);
             }
-            MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section.", "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
+            string reportText = WaterPlacement.BuildReport(water, useWater, report.Values);
+            try { File.WriteAllText(Path.Combine(directory, "placement_report.txt"), reportText); } catch { }
+            string extra = "";
+            if (useWater)
+            {
+                var shortfalls = WaterPlacement.Shortfalls(report.Values);
+                extra = "\r\n\r\nWater rules were applied. " + (shortfalls.Count == 0
+                    ? "Every ore got (almost) all of its veins."
+                    : "Some ores found too little dry ground:\r\n" + string.Join("\r\n", shortfalls) +
+                      "\r\nLower the water radius, or let these ores spawn anywhere / use shallower layers.") +
+                    "\r\nDetails: placement_report.txt in the output folder.";
+            }
+            MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section." + extra, "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
             PathHelper.RevealInFileManager(xmlFileName);
         },
         o => SelectedPlanetDefinition != null);

@@ -42,6 +42,33 @@ Unhandled errors are written to `~/.config/OreRedistLinux/crash.log` and shown i
 Also fixed: the six cube faces were loaded in parallel into a non-thread-safe dictionary, which could randomly drop a face
 (ore statistics too low, face without ore overlay).
 
+## Water Mod support (keep ore out of the water)
+Planets that use the [Water Mod](https://steamcommunity.com/sharedfiles/filedetails/?id=2200451495) have a global water sphere,
+so ore below it can only be reached by digging into water. The new **Water** menu (and *Map > Show Water*) deal with that.
+
+- **Settings**: read from `WaterConfig.xml` in the same folder as the planet definition (matched by `SubtypeId`), otherwise enter them
+  yourself. Values are remembered per planet in `~/.config/OreRedistLinux/water.xml`.
+- **Geometry** (checked in the Water Mod scripts and the game's own code): water radius = `MinimumRadius x Radius`,
+  `MinimumRadius = R x (1 + HillParams.Min)`, terrain radius = `R x (1 + Min + (Max - Min) x height)`. Ore `Start`/`Depth` are plain
+  meters below the surface and do not scale with the planet; the terrain height does, so the **planet radius** (not stored in any
+  file, default 60 km = EarthLike) is needed.
+- **Safety margin**: tide + wave height by default (editable), because the water level moves.
+- **Per ore** (*Water* column in the redistribution window):
+  - *Above water* (default): the whole ore layer (`Start + Depth`) must end above water + margin. Where the wanted layer is too deep
+    for a pixel the next shallower layer is used (clamped); if no layer fits, the pixel is not used. Veins that creep towards the sea
+    step back and follow the shore, so they still reach their size.
+  - *Anywhere*: ignore the water.
+  - *Under water only*: only where the terrain is below the water line.
+- **Not enough dry ground?** A vein whose first site is too wet looks for another site on the same cube face (up to 400 tries), so
+  ore keeps its share. If nothing fits at all the vein is dropped and listed in the message and in `placement_report.txt`
+  (written next to the maps), together with how many veins moved or were made shallower. On a planet that is mostly ocean the ore
+  ends up on the islands, deep layers only on high ground.
+- The water window shows how much of the planet is underwater and on how much of the surface a layer ending at 10 / 25 / 50 / 100 / 200 / 400 m
+  stays dry. Not covered: the Perlin distortion some planets add to the terrain (use the safety margin) and the planet's own lake layer.
+
+Also changed: height maps that are not 16 bit (8 bit and palette PNGs, used by some mods) are now converted instead of being replaced
+by a blank map, and ore map pixels whose value has no ore mapping are no longer painted green (Typhoon uses 0 for "no ore").
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

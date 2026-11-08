@@ -1,0 +1,47 @@
+<local:DialogWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SpaceEngineersOreRedistribution"
+        x:Class="SpaceEngineersOreRedistribution.WaterSettingsWindow"
+        Title="Water Mod settings" Width="640" SizeToContent="Height" CanResize="False">
+    <StackPanel Margin="12" Spacing="8">
+        <CheckBox IsChecked="{Binding Enabled}" Content="Keep ore out of the water (apply the water rules when redistributing ore)"/>
+        <TextBlock Text="{Binding Source}" TextWrapping="Wrap" Foreground="Gray" FontSize="12"/>
+
+        <Grid ColumnDefinitions="Auto,100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="8" Margin="0,6,0,0">
+            <TextBlock Grid.Row="0" Text="Water radius" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Radius, UpdateSourceTrigger=PropertyChanged}"/>
+            <Slider Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="2" Value="{Binding Radius}" />
+
+            <TextBlock Grid.Row="1" Text="Planet radius (m)" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PlanetRadius, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBlock Grid.Row="1" Grid.Column="2" FontSize="12" Foreground="Gray" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="Set when the planet is spawned, not stored in any file. Ore depth does not scale with it, but the height of the terrain does. 60000 = EarthLike (120 km diameter)."/>
+
+            <TextBlock Grid.Row="2" Text="Tide height (m)" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TideHeight, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <TextBlock Grid.Row="3" Text="Wave height (m)" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding WaveHeight, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <TextBlock Grid.Row="4" Text="Safety margin (m)" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding MarginOverride, UpdateSourceTrigger=PropertyChanged}" Watermark="{Binding Margin}"/>
+            <TextBlock Grid.Row="4" Grid.Column="2" FontSize="12" Foreground="Gray" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="Empty = tide + waves. Ore layers must end this far above the water line."/>
+
+            <TextBlock Grid.Row="5" Text="Hill range min" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding HillMin, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBlock Grid.Row="5" Grid.Column="2" FontSize="12" Foreground="Gray" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="HillParams of the planet definition (fractions of the planet radius). Fill in if the definition has none."/>
+
+            <TextBlock Grid.Row="6" Text="Hill range max" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding HillMax, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+
+        <Border Background="#11808080" CornerRadius="4" Padding="8">
+            <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" FontSize="12" MinHeight="48"/>
+        </Border>
+        <TextBlock FontSize="12" Foreground="Gray" TextWrapping="Wrap"
+                   Text="Each ore chooses in the redistribution window what it does: stay above the water (default, the whole layer must be dry), ignore the water, or only appear under water. Map &gt; Show Water tints the underwater area."/>
+        <Button Content="Close" HorizontalAlignment="Right" HorizontalContentAlignment="Center" Width="100" Click="Close_Click" IsDefault="True"/>
+    </StackPanel>
+</local:DialogWindow>
