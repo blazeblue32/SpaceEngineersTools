@@ -6,97 +6,104 @@ Proposal, 2026-11-09, for the Better Stone + Better Resources pack with the comp
 
 * **Real geology decides first.** A body gets a mineral only if it forms there (native metals and sulfides on wet Earth-likes, Fe-Ni metal and impact minerals on airless bodies, hydrocarbons on Titan...). Where a planet would otherwise lack an ingot completely, a very rare trace entry keeps it obtainable (marked as trace).
 * **Rarity tiers (share of the ore on that body):** Abundant 8 % and up, Common 3-8 %, Uncommon 1-3 %, Rare 0.3-1 %, Very rare under 0.3 %.
-* **Host rock, vein size and regions come from the data packs** (`Rocks`, `Size`, `Glob`, `GlobSize`, `GlobCoverage`); the table in section 5 lists them per mineral. Regions are in km on the planet, so they scale to each body's size; change Glob km per planet if a moon is much smaller.
+* **Host rock, vein size and regions come from the data packs** (`Rocks`, `Size`, `Glob`, `GlobSize`, `GlobCoverage`); the table in section 6 lists them per mineral. Regions are in km on the planet, so they scale to each body's size; change Glob km per planet if a moon is much smaller.
 * **Per body ore lists**, each with its own 254-number budget; the lists here have 15-40 ores, so 6-12 layers per ore is possible on the small ones.
 
-## 2. Planets and moons
+## 2. Vanilla progression (checked against the game and Better Stone)
+
+Better Stone says it respects vanilla progression, and the files confirm it: for every planet the set of metals it can give equals vanilla's, with one exception (uranium). Compared from the vanilla `PlanetGeneratorDefinitions.sbc` and Better Stone's `Override-PlanetGeneratorDefinitions.sbc` (through the refining recipes of the minerals):
+
+| Planet | Gold, silver | Platinum | Uranium |
+|---|---|---|---|
+| EarthLike | vanilla yes, Better Stone yes | no, no | no, no |
+| Alien | yes, yes | no, no | no, **Better Stone adds it** |
+| Mars | yes, yes | no, no | no, **adds it** |
+| Moon | yes, yes | yes, yes | no, **adds it** |
+| Europa | yes, yes | yes, yes | no, **adds it** |
+| Titan | yes, yes | yes, yes | no, **adds it** |
+| Triton, Pertam (vanilla only) | yes | no | no |
+
+So **gold and silver occur on every planet and moon in vanilla**, including the airless Moon, Europa and Titan, and **platinum only on the Moon, Europa and Titan**. The trace amounts of gold and silver proposed for the airless bodies stay, and the plan below follows Better Stone: no platinum on Earth-like or Mars (so no Cooperite, Niggliite, Sperrylite or native platinum there), no uranium on EarthLike (Alien, Mars, Moon, Europa and Titan get the uranium minerals). Vanilla asteroids have both platinum and uranium, kept in section 4.
+
+## 3. Planets and moons
 
 Vanilla planets: EarthLike, Alien, Mars, Moon, Europa, Titan, Triton, Pertam. Vanilla places only 8 ore types on each (Iron_02, Nickel, Cobalt, Magnesium, Silicon, Silver, Gold, Ice; Platinum only on Moon, Europa, Titan; Uranium nowhere, only in asteroids).
 
 ### Earth-like (EarthLike, Alien)
 
-Everything forms here (wet crust, hydrothermal and sedimentary systems, pegmatites, laterites, evaporites). Meteoritic and impact minerals only in crater regions (tiny regions). Ice only at the poles (3 %). **Alien** uses the same list; make Niter and Sulfur ×2 (volcanic / arid) and Petroleum ×0.5 if you want it to feel different. **Pertam** (arid, no ice in vanilla): the Earth-like list without Ice, Petroleum, Spodumene and Lepidolite, Niter ×3 and Sulfur ×2.
+Everything forms here (wet crust, hydrothermal and sedimentary systems, pegmatites, laterites, evaporites), except the **platinum and uranium minerals: vanilla EarthLike has neither, and Better Stone keeps it that way** (section 2). Meteoritic and impact minerals only in crater regions (tiny regions). Ice only at the poles (3 %). **Alien** uses the same list plus the uranium minerals (Uraninite, Autunite, Carnotite, Uraniaurite at 1, as in Better Stone; still no platinum); make Niter and Sulfur ×2 (volcanic / arid) and Petroleum ×0.5 if you want it to feel different. **Pertam** (arid, no ice in vanilla): the Earth-like list without Ice, Petroleum, Spodumene and Lepidolite, Niter ×3 and Sulfur ×2.
 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
-| Quartz | `Quartz_01` | 14.58 | Abundant | Si |
-| Hematite (Iron) | `Iron_01` | 11.08 | Abundant | Fe, Ti |
-| Bauxite | `Aluminium_01` | 10.31 | Abundant | Al, Ti, Ga |
-| Dolomite | `Dolomite_01` | 9.32 | Abundant | Mg, C |
-| Magnetite (Dense Iron) | `Iron_02` | 8.81 | Abundant | Fe, Ti |
-| Ilmenite | `Magnesium_01` | 5.80 | Common | Fe, Ti |
-| Olivine | `Olivine_01` | 5.16 | Common | Si, Mg, Fe |
-| Pyrite | `Pyrite_01` | 4.41 | Common | Fe, S |
-| Rutile | `Titanium_01` | 3.50 | Common | Ti, Nb |
+| Quartz | `Quartz_01` | 15.01 | Abundant | Si |
+| Hematite (Iron) | `Iron_01` | 11.40 | Abundant | Fe, Ti |
+| Bauxite | `Aluminium_01` | 10.61 | Abundant | Al, Ti, Ga |
+| Dolomite | `Dolomite_01` | 9.59 | Abundant | Mg, C |
+| Magnetite (Dense Iron) | `Iron_02` | 9.07 | Abundant | Fe, Ti |
+| Ilmenite | `Magnesium_01` | 5.97 | Common | Fe, Ti |
+| Olivine | `Olivine_01` | 5.31 | Common | Si, Mg, Fe |
+| Pyrite | `Pyrite_01` | 4.53 | Common | Fe, S |
+| Rutile | `Titanium_01` | 3.61 | Common | Ti, Nb |
 | Ice | `Ice_01 / Ice_02` | 3.00 | Common | Ice |
-| Oil shale (Petroleum) | `Petroleum_01` | 2.48 | Uncommon | C, S, Oil |
-| Sulfur (native) | `Sulfur_01` | 2.37 | Uncommon | S |
-| Sphalerite | `Nickel_01` | 2.27 | Uncommon | Zn, S, Ga |
-| Spodumene | `Silicon_01` | 1.92 | Uncommon | Li, Al, Si |
-| Native Copper | `Copper_01` | 1.83 | Uncommon | Cu, Ag |
-| Azurite | `Cobalt_01` | 1.83 | Uncommon | Cu, C |
-| Galena | `Galena_01` | 1.57 | Uncommon | Pb, Ag, Zn |
-| Lepidolite | `Lithium_01` | 1.53 | Uncommon | Li, Al, Nitre, Nb |
-| Wolframite | `Wolframite_01` | 0.93 | Rare | W, Sn, Fe, Nb |
-| Niter | `Nitre_01` | 0.92 | Rare | Nitre, N, Perchlorate |
-| Heazlewoodite | `Heazlewoodite_01` | 0.78 | Rare | Ni, S |
-| Uraninite | `Uraninite_01` | 0.78 | Rare | U, Pb |
-| Glaucodot | `Glaucodot_01` | 0.66 | Rare | Fe, Co, S |
-| Autunite | `Autunite_01` | 0.58 | Rare | U |
-| Carnotite | `Carnotite_01` | 0.58 | Rare | U, Nitre |
-| Cattierite | `Cattierite_01` | 0.44 | Rare | Co, S |
-| Silver (native) | `Silver_01` | 0.41 | Rare | Ag |
+| Oil shale (Petroleum) | `Petroleum_01` | 2.55 | Uncommon | C, S, Oil |
+| Sulfur (native) | `Sulfur_01` | 2.44 | Uncommon | S |
+| Sphalerite | `Nickel_01` | 2.33 | Uncommon | Zn, S, Ga |
+| Spodumene | `Silicon_01` | 1.98 | Uncommon | Li, Al, Si |
+| Native Copper | `Copper_01` | 1.89 | Uncommon | Cu, Ag |
+| Azurite | `Cobalt_01` | 1.89 | Uncommon | Cu, C |
+| Galena | `Galena_01` | 1.61 | Uncommon | Pb, Ag, Zn |
+| Lepidolite | `Lithium_01` | 1.57 | Uncommon | Li, Al, Nitre, Nb |
+| Wolframite | `Wolframite_01` | 0.96 | Rare | W, Sn, Fe, Nb |
+| Niter | `Nitre_01` | 0.94 | Rare | Nitre, N, Perchlorate |
+| Heazlewoodite | `Heazlewoodite_01` | 0.81 | Rare | Ni, S |
+| Glaucodot | `Glaucodot_01` | 0.68 | Rare | Fe, Co, S |
+| Cattierite | `Cattierite_01` | 0.45 | Rare | Co, S |
+| Silver (native) | `Silver_01` | 0.42 | Rare | Ag |
 | Porphyry | `Porphyry_01` | 0.25 | Very rare | Au, Cu, Ag |
 | Chlorargyrite | `Chlorargyrite_01` | 0.25 | Very rare | Ag, Perchlorate |
-| Platinum (native) | `Platinum_01` | 0.21 | Very rare | Pt |
 | Gold (native) | `Gold_01` | 0.20 | Very rare | Au |
-| Cooperite | `Cooperite_01` | 0.17 | Very rare | Ni, Pt, S |
 | Electrum | `Electrum_01` | 0.17 | Very rare | Ag, Au |
-| Sperrylite | `Sperrylite_01` | 0.17 | Very rare | Pt |
 | Petzite | `Petzite_01` | 0.14 | Very rare | Ag, Au |
-| Niggliite | `Niggliite_01` | 0.14 | Very rare | Pt, Sn |
-| Uraniaurite | `Uraniaurite_01` | 0.14 | Very rare | Au, U |
-| Kamacite | `Kamacite_01` | 0.13 | Very rare (trace entry) | Fe, Ni, Co |
+| Kamacite | `Kamacite_01` | 0.14 | Very rare (trace entry) | Fe, Ni, Co |
 | Taenite | `Taenite_01` | 0.12 | Very rare (trace entry) | Fe, Ni |
 | Akimotoite | `Akimotoite_01` | 0.05 | Very rare (trace entry) | Si, Mg, Fe |
 | Wadsleyite | `Wadsleyite_01` | 0.05 | Very rare (trace entry) | Si, Mg, Fe |
 
-41 ores.
+33 ores.
 
 ### Mars
 
-Basaltic crust, iron oxides (hematite) and sulfate / carbonate salts; hydrothermal ore only near volcanoes and craters (trace). Polar Ice 6 %. Aluminium and lithium minerals are absent (no laterites or pegmatites).
+Basaltic crust, iron oxides (hematite) and sulfate / carbonate salts; hydrothermal ore only near volcanoes and craters (trace). **No platinum** (vanilla Mars has none); uranium as in Better Stone. Polar Ice 6 %. Aluminium and lithium minerals are absent (no laterites or pegmatites).
 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
-| Hematite (Iron) | `Iron_01` | 32.05 | Abundant | Fe, Ti |
-| Olivine | `Olivine_01` | 29.83 | Abundant | Si, Mg, Fe |
-| Sulfur (native) | `Sulfur_01` | 6.53 | Common | S |
+| Hematite (Iron) | `Iron_01` | 31.97 | Abundant | Fe, Ti |
+| Olivine | `Olivine_01` | 29.75 | Abundant | Si, Mg, Fe |
+| Sulfur (native) | `Sulfur_01` | 6.52 | Common | S |
 | Ice | `Ice_01 / Ice_02` | 6.00 | Common | Ice |
-| Dolomite | `Dolomite_01` | 4.49 | Common | Mg, C |
-| Magnetite (Dense Iron) | `Iron_02` | 4.25 | Common | Fe, Ti |
-| Pyrite | `Pyrite_01` | 4.25 | Common | Fe, S |
-| Quartz | `Quartz_01` | 4.22 | Common (trace entry) | Si |
-| Ilmenite | `Magnesium_01` | 2.80 | Uncommon | Fe, Ti |
-| Niter | `Nitre_01` | 1.77 | Uncommon | Nitre, N, Perchlorate |
-| Sphalerite | `Nickel_01` | 0.66 | Rare (trace entry) | Zn, S, Ga |
+| Dolomite | `Dolomite_01` | 4.48 | Common | Mg, C |
+| Magnetite (Dense Iron) | `Iron_02` | 4.24 | Common | Fe, Ti |
+| Pyrite | `Pyrite_01` | 4.24 | Common | Fe, S |
+| Quartz | `Quartz_01` | 4.21 | Common (trace entry) | Si |
+| Ilmenite | `Magnesium_01` | 2.79 | Uncommon | Fe, Ti |
+| Niter | `Nitre_01` | 1.76 | Uncommon | Nitre, N, Perchlorate |
+| Sphalerite | `Nickel_01` | 0.65 | Rare (trace entry) | Zn, S, Ga |
 | Kamacite | `Kamacite_01` | 0.51 | Rare | Fe, Ni, Co |
 | Galena | `Galena_01` | 0.45 | Rare (trace entry) | Pb, Ag, Zn |
 | Taenite | `Taenite_01` | 0.45 | Rare | Fe, Ni |
 | Heazlewoodite | `Heazlewoodite_01` | 0.38 | Rare | Ni, S |
+| Uraninite | `Uraninite_01` | 0.38 | Rare | U, Pb |
 | Native Copper | `Copper_01` | 0.35 | Rare (trace entry) | Cu, Ag |
-| Uraninite | `Uraninite_01` | 0.23 | Very rare (trace entry) | U, Pb |
 | Glaucodot | `Glaucodot_01` | 0.19 | Very rare (trace entry) | Fe, Co, S |
 | Cohenite | `Cohenite_01` | 0.17 | Very rare | Fe, Ni, Co, C |
+| Carnotite | `Carnotite_01` | 0.17 | Very rare (trace entry) | U, Nitre |
 | Silver (native) | `Silver_01` | 0.12 | Very rare (trace entry) | Ag |
 | Akimotoite | `Akimotoite_01` | 0.07 | Very rare (trace entry) | Si, Mg, Fe |
 | Wadsleyite | `Wadsleyite_01` | 0.07 | Very rare (trace entry) | Si, Mg, Fe |
 | Gold (native) | `Gold_01` | 0.06 | Very rare (trace entry) | Au |
-| Cooperite | `Cooperite_01` | 0.05 | Very rare (trace entry) | Ni, Pt, S |
-| Platinum (native) | `Platinum_01` | 0.04 | Very rare (trace entry) | Pt |
 | Electrum | `Electrum_01` | 0.03 | Very rare (trace entry) | Ag, Au |
 
-26 ores.
+25 ores.
 
 ### Moon
 
@@ -181,7 +188,7 @@ Ice bedrock with hydrocarbon lakes and dunes: **Petroleum is the main mineral** 
 
 15 ores.
 
-## 3. Asteroids
+## 4. Asteroids
 
 Asteroids pick their ore from **every material with `SpawnsInAsteroids` true**, repeated `AsteroidGeneratorSpawnProbabilityMultiplier` times (checked in the game code, see MODPACK_REPORT section 12). A mod can replace these weights. Proposed weights below (the weights are integers; the share is weight / total); **every other mineral is set to `SpawnsInAsteroids` false** (planet-only: bauxite, native copper, azurite, sphalerite, lepidolite, spodumene, rutile, wolframite, niter, galena, the gold / silver / uranium minerals other than the trace ones).
 
@@ -216,37 +223,37 @@ The generator has one list for all asteroids, so the mix is global; asteroid *fa
 
 Total weight 86. Ice is the most common single material (about 14 %), then asteroid iron (Iron (Fe) with a little Ice) and the Fe-Ni metals; precious metals are rare, as in vanilla (gold and platinum weight 1).
 
-## 4. Which ingots can be mined where
+## 5. Which ingots can be mined where
 
 Number of different minerals that give each ingot on each body (a dash = none).
 
 | Ingot | Earth-like | Mars | Moon | Europa | Titan | Asteroids |
 |---|---|---|---|---|---|---|
 | Fe | 11 | 11 | 11 | 5 | 5 | 10 |
-| Ni | 4 | 5 | 5 | 3 | 2 | 5 |
+| Ni | 3 | 4 | 5 | 3 | 2 | 5 |
 | Co | 3 | 3 | 3 | 2 | 2 | 2 |
 | Mg | 4 | 4 | 3 | 2 | 2 | 4 |
 | Si | 5 | 4 | 5 | 2 | 1 | 6 |
 | Ag | 7 | 4 | 2 | 3 | 1 | 1 |
-| Au | 5 | 2 | 2 | 1 | 1 | 1 |
-| Pt | 4 | 2 | 4 | 2 | 1 | 4 |
-| U | 4 | 1 | 1 | 1 | 1 | 1 |
+| Au | 4 | 2 | 2 | 1 | 1 | 1 |
+| Pt | - | - | 4 | 2 | 1 | 4 |
+| U | - | 2 | 1 | 1 | 1 | 1 |
 | Cu | 3 | 1 | - | 1 | - | - |
 | Al | 3 | - | - | - | - | - |
 | Ti | 5 | 3 | 2 | 1 | 1 | 2 |
 | Li | 2 | - | - | - | - | - |
 | Zn | 2 | 2 | - | 2 | 1 | - |
-| Pb | 2 | 2 | 1 | 2 | 1 | 1 |
-| S | 8 | 6 | 4 | 6 | 6 | 5 |
+| Pb | 1 | 2 | 1 | 2 | 1 | 1 |
+| S | 7 | 5 | 4 | 6 | 6 | 5 |
 | W | 1 | - | - | - | - | - |
-| Sn | 2 | - | 1 | - | - | 1 |
+| Sn | 1 | - | 1 | - | - | 1 |
 | C | 3 | 2 | 1 | 1 | 2 | 3 |
 | N | 1 | 1 | 1 | 1 | - | 1 |
 | Ice | 1 | 1 | 1 | 1 | 1 | 1 |
 
 **Gaps to look at:** aluminium, lithium and tungsten exist only on Earth-likes (bauxite, spodumene, lepidolite, wolframite), copper, zinc, lead and tin only as traces on Mars, Europa and Titan or not at all on the Moon and in asteroids, nitrogen only from Sinoite and Niter. Items made from Better Resources ingots (aluminium parts, lithium batteries, tungsten) would then be Earth-like-only. See decision 1.
 
-## 5. Host rock, vein size and regions (the data pack values)
+## 6. Host rock, vein size and regions (the data pack values)
 
 Rock names: sed = sedimentary, met-low / met-high = metamorphic low / high grade, extr = igneous extrusive, intr = igneous intrusive. Size = vein pixels on the reference planet (60 km radius, 2048 px tiles; scaled automatically). Regions: strength Glob %, size km, coverage %.
 
@@ -298,10 +305,10 @@ Rock names: sed = sedimentary, met-low / met-high = metamorphic low / high grade
 
 New entries (Azurite, Sphalerite, Ilmenite, Spodumene, and the renamed Bauxite, Native Copper, Rutile, Lepidolite, Niter, Oil shale) reuse the values of the Better Resources ore or mineral they were built from; Magnetite and Hematite split the Iron entry (abundance 16,000 and 40,000). Ice has no rock or region (it follows the polar regions you paint, or is left even).
 
-## 6. Decisions to confirm
+## 7. Decisions to confirm
 
 1. **Aluminium gap:** aluminium only exists on Earth-likes. Change Spodumene (`Silicon_01`) to **Anorthite (Al, Si)**, a real mineral of the lunar highlands, of basaltic crust (Mars, Moon) and of anorthosite on Earth-likes, with a trace of Bauxite-like clay on Mars? Lithium then comes only from Lepidolite (Earth-likes), tungsten stays Earth-like-only.
 2. **Hematite / Magnetite names** for the two iron slots (Better Stone calls them Iron (Fe) and Dense Iron (Fe+)).
-3. **Precious-metal traces on airless bodies** (Moon, Europa, Titan, Mars): real only as ppb, kept at 0.2-0.3 % so every ingot stays obtainable; set them to zero if you want strict realism.
+3. **Precious-metal traces on airless bodies** (Moon, Europa, Titan, Mars): real only as ppb, but vanilla and Better Stone give gold and silver (and platinum on the Moon, Europa, Titan) to every one of them, so they stay at 0.05-0.3 % to keep the progression.
 4. **Planet-specific ore regions:** the pack values are Earth-scale; on a smaller moon (Europa, Triton) use bigger Cov % or fewer regions in the tool per planet.
 5. **Asteroid weights** are one global list; asteroid families would need extra work.
