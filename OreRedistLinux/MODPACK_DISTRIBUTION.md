@@ -164,7 +164,7 @@ Ice shell over a silicate floor: Ice dominates (35 %), salts and sulfur compound
 
 ### Titan
 
-Ice bedrock with hydrocarbon lakes and dunes: **Petroleum is the main mineral** (6 times its normal weight), Ice 30 %, a few silicate and metal traces, uranium only as a trace. Oil shale stays on Titan because it has real hydrocarbons, even though it is not a rock-forming mineral there; drop it if you want oil on Earth-likes only. **Triton**: like Europa with Sinoite (nitrogen) added at 1.
+Ice bedrock with hydrocarbon lakes and dunes: **Petroleum is the main mineral** (6 times its normal weight), Ice 30 %, a few silicate and metal traces, uranium only as a trace. Oil shale stays on Titan because it has real hydrocarbons, even though it is not a rock-forming mineral there; drop it if you want oil on Earth-likes only. **Triton** (vanilla has no platinum, uranium or ice ore there): like Europa without the platinum and uranium minerals, with Sinoite (nitrogen) added at 1.
 
 | Mineral | Slot | Share % | Tier | Ingots |
 |---|---|---|---|---|
@@ -252,6 +252,22 @@ Number of different minerals that give each ingot on each body (a dash = none).
 | Ice | 1 | 1 | 1 | 1 | 1 | 1 |
 
 **Gaps to look at:** aluminium, lithium and tungsten exist only on Earth-likes (bauxite, spodumene, lepidolite, wolframite), copper, zinc, lead and tin only as traces on Mars, Europa and Titan or not at all on the Moon and in asteroids, nitrogen only from Sinoite and Niter. Items made from Better Resources ingots (aluminium parts, lithium batteries, tungsten) would then be Earth-like-only. See decision 1.
+
+
+### Progression check
+
+Metals each body gives in the plan against vanilla (and Better Stone, which adds uranium to every planet except EarthLike). Alien is the Earth-like list plus uranium; Pertam and Triton as described in section 3.
+
+| Body | Plan gives | Vanilla + Better Stone give | Match |
+|---|---|---|---|
+| Earth-like | Fe, Ni, Co, Mg, Si, Ag, Au | Fe, Ni, Co, Mg, Si, Ag, Au | yes |
+| Mars | Fe, Ni, Co, Mg, Si, Ag, Au, U | Fe, Ni, Co, Mg, Si, Ag, Au, U | yes |
+| Moon | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | yes |
+| Europa | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | yes |
+| Titan | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | yes |
+| Asteroids | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | Fe, Ni, Co, Mg, Si, Ag, Au, Pt, U | yes |
+
+Availability matches. Not the same is **how common** gold and silver are on the airless bodies: in vanilla they are ordinary ores there (6 of about 55 mappings each); in this plan they are trace entries of 0.05-0.3 %, so the ingots are obtainable but much scarcer. Raising them to about 0.5-1 % (Rare) on the Moon, Europa and Titan would keep the progression closer to vanilla.
 
 ## 6. Host rock, vein size and regions (the data pack values)
 
