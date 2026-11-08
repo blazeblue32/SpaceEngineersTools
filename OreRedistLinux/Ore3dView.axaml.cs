@@ -37,6 +37,9 @@ namespace SpaceEngineersOreRedistribution
             if (vp == null) return;
             vp.Cuboids = ViewModel.Cuboids.ToList();
             vp.RectSize = ViewModel.RectSize;
+            vp.Heights = ViewModel.Heights;
+            vp.VerticalUnitsPerMeter = ViewModel.VerticalUnitsPerMeter;
+            InfoText.Text = "Left Mouse: Pan, Right Mouse: Height, Scroll: Zoom   |   " + ViewModel.TerrainNote;
             vp.CamPos = ViewModel.CamPos;
             vp.CamDir = ViewModel.CamDir;
             vp.InvalidateVisual();

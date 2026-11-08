@@ -199,6 +199,13 @@ Packs are data only. A file is loaded only if its root element is `OreDataPack` 
 external entities, over 1 MB, symbolic links and anything malformed are skipped (and listed in the window). Ore names must match a strict pattern, numbers are
 range checked, text is only displayed, and nothing in a pack is ever executed or used as a path.
 
+## 3D ore viewer on the real terrain
+Right click on the map (with the Ore Inspector on) opens the 3D view of the ore under the violet square. The ground is now a mesh of the **height map**: the
+relief in meters is the planet radius times the hill range of the planet definition (without hill parameters an assumed 3 % of the radius), ore boxes hang
+below the terrain surface at their own pixel (the ore *Start* and *Depth* are depths below the surface), so you see where the ore really lies under the hills.
+Scene proportions follow the pixel size on the planet (EarthLike: about 42 m per pixel), so slopes look as steep as they are. Without a height map you get the
+old flat plane. Left mouse turns the view, right mouse moves it up and down, the wheel zooms.
+
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.
 

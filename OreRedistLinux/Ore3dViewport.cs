@@ -19,6 +19,9 @@ namespace SpaceEngineersOreRedistribution
         public Point3D CamPos { get; set; } = new Point3D(50, 40, 120);
         public Vector3D CamDir { get; set; } = new Vector3D(0, 0, -1);
         public double FieldOfViewDeg { get; set; } = 60;
+        /// <summary>Terrain heights in meters per cell (relative), null = flat plane.</summary>
+        public double[,] Heights { get; set; }
+        public double VerticalUnitsPerMeter { get; set; } = 0.1;
 
         // Same light setup as the WPF version
         static readonly Vector3D LightDir = Norm(new Vector3D(-0.2, -0.2, -0.5));
@@ -33,6 +36,7 @@ namespace SpaceEngineersOreRedistribution
             public Color Color;
             public double Alpha;
             public double Depth;
+            public bool Outline;
         }
 
         public override void Render(DrawingContext context)
@@ -57,8 +61,11 @@ namespace SpaceEngineersOreRedistribution
             const double near = 0.5;
 
             var polys = new List<Poly>(Cuboids.Count * 6);
+            double vs = VerticalUnitsPerMeter;
             foreach (var c in Cuboids)
-                AddCuboid(polys, c);
+                AddCuboid(polys, c, vs);
+            bool terrain = Heights != null;
+            if (terrain) AddTerrain(polys);
 
             // Camera space transform + depth for sorting
             foreach (var p in polys)
@@ -69,11 +76,11 @@ namespace SpaceEngineersOreRedistribution
             }
             polys.Sort((a, b) => b.Depth.CompareTo(a.Depth)); // far to near
 
-            Poly plane = BuildPlane();
-            bool planeLast = cam.Z > 0.1; // plane is at z=0.1, all cuboids are below it
-            if (!planeLast) DrawPoly(context, plane);
+            Poly plane = terrain ? null : BuildPlane();
+            bool planeLast = cam.Z > 0.1; // flat plane is at z=0.1, all cuboids are below it
+            if (plane != null && !planeLast) DrawPoly(context, plane);
             foreach (var p in polys) DrawPoly(context, p);
-            if (planeLast) DrawPoly(context, plane);
+            if (plane != null && planeLast) DrawPoly(context, plane);
 
             (double X, double Y, double Z) ToCam(Point3D p)
             {
@@ -121,8 +128,44 @@ namespace SpaceEngineersOreRedistribution
                     }
                     ctx.EndFigure(true);
                 }
-                dc.DrawGeometry(new Avalonia.Media.Immutable.ImmutableSolidColorBrush(col), null, geo);
+                dc.DrawGeometry(new Avalonia.Media.Immutable.ImmutableSolidColorBrush(col), poly.Outline ? OutlinePen : null, geo);
             }
+        }
+
+        static readonly Avalonia.Media.Immutable.ImmutablePen OutlinePen = new(new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.FromArgb(70, 0, 0, 0)), 0.6);
+
+        /// <summary>The ground as a mesh of the height map (one quad per cell, corners are the mean of the neighbouring cells), colored by height.</summary>
+        void AddTerrain(List<Poly> list)
+        {
+            int w = Heights.GetLength(0), h = Heights.GetLength(1);
+            double b = My3dHelper.BaseUnit, vs = VerticalUnitsPerMeter;
+            double min = double.MaxValue, max = double.MinValue;
+            foreach (var v in Heights) { min = Math.Min(min, v); max = Math.Max(max, v); }
+            double span = Math.Max(1e-6, max - min);
+
+            double Corner(int i, int j)
+            {
+                double sum = 0; int n = 0;
+                for (int x = i - 1; x <= i; ++x)
+                    for (int y = j - 1; y <= j; ++y)
+                        if (x >= 0 && y >= 0 && x < w && y < h) { sum += Heights[x, y]; ++n; }
+                return n == 0 ? 0 : sum / n;
+            }
+            var cz = new double[w + 1, h + 1];
+            for (int i = 0; i <= w; ++i) for (int j = 0; j <= h; ++j) cz[i, j] = Corner(i, j);
+            // cell row y of the data is drawn at Y = (h - y) cells (same as the ore boxes); a corner line j lies at Y = (h - j + 1) cells
+            Point3D P(int i, int j) => new Point3D(i * b, (h - j + 1) * b, cz[i, j] * vs);
+
+            for (int x = 0; x < w; ++x)
+                for (int y = 0; y < h; ++y)
+                {
+                    var p0 = P(x, y); var p1 = P(x + 1, y); var p2 = P(x + 1, y + 1); var p3 = P(x, y + 1);
+                    var n = Vector3D.CrossProduct(p1 - p0, p3 - p0); n.Normalize();
+                    if (n.Z < 0) n = -n;
+                    double t = (Heights[x, y] - min) / span; // 0 low .. 1 high
+                    var color = Color.FromRgb((byte)(70 + 130 * t), (byte)(120 + 50 * t), (byte)(75 + 40 * t));
+                    list.Add(new Poly { Pts = new[] { p0, p1, p2, p3 }, Normal = n, Color = color, Alpha = 90, Outline = true });
+                }
         }
 
         Poly BuildPlane()
@@ -138,10 +181,11 @@ namespace SpaceEngineersOreRedistribution
             };
         }
 
-        static void AddCuboid(List<Poly> list, Cuboid c)
+        static void AddCuboid(List<Poly> list, Cuboid c, double unitsPerMeter)
         {
-            var z1 = -1 * c.Start * My3dHelper.DepthUnit;
-            var z2 = -1 * c.Start * My3dHelper.DepthUnit - c.Depth * My3dHelper.DepthUnit;
+            // start / depth are in 50 m steps below the terrain surface at that cell
+            var z1 = (c.Surface - c.Start * 50) * unitsPerMeter;
+            var z2 = (c.Surface - c.Start * 50 - c.Depth * 50) * unitsPerMeter;
             var x1 = c.X * My3dHelper.BaseUnit;
             var x2 = x1 + My3dHelper.BaseUnit;
             var y1 = c.Y * My3dHelper.BaseUnit;

@@ -3,16 +3,16 @@ using System;
 
 namespace SpaceEngineersOreRedistribution
 {
-    /// <summary>One ore cell as a box. Units: x,y in cells; start/depth in 50m steps.</summary>
-    public record Cuboid(int X, int Y, double Start, double Depth, RgbValue Rgb);
+    /// <summary>One ore cell as a box. Units: x,y in cells; start/depth in 50m steps; Surface = height of the terrain there in meters (relative to the view).</summary>
+    public record Cuboid(int X, int Y, double Start, double Depth, RgbValue Rgb, double Surface = 0);
 
     public static class My3dHelper
     {
         public const double BaseUnit = 5;
         public const double DepthUnit = 5;
 
-        public static Cuboid CreateCuboid(int x, int y, double start, double depth, RgbValue rgb)
-            => new Cuboid(x, y, start, depth, rgb);
+        public static Cuboid CreateCuboid(int x, int y, double start, double depth, RgbValue rgb, double surface = 0)
+            => new Cuboid(x, y, start, depth, rgb, surface);
 
         public static Vector3D CalcNormal(Point3D p0, Point3D p1, Point3D p2)
         {

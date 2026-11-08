@@ -196,13 +196,44 @@ namespace SpaceEngineersOreRedistribution
             UpdateCamera();
         }
 
-        public void AddCuboids(OreMapping[,] oreMap)
+        /// <summary>Terrain height in meters for every cell of the view (relative to the mean height), null = flat plane.</summary>
+        public double[,] Heights { get; private set; }
+
+        /// <summary>Scene units per meter (the horizontal size of a cell is BaseUnit units, so this keeps the proportions of the real ground).</summary>
+        public double VerticalUnitsPerMeter { get; private set; } = 0.1;
+
+        /// <summary>Text for the window: where the terrain comes from and how high it is.</summary>
+        public string TerrainNote { get; private set; } = "";
+
+        /// <param name="oreMap">ore mapping per cell (null = no ore)</param>
+        /// <param name="heightMeters">terrain height in meters per cell from the height map (NaN = unknown); null = flat</param>
+        /// <param name="pixelMeters">size of a map pixel on the planet in meters, sets the proportions of the scene (0 = assume 50 m)</param>
+        public void AddCuboids(OreMapping[,] oreMap, double[,] heightMeters = null, double pixelMeters = 0)
         {
             Cuboids.Clear();
+            int w = oreMap.GetLength(0), h = oreMap.GetLength(1);
+            VerticalUnitsPerMeter = pixelMeters > 0 ? My3dHelper.BaseUnit / pixelMeters : 0.1;
 
-            for (int x = 0; x < oreMap.GetLength(0); ++x)
+            double mean = 0; int n = 0; double min = double.MaxValue, max = double.MinValue;
+            if (heightMeters != null && heightMeters.GetLength(0) == w && heightMeters.GetLength(1) == h)
             {
-                for (int y = 0; y < oreMap.GetLength(1); ++y)
+                foreach (var v in heightMeters) if (!double.IsNaN(v)) { mean += v; ++n; min = Math.Min(min, v); max = Math.Max(max, v); }
+            }
+            if (n > 0)
+            {
+                mean /= n;
+                Heights = new double[w, h];
+                for (int x = 0; x < w; ++x) for (int y = 0; y < h; ++y) Heights[x, y] = double.IsNaN(heightMeters[x, y]) ? 0 : heightMeters[x, y] - mean;
+                TerrainNote = $"Terrain from the height map: {max - min:0} m of relief in this view, ore depths are measured from the surface.";
+                // a high relief needs the camera further away to keep the whole terrain in view
+                double reliefUnits = (max - min) * VerticalUnitsPerMeter;
+                if (reliefUnits > RectSize * My3dHelper.BaseUnit * 0.3) Radius = Math.Max(Radius, RectSize * My3dHelper.BaseUnit * 1.2 + reliefUnits * 0.5);
+            }
+            else { Heights = null; TerrainNote = "No height map: flat ground."; }
+
+            for (int x = 0; x < w; ++x)
+            {
+                for (int y = 0; y < h; ++y)
                 {
                     if (oreMap[x, y] == null) continue;
                     var map = oreMap[x, y];
@@ -210,12 +241,9 @@ namespace SpaceEngineersOreRedistribution
                     // Base unit is 50m
                     var start = map.Start / 50.0;
                     var depth = map.Depth / 50.0;
-                    Cuboids.Add(My3dHelper.CreateCuboid(x, oreMap.GetLength(1) - y, start, depth, map.MapRgbValue));
+                    Cuboids.Add(My3dHelper.CreateCuboid(x, h - y, start, depth, map.MapRgbValue, Heights != null ? Heights[x, y] : 0));
                 }
             }
-
-            //Cuboids.Add(My3dHelper.CreateCuboid(0, 0, 0, 2));
-            //Cuboids.Add(My3dHelper.CreateCuboid(-2, 0, 0, 1));
         }
     }
 }

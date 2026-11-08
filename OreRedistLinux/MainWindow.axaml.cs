@@ -406,13 +406,38 @@ namespace SpaceEngineersOreRedistribution
             else
                 return;
 
+            var win = BuildOreView(face, x, y);
+            win?.ShowDialogBlocking(this);
+        }
+
+        /// <summary>The 3D view of the ore under the inspector square whose top left corner is pixel (x, y) of the face. Null if there is no data.</summary>
+        internal Ore3dView BuildOreView(CubeMapFace face, int x, int y)
+        {
             // Copy pixels into matrix
             var width = (int)(OreInspectorRect.Width + .5);
             var height = (int)(OreInspectorRect.Height + .5);
             OreMapping[,] oreMap = new OreMapping[width, height];
+            double[,] heightMeters = null;
 
             var info = ViewModel.GetInfo(face, CancellationToken.None);
-            if (info == null) return;
+            if (info == null) return null;
+            // Terrain from the height map: meters above the lowest terrain (relief = radius x hill range of the planet definition;
+            // without hill parameters an assumed 3 % of the radius). Pixel size on the planet gives the proportions of the scene.
+            var water = ViewModel.Water;
+            double radius = water?.PlanetRadius > 0 ? water.PlanetRadius : 60000;
+            double relief = water != null && water.HasUsableHills ? radius * (water.HillMax - water.HillMin) : radius * 0.03;
+            double pixelMeters = radius * Math.Sqrt(2 * Math.PI / 3) / Math.Max(1, ViewModel.TileWidth);
+            if (info.HasHeightMap && info.H16 != null)
+            {
+                heightMeters = new double[width, height];
+                for (int xx = 0; xx < width; ++xx)
+                    for (int yy = 0; yy < height; ++yy)
+                    {
+                        int hx = xx + x, hy = yy + y;
+                        heightMeters[xx, yy] = hx >= 0 && hx < info.H16.GetLength(0) && hy >= 0 && hy < info.H16.GetLength(1)
+                            ? relief * info.H16[hx, hy] / 65535.0 : double.NaN;
+                    }
+            }
             for (int xx = 0; xx < width; ++xx)
             {
                 for (int yy = 0; yy < height; ++yy)
@@ -430,8 +455,8 @@ namespace SpaceEngineersOreRedistribution
 
             var win = new Ore3dView();
             win.SetRectSize(ViewModel.OreInspectorSize);
-            win.ViewModel.AddCuboids(oreMap);
-            win.ShowDialogBlocking(this);
+            win.ViewModel.AddCuboids(oreMap, heightMeters, pixelMeters);
+            return win;
         }
 
         bool _moved = false;
