@@ -130,7 +130,9 @@ planet and four times that on a 240 km one, so ore was far apart on big planets 
 **1000 is the default for the EarthLike size, 120 km diameter / 60 km radius**, and when you change the diameter (Enter or click elsewhere) N is
 recalculated so the patches stay the same distance apart in meters (240 km: 250, 60 km: 4000). A line shows the resulting distance, about 1.3 km at the
 default. A number you type yourself is kept as the wanted distance when you change the size and back, so nothing drifts; the tile width is
-included the same way (4096 pixel tiles: 4 times as many pixels). Saved setups (autosave, Export) remember the size they were made for and are converted
+included the same way (4096 pixel tiles: 4 times as many pixels). The **Ore density** box next to it is linked to that number: density = the default number of pixels for this planet size / your number, so on EarthLike
+2.0 = 500 pixels, 0.5 = 2000, and you can edit either one and watch the other (density applies on Enter or when you click elsewhere, the pixel box
+immediately). The density stays the same when you change the planet size. Saved setups (autosave, Export) remember the size they were made for and are converted
 to the planet they are loaded on. The engine is unchanged: it uses the number shown. At the default size the maps are identical to before.
 (The 100 km in the original code was a *radius* and only used for the slope map; the spawn number never had a size.) The lowest allowed value is now 20
 (was 100) because planets larger than about 190 km radius need it. Not scaled: the size of the veins themselves (pixels per vein) and *Small Planet Mode*.

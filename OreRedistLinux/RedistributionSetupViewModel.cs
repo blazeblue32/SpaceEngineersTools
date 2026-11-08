@@ -268,6 +268,7 @@ namespace SpaceEngineersOreRedistribution
             OnPropertyChanged(nameof(PlanetDiameterKm));
             OnPropertyChanged(nameof(PlanetRadiusKm));
             OnPropertyChanged(nameof(SpawnInfo));
+            OnPropertyChanged(nameof(SpawnDensity));
         }
 
         int _oreSpawnRate = DefaultSpawnRate;
@@ -279,6 +280,35 @@ namespace SpaceEngineersOreRedistribution
                 if (!SetProp(ref _oreSpawnRate, value)) return;
                 if (!_adjusting) _gap = value * Scale(PlanetRadius, _tileWidth); // typed by the user: this is the new wanted distance
                 OnPropertyChanged(nameof(SpawnInfo));
+                OnPropertyChanged(nameof(SpawnDensity));
+            }
+        }
+
+        /// <summary>Pixels between ore patches that is "normal" (density 1) for the current planet size and tile width.</summary>
+        double DefaultSpawnRateForSize => DefaultSpawnRate * Scale(ReferenceRadius, ReferenceTileWidth) / Scale(PlanetRadius, _tileWidth);
+
+        /// <summary>
+        /// Ore density as multiple of the default for this planet size (1 = default, 2 = twice as many ore patches per area).
+        /// Linked to OreSpawnRate: density = default pixels / pixels. EarthLike: 2 = 500 pixels, 0.5 = 2000 pixels.
+        /// It stays the same when the planet size changes, because the pixel number follows the size.
+        /// </summary>
+        public double SpawnDensity
+        {
+            get
+            {
+                double scale = Scale(PlanetRadius, _tileWidth);
+                int expected = (int)Math.Clamp(Math.Round(_gap / scale), MinSpawnRate, MaxSpawnRate);
+                // Normally the wanted distance gives the density exactly (the pixel number is only that rounded to a whole number);
+                // if the number is being limited, show what the limited number really gives.
+                double n = expected == _oreSpawnRate ? _gap / scale : _oreSpawnRate;
+                return Math.Round(DefaultSpawnRateForSize / Math.Max(1, n), 3);
+            }
+            set
+            {
+                if (!(value > 0)) return;
+                int n = (int)Math.Clamp(Math.Round(DefaultSpawnRateForSize / value), MinSpawnRate, MaxSpawnRate);
+                OreSpawnRate = n; // a user change: sets the wanted distance and refreshes this property
+                OnPropertyChanged(); // show the density that the (limited) pixel number really gives
             }
         }
 

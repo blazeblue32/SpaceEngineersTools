@@ -135,12 +135,16 @@
                         <TextBlock Text="{Binding PlanetRadiusKm, StringFormat='km  (radius {0:0.###} km). Default: EarthLike, 120 km diameter / 60 km radius.'}" VerticalAlignment="Center"/>
                     </WrapPanel>
                     <WrapPanel Orientation="Horizontal">
-                        <TextBlock Text="Randomly spawn ore every " VerticalAlignment="Center"/>
+                        <TextBlock Text="Ore density " VerticalAlignment="Center"/>
+                        <TextBox Width="70" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="3,0,3,0"
+                                 Text="{Binding SpawnDensity, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.###}}" KeyDown="ApplyOnEnter"
+                                 ToolTip.Tip="Multiple of the default ore density for this planet size: 1 = default, 2 = twice as many ore patches (half the pixel distance), 0.5 = half as many. Linked to the pixel distance. Press Enter or click elsewhere to apply."/>
+                        <TextBlock Text="x   =   spawn ore every " VerticalAlignment="Center"/>
                         <TextBox Width="80" Height="26" MinHeight="0" Padding="4,2" VerticalContentAlignment="Center" Text="{Binding OreSpawnRate}" HorizontalContentAlignment="Center" Margin="3,0,3,0"
-                                 ToolTip.Tip="Pixels between ore patches on average. 1000 is the default for the EarthLike size. Changing the planet size recalculates this number so the patches stay the same distance apart in meters."/>
-                        <TextBlock Text="pixels on average (1000 = default for 120 km diameter / 60 km radius). " VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding SpawnInfo}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                 ToolTip.Tip="Pixels between ore patches on average. 1000 is the default for the EarthLike size. Changing the planet size recalculates this number so the patches stay the same distance apart in meters. Linked to the density."/>
+                        <TextBlock Text="pixels on average (default 1000 for 120 km diameter / 60 km radius)." VerticalAlignment="Center"/>
                     </WrapPanel>
+                    <TextBlock Text="{Binding SpawnInfo}" FontWeight="SemiBold"/>
                 </StackPanel>
                 <WrapPanel Orientation="Horizontal" Grid.Row="7">
                     <TextBlock Text="Seed" VerticalAlignment="Center"/>
