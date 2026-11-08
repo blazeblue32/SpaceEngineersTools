@@ -328,3 +328,46 @@ New entries (Azurite, Sphalerite, Ilmenite, Spodumene, and the renamed Bauxite, 
 3. **Precious-metal traces on airless bodies** (Moon, Europa, Titan, Mars): real only as ppb, but vanilla and Better Stone give gold and silver (and platinum on the Moon, Europa, Titan) to every one of them, so they stay at 0.05-0.3 % to keep the progression.
 4. **Planet-specific ore regions:** the pack values are Earth-scale; on a smaller moon (Europa, Triton) use bigger Cov % or fewer regions in the tool per planet.
 5. **Asteroid weights** are one global list; asteroid families would need extra work.
+
+## 8. Rare metal balance against vanilla and Better Stone
+
+Measured on the real planet maps: the blue channel of the vanilla `*_mat.png` files (Better Stone ships no map files, it only re-assigns the ore values), counted per ore value and mapped to the ore types of the vanilla and the Better Stone definitions. The yardstick is **ingots per 100 ore mined**, averaged over the planet's ore (vanilla yields: Gold 0.01, Silver 0.1, Platinum 0.005, Uranium 0.01 per ore; Better Stone's mineral recipes for the rest; this plan uses Better Resources' 0.1 Ag for Galena and no gold in Pyrite).
+
+**Finding:** Better Stone keeps vanilla's ingot rate. On EarthLike gold is 0.091 (vanilla) against 0.093 (Better Stone) ingots per 100 ore; it does this by making the gold-bearing ores (Gold, Electrum, Petzite, Porphyry, Pyrite, Uraniaurite) about **19 % of the ore pixels** (12 % silver-bearing, 7.5 % platinum-bearing on the Moon, Europa and Titan, 9-14 % uranium-bearing) with small yields each. Rare metals are not rare in Better Stone's ore maps; they are low-yield. The plan above, which follows real abundance, is **far below that**:
+
+| Body | Metal | Vanilla | Better Stone | Plan now | Share of ore, Better Stone / plan now |
+|---|---|---|---|---|---|
+| Earth-like | Gold | 0.091 | 0.093 | 0.0048 (x0.05) | 19.5 % / 0.77 % |
+| Earth-like | Silver | 0.684 | 0.699 | 0.2339 (x0.33) | 12.1 % / 2.60 % |
+| Mars | Gold | 0.078 | 0.050 | 0.0007 (x0.01) | 12.0 % / 0.09 % |
+| Mars | Silver | 0.586 | 0.477 | 0.0586 (x0.12) | 7.7 % / 0.60 % |
+| Mars | Uranium | 0.000 | 0.040 | 0.0024 (x0.06) | 12.0 % / 0.31 % |
+| Moon | Gold | 0.073 | 0.048 | 0.0012 (x0.02) | 11.2 % / 0.16 % |
+| Moon | Silver | 0.555 | 0.494 | 0.0213 (x0.04) | 8.1 % / 0.25 % |
+| Moon | Platinum | 0.037 | 0.023 | 0.0022 (x0.10) | 7.5 % / 0.72 % |
+| Moon | Uranium | 0.000 | 0.038 | 0.0057 (x0.15) | 8.9 % / 0.57 % |
+| Europa | Gold | 0.073 | 0.048 | 0.0005 (x0.01) | 11.2 % / 0.05 % |
+| Europa | Silver | 0.555 | 0.494 | 0.0656 (x0.13) | 8.1 % / 0.66 % |
+| Europa | Platinum | 0.037 | 0.023 | 0.0005 (x0.02) | 7.5 % / 0.13 % |
+| Europa | Uranium | 0.000 | 0.038 | 0.0009 (x0.02) | 8.9 % / 0.09 % |
+| Titan | Gold | 0.073 | 0.048 | 0.0008 (x0.02) | 11.2 % / 0.08 % |
+| Titan | Silver | 0.555 | 0.494 | 0.0159 (x0.03) | 8.1 % / 0.16 % |
+| Titan | Platinum | 0.037 | 0.023 | 0.0006 (x0.03) | 7.5 % / 0.12 % |
+| Titan | Uranium | 0.000 | 0.038 | 0.0015 (x0.04) | 8.9 % / 0.15 % |
+
+So in the plan gold would be 20-150 times scarcer than in vanilla and Better Stone, platinum and uranium 10-50 times. Progression is kept only on paper.
+
+**Proposal (not yet applied to the tables above):** bring gold, silver and platinum to the Better Stone rate (the progression), uranium to half of it (Better Stone adds it, you wanted less), and keep realism through the *regions* and host rocks: these ores are in a few rich regions (Glob 65-90 %, 8-17 km regions, section 6), so a miner who finds one gets a lot, instead of a thin even sprinkle. Fitted multipliers on the current body factors:
+
+| Body | Metal groups: factor and resulting share of the ore |
+|---|---|
+| Earth-like | Gold x29 -> 10.8 %; Silver x9 -> 7.7 % |
+| Mars | Gold x91 -> 4.6 %; Silver x38 -> 4.9 %; Uranium x10 -> 2.6 % |
+| Moon | Gold x58 -> 4.1 %; Silver x29 -> 5.9 %; Platinum x12 -> 7.3 %; Uranium x4 -> 1.9 % |
+| Europa | Gold x139 -> 4.8 %; Silver x63 -> 4.5 %; Platinum x62 -> 6.1 %; Uranium x28 -> 1.9 % |
+| Titan | Gold x81 -> 4.8 %; Silver x40 -> 4.9 %; Platinum x48 -> 4.5 %; Uranium x16 -> 1.9 % |
+
+The cost: the gold- and silver-bearing minerals then take about 18 % of the ore pixels on Earth-like (10.8 % and 7.7 %) and 10-20 % on the other bodies (gold, silver, platinum and uranium groups together), and the other minerals get proportionally less; Better Stone's own shares are in the table above. A middle path is half the Better Stone rate for all four metals on planets (the companion mod's idea applied to planets); say which.
+
+**Asteroids:** Better Stone's rebalanced list (companion mod) gives gold, silver, platinum and uranium about 1 / 103 = 0.97 % each, with the other ores summing to 82. In the plan they are 1 / 151 = 0.66 %. Raise them to weight 2 (and the platinum minerals Cooperite 3, Niggliite 2, Sperrylite 2) for about 1.3 % each, still half of the original Better Stone share of about 1.6 %.
+
