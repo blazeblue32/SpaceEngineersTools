@@ -223,6 +223,19 @@ Petroleum <- BS Porphyry or Kamacite (black rough, the nearest of all, but they 
 * Textures stay those of the donor slot, so the renamed ores look like the old ones (a "Copper" that looks like cobalt). Better Resources' own textures would match better but are new texture files, not new materials: you
   can keep the donor's id and use Better Resources' texture files in the override if you want that.
 
+## 12. How asteroids choose their ore (read from the game code, not guessed)
+
+Checked in the game assemblies (`MyCompositeShapes.FillMaterials`, `IsAcceptedAsteroidMaterial`, `ProcessMaterialSpawnProbabilities`) with `Tools/setools`:
+
+* Asteroid ore comes from **every voxel material** whose `SpawnsInAsteroids` is true (the default is true) and whose `MinVersion` / `MaxVersion` fit the generator. Ice_01 and Ice_03 are explicitly false, Ice_02 is true.
+* Newer generators put every non-stone material in one list; the older generator puts iron materials in the asteroid core, uranium and ice in the deposits twice. Stone materials are the surface.
+* `AsteroidGeneratorSpawnProbabilityMultiplier` repeats a material in that list: the weight of the material in asteroids (default 1).
+* **Vanilla:** `Iron_01` and `Iron_02` both spawn in asteroids, each with weight 5; Nickel, Cobalt, Magnesium, Silicon 3; Silver, Gold, Platinum, Uraninite 1. So Iron_01 is used in vanilla asteroids, just as often as Iron_02.
+* **Better Stone:** `Iron_01` weight 5 and `Iron_02` weight 3 (so Iron_01 is the main asteroid iron, Iron_02 the planet iron), Hapkeite, Heazlewoodite, Glaucodot, Pyrite, Quartz, Taenite, Kamacite 2, the other minerals 1 (total 40).
+  **Better Resources:** Copper, Aluminium, Petroleum 3, Wolframite, Galena, Lithium, Sulfur, Nitre 2, Titanium 1 (total 20).
+* **Consequence for the pack:** the four replaced vanilla slots (Cobalt_01, Nickel_01, Magnesium_01, Silicon_01) have weight 3 each in asteroids; Azurite, Sphalerite, Ilmenite and Spodumene would inherit that unless their weight is
+  set, and every composite needs a sensible `AsteroidGeneratorSpawnProbabilityMultiplier` (and `SpawnsInAsteroids` if it should be planet-only). The sum of the weights is the asteroid ore mix, not only the planet maps.
+
 ## 8. Tool changes made while writing this
 
 * The Vanilla data pack now also has an `Uraninite` entry: the vanilla uranium voxel material is `Uraninite_01`, so the old `Uranium` entry never matched a planet's ore name.
