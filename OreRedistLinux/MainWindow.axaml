@@ -30,6 +30,12 @@
                 <MenuItem Header="Redistribute Ore" Command="{Binding RedistributeOreCommand}" />
                 <MenuItem Header="Rewrite Biomes" Command="{Binding RewriteBiomesCommand}" />
                 <MenuItem Header="Create Occlusion Maps" Command="{Binding CreateOcclusionMapsCommand}" />
+                <MenuItem Header="_Debug">
+                    <MenuItem Header="Original depth weighting (Preferred Depth bug)" ToggleType="CheckBox" IsChecked="{Binding LegacyDepthWeighting, Mode=TwoWay}"
+                              ToolTip.Tip="The original tool counted the weights twice when picking a Preferred Depth, skewing veins toward shallow layers. Off = fixed." />
+                    <MenuItem Header="Original Very Deep Ore range (inverted bug)" ToggleType="CheckBox" IsChecked="{Binding LegacyVeryDeepRange, Mode=TwoWay}"
+                              ToolTip.Tip="The original tool had the random depth range for Very Deep Ore backwards (depth 9 never spawned when enabled). Off = fixed." />
+                </MenuItem>
             </Menu>
             <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,0" VerticalAlignment="Center">
                 <CheckBox x:Name="OreInspectorCb" Content="Ore Inspector" IsChecked="True" VerticalAlignment="Center" />

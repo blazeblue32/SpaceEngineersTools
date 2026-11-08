@@ -32,7 +32,11 @@ moved into a toolbar next to the menu. *Map* options are checkable menu items.
 
 Also fixed: random depth for ore without a preferred depth used `VeryDeepOre ? 9 : 10` as the (exclusive) upper bound, which is
 backwards: with *Very Deep Ore* ticked depth 9 never spawned, and with it unticked depth 9 (disabled) could still be picked, so about
-10% of that ore's veins silently disappeared. Unhandled errors are written to `~/.config/OreRedistLinux/crash.log` and shown in a dialog.
+10% of that ore's veins silently disappeared. Both fixes can be switched back to the original behavior in the **Debug** menu
+(*Original depth weighting*, *Original Very Deep Ore range*), in case a setup was tuned around them. The choice is remembered in
+`~/.config/OreRedistLinux/settings.xml`. The depth weighting bug: with a *Preferred Depth* the weights were summed twice per step
+(`weightSum += weightSum += w`), which skewed veins toward shallow layers (preferred depth 5 peaked at 3).
+Unhandled errors are written to `~/.config/OreRedistLinux/crash.log` and shown in a dialog.
 
 Also fixed: the six cube faces were loaded in parallel into a non-thread-safe dictionary, which could randomly drop a face
 (ore statistics too low, face without ore overlay).

@@ -695,6 +695,28 @@ namespace SpaceEngineersOreRedistribution
             _images.Clear();
         }
 
+        /// <summary>
+        /// Exclusive upper bound for a random depth index. Depth 9 only exists with very deep ore.
+        /// The original tool had this backwards, see AppSettings.LegacyVeryDeepRange.
+        /// </summary>
+        static int DepthUpperBound(bool veryDeepOre)
+        {
+            bool tenSlots = AppSettings.LegacyVeryDeepRange ? !veryDeepOre : veryDeepOre;
+            return tenSlots ? 10 : 9;
+        }
+
+        public bool LegacyDepthWeighting
+        {
+            get => AppSettings.LegacyDepthWeighting;
+            set { if (AppSettings.LegacyDepthWeighting == value) return; AppSettings.LegacyDepthWeighting = value; OnPropertyChanged(); }
+        }
+
+        public bool LegacyVeryDeepRange
+        {
+            get => AppSettings.LegacyVeryDeepRange;
+            set { if (AppSettings.LegacyVeryDeepRange == value) return; AppSettings.LegacyVeryDeepRange = value; OnPropertyChanged(); }
+        }
+
         List<string> _oreTypeOrder = new();
 
         Avalonia.Media.Color DefaultOreColor(string type)
@@ -1045,7 +1067,10 @@ namespace SpaceEngineersOreRedistribution
                             for (int i = 0; i < 10; ++i)
                             {
                                 if (depthWeights[i] == 0) continue;
-                                weightSum += weightSum += depthWeights[i];
+                                if (AppSettings.LegacyDepthWeighting)
+                                    weightSum += weightSum += depthWeights[i]; // original (buggy) double counting
+                                else
+                                    weightSum += depthWeights[i];
                                 if (depthRnd <= weightSum)
                                 {
                                     depth = i;
@@ -1057,7 +1082,7 @@ namespace SpaceEngineersOreRedistribution
                         {
                             if (depthMin == -1 && depthMax == -1)
                             {
-                                depth = rnd.Next(0, info.VeryDeepOre ? 10 : 9); // upper bound is exclusive; depth 9 only with very deep ore
+                                depth = rnd.Next(0, DepthUpperBound(info.VeryDeepOre)); // upper bound is exclusive
                             }
                             else if (depthMin == -1 && depthMax > -1)
                             {
@@ -1065,7 +1090,7 @@ namespace SpaceEngineersOreRedistribution
                             }
                             else if (depthMin >= -1 && depthMax == -1)
                             {
-                                depth = rnd.Next(depthMin, info.VeryDeepOre ? 10 : 9);
+                                depth = rnd.Next(depthMin, DepthUpperBound(info.VeryDeepOre));
                             }
                             else //if (depthMin >= -1 && depthMax >= -1)
                             {
