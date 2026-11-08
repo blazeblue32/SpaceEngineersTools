@@ -15,6 +15,7 @@ namespace SpaceEngineersOreRedistribution
         static bool _loaded;
         static bool _legacyDepthWeighting;
         static bool _legacyVeryDeepRange;
+        static bool _openFolderWhenFinished;
 
         /// <summary>
         /// Original: the cumulative weight in the Preferred Depth pick was added twice per step
@@ -36,6 +37,13 @@ namespace SpaceEngineersOreRedistribution
             set { Load(); _legacyVeryDeepRange = value; Save(); }
         }
 
+        /// <summary>Open the output folder in the file manager after "Redistribute Ore" (the original opened Explorer). Off by default.</summary>
+        public static bool OpenFolderWhenFinished
+        {
+            get { Load(); return _openFolderWhenFinished; }
+            set { Load(); _openFolderWhenFinished = value; Save(); }
+        }
+
         static void Load()
         {
             if (_loaded) return;
@@ -46,6 +54,7 @@ namespace SpaceEngineersOreRedistribution
                 var root = XDocument.Load(FilePath).Root;
                 bool.TryParse(root?.Element("LegacyDepthWeighting")?.Value, out _legacyDepthWeighting);
                 bool.TryParse(root?.Element("LegacyVeryDeepRange")?.Value, out _legacyVeryDeepRange);
+                bool.TryParse(root?.Element("OpenFolderWhenFinished")?.Value, out _openFolderWhenFinished);
             }
             catch { }
         }
@@ -56,7 +65,8 @@ namespace SpaceEngineersOreRedistribution
             {
                 new XDocument(new XElement("Settings",
                     new XElement("LegacyDepthWeighting", _legacyDepthWeighting),
-                    new XElement("LegacyVeryDeepRange", _legacyVeryDeepRange))).Save(FilePath);
+                    new XElement("LegacyVeryDeepRange", _legacyVeryDeepRange),
+                    new XElement("OpenFolderWhenFinished", _openFolderWhenFinished))).Save(FilePath);
             }
             catch { }
         }

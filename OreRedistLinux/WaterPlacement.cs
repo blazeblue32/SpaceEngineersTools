@@ -51,7 +51,9 @@ namespace SpaceEngineersOreRedistribution
             {
                 sb.AppendLine("Water rules: ON  (" + w.Describe() + ")");
                 if (!string.IsNullOrWhiteSpace(w.Summary)) sb.AppendLine(w.Summary);
-                if (w.SeabedShare.HasValue) sb.AppendLine($"Land + seabed ores: {w.SeabedShare.Value:0}% of their veins are sent to the seabed.");
+                sb.AppendLine(w.SeabedShare.HasValue
+                    ? $"Land + seabed ores: {w.SeabedShare.Value:0}% of their veins are sent to the seabed."
+                    : $"Land + seabed ores: by area, land counts {w.LandPreference:0.##}x.");
                 sb.AppendLine($"Keep ratios: {(hasReference ? "on (reference run + top-up)" : "off")}, land density limit: {(w.LandDensityLimit > 0 ? w.LandDensityLimit.ToString("0.##") + "x normal" : "none")}, " +
                               $"shallower layers allowed: {(w.AllowShallower ? "yes" : "no")}");
                 if (!string.IsNullOrEmpty(densityLine)) sb.AppendLine(densityLine);

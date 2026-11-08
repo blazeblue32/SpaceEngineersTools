@@ -334,11 +334,15 @@ namespace SpaceEngineersOreRedistribution
             bool landOk = mode == OreWaterMode.AboveWater || mode == OreWaterMode.LandAndSeabed;
             bool seaOk = mode == OreWaterMode.UnderwaterOnly || mode == OreWaterMode.LandAndSeabed;
             bool landFirst = true;
-            bool diceIsSea = fw.IsSea(diceX, diceY);
             if (mode == OreWaterMode.LandAndSeabed)
             {
                 if (W.SeabedShare.HasValue) landFirst = !(_rnd.NextDouble() * 100 < W.SeabedShare.Value);
-                else landFirst = !diceIsSea; // by area: wherever the dice put it
+                else
+                {
+                    // by area, land counts LandPreference times: p(land) = f * land / (f * land + sea)
+                    double fl = W.LandPreference * fw.LandPixels.Length, fs = fw.SeaPixels.Length;
+                    landFirst = _rnd.NextDouble() < (fl + fs > 0 ? fl / (fl + fs) : 0.5);
+                }
             }
             else if (mode == OreWaterMode.UnderwaterOnly) landFirst = false;
 

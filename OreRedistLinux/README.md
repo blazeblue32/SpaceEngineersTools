@@ -62,9 +62,10 @@ so ore below it can only be reached by digging into water. The new **Water** men
     total is the same as without water rules (368.9k vs 368.9k) while every land layer stays dry.
   - *Seabed only*: only where the terrain is below the water line.
   - *Anywhere (ignore water)*.
-- **Land / seabed balance** (Water window, for *Land + seabed* ores): *By area* lets the dice decide, so an ocean world gets mostly
-  seabed ore (Typhoon: 97%); *Fixed* sends a chosen share of the veins to the seabed and the rest to land (30% fixed gave a 70/30 split
-  of the veins on Typhoon). If a cube face lacks one kind of ground the other is used.
+- **Land / seabed balance** (Water window, for *Land + seabed* ores): *By area* follows the size of land and sea, nudged by a
+  **land preference** (default 1.5: land counts 1.5 times in the dice; 1 = purely by area; below 1 favors the seabed). On EarthLike with
+  44% water the land share of the veins is 54% at 1, 63% at 1.5, 71% at 4. *Fixed* sends a chosen share of the veins to the seabed.
+  Deep layers still end up on the seabed wherever the land is too low for them. If a cube face lacks one kind of ground the other is used.
 - **Keeping the ore ratios** (Water window, on by default): the tool first works out what it would place *without* water rules
   (target pixels per ore and layer, and the normal ore density = ore pixels per surface pixel). Then:
   - a vein keeps the layer the dice chose and looks for a site where that layer is dry (land pixels sorted by height, so deep layers
@@ -89,6 +90,9 @@ so ore below it can only be reached by digging into water. The new **Water** men
 Also changed: the same seed now always gives the same maps (the faces were visited in the order they happened to finish loading,
 which changed the random number stream); height maps that are not 16 bit (8 bit and palette PNGs, used by some mods) are now converted instead of being replaced
 by a blank map, and ore map pixels whose value has no ore mapping are no longer painted green (Typhoon uses 0 for "no ore").
+
+The output folder is no longer opened after *Redistribute Ore* (the original opened Explorer). *File > Open output folder when finished*
+turns it back on.
 
 ## Build and run
 Needs the .NET 8 SDK (or newer; `dotnet --list-sdks`). On CachyOS/Arch: `sudo pacman -S dotnet-sdk`.

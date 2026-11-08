@@ -40,15 +40,18 @@
         <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="4" Padding="8">
             <StackPanel Spacing="4">
                 <TextBlock Text="Ores set to &quot;Land + seabed&quot;" FontWeight="SemiBold"/>
-                <RadioButton GroupName="Balance" IsChecked="{Binding SeabedByArea}"
-                             Content="By area: veins land wherever the dice put them"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <RadioButton GroupName="Balance" IsChecked="{Binding SeabedByArea}" Content="By area, land counts"/>
+                    <TextBox Width="60" Text="{Binding LandPreference, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SeabedByArea}"/>
+                    <TextBlock Text="x   (1 = purely by area, 1.5 = slight land preference, below 1 favors the seabed)" FontSize="12" Foreground="Gray" VerticalAlignment="Center"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <RadioButton GroupName="Balance" IsChecked="{Binding SeabedFixed}" Content="Fixed: this share of the veins goes to the seabed"/>
                     <Slider Width="180" Minimum="0" Maximum="100" Value="{Binding SeabedPercent}" IsEnabled="{Binding SeabedFixed}"/>
                     <TextBlock Text="{Binding SeabedPercent, StringFormat={}{0:0}%}" VerticalAlignment="Center" Width="40"/>
                 </StackPanel>
                 <TextBlock FontSize="12" Foreground="Gray" TextWrapping="Wrap"
-                           Text="On land the ore layer has to stay above the water (+ margin), under water any layer is allowed. By area follows the size of land and sea, so an ocean world gets mostly seabed ore; a fixed share keeps more ore on land. If one kind of ground is missing on a cube face, the other one is used."/>
+                           Text="On land the ore layer has to stay above the water (+ margin), under water any layer is allowed. By area follows the size of land and sea (an ocean world gets mostly seabed ore), nudged by the land preference; a fixed share decides the split directly. Deep layers still end up on the seabed wherever the land is too low for them. If one kind of ground is missing on a cube face, the other one is used."/>
             </StackPanel>
         </Border>
         <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="4" Padding="8">

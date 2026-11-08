@@ -82,6 +82,14 @@ namespace SpaceEngineersOreRedistribution
         double _hillMax;
         public double HillMax { get => _hillMax; set { if (SetProp(ref _hillMax, value)) Changed(); } }
 
+        double _landPreference = 1.5;
+        /// <summary>
+        /// "By area" balance for Land + seabed ores: land pixels count this many times in the dice
+        /// (1 = purely by area, 1.5 = slight preference for land, 0.5 = slight preference for the seabed).
+        /// Land that is full or too low for the layer still sends the vein to the seabed.
+        /// </summary>
+        public double LandPreference { get => _landPreference; set { if (SetProp(ref _landPreference, Math.Clamp(value, 0.05, 50))) Changed(); } }
+
         bool _seabedByArea = true;
         /// <summary>
         /// For ores set to "Land + seabed": true = veins land where the dice put them (share follows the area of land and
@@ -208,6 +216,7 @@ namespace SpaceEngineersOreRedistribution
                 w._planetRadius = D(saved, "PlanetRadius", DefaultPlanetRadius);
                 w._seabedByArea = saved.Attribute("SeabedByArea")?.Value != "false";
                 w._seabedPercent = D(saved, "SeabedPercent", 50);
+                w._landPreference = D(saved, "LandPreference", 1.5);
                 w._keepRatios = saved.Attribute("KeepRatios")?.Value != "false";
                 w._landDensityLimit = D(saved, "LandDensityLimit", 1.25);
                 w._allowShallower = saved.Attribute("AllowShallower")?.Value == "true";
@@ -283,6 +292,7 @@ namespace SpaceEngineersOreRedistribution
                     new XAttribute("HillMax", HillMax.ToString(inv)),
                     new XAttribute("SeabedByArea", SeabedByArea ? "true" : "false"),
                     new XAttribute("SeabedPercent", SeabedPercent.ToString(inv)),
+                    new XAttribute("LandPreference", LandPreference.ToString(inv)),
                     new XAttribute("KeepRatios", KeepRatios ? "true" : "false"),
                     new XAttribute("LandDensityLimit", LandDensityLimit.ToString(inv)),
                     new XAttribute("AllowShallower", AllowShallower ? "true" : "false"));

@@ -798,6 +798,12 @@ namespace SpaceEngineersOreRedistribution
             _images.Clear();
         }
 
+        public bool OpenFolderWhenFinished
+        {
+            get => AppSettings.OpenFolderWhenFinished;
+            set { if (AppSettings.OpenFolderWhenFinished == value) return; AppSettings.OpenFolderWhenFinished = value; OnPropertyChanged(); }
+        }
+
         public bool LegacyDepthWeighting
         {
             get => AppSettings.LegacyDepthWeighting;
@@ -1156,7 +1162,7 @@ namespace SpaceEngineersOreRedistribution
                     "\r\nDetails: placement_report.txt in the output folder.";
             }
             MessageBox.Show("Finished!\r\nPlease copy the pngs to the 'PlanetDataFiles/PlanetName' folder.\r\nThen open the planet definition SBC\r\nand copy the content of 'oremappings.xml' to the corresponding section." + extra, "Ore Redistribution", MessageBoxButton.OK, MessageBoxImage.Information);
-            PathHelper.RevealInFileManager(xmlFileName);
+            if (AppSettings.OpenFolderWhenFinished) PathHelper.RevealInFileManager(xmlFileName);
         },
         o => SelectedPlanetDefinition != null);
 

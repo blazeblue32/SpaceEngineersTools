@@ -20,6 +20,7 @@
             <Menu DockPanel.Dock="Left">
                 <MenuItem Header="_File">
                     <MenuItem Header="Open Planet Definition" Command="{Binding OpenPlanetDefinitionCommand}" />
+                    <MenuItem Header="Open output folder when finished" ToggleType="CheckBox" IsChecked="{Binding OpenFolderWhenFinished, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Map">
                     <MenuItem Header="Show Ore Locations" ToggleType="CheckBox" IsChecked="{Binding ShowOreLocations, Mode=TwoWay}" />
