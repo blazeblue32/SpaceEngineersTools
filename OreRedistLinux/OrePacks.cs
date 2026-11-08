@@ -20,6 +20,8 @@ namespace SpaceEngineersOreRedistribution
         public double[] Rocks;
         /// <summary>Regional strength in percent (0 = evenly spread, 100 = only inside its regions), region size in km and the share of the planet in percent inside the regions. Null = not given.</summary>
         public double? Glob, GlobSize, GlobCoverage;
+        /// <summary>Size of a vein in pixels on the reference planet (the Size column), 1-500. Null = not given.</summary>
+        public int? Size;
     }
 
     /// <summary>A data pack: ore data loaded from an XML file of the DataPacks folder.</summary>
@@ -38,6 +40,7 @@ namespace SpaceEngineersOreRedistribution
         public double? Abundance;
         public double[] Rocks;
         public double? Glob, GlobSize, GlobCoverage;
+        public int? Size;
     }
 
     /// <summary>
@@ -183,7 +186,9 @@ namespace SpaceEngineersOreRedistribution
                 if (gs.HasValue && gs.Value > 0) ore.GlobSize = Math.Clamp(gs.Value, 0.5, 5000);
                 var gc = Num((string)e.Attribute("GlobCoverage"));
                 if (gc.HasValue && gc.Value > 0) ore.GlobCoverage = Math.Clamp(gc.Value, 0.5, 90);
-                if (ore.Abundance.HasValue || ore.Rocks != null || ore.Glob.HasValue) pack.Ores.Add(ore);
+                var sz = Num((string)e.Attribute("Size"));
+                if (sz.HasValue && sz.Value >= 1) ore.Size = (int)Math.Clamp(Math.Round(sz.Value), 1, 500);
+                if (ore.Abundance.HasValue || ore.Rocks != null || ore.Glob.HasValue || ore.Size.HasValue) pack.Ores.Add(ore);
             }
             return pack;
         }
@@ -214,6 +219,7 @@ namespace SpaceEngineersOreRedistribution
                 if (hit == null) continue;
                 if (hit.Abundance.HasValue) result.Abundance = hit.Abundance;
                 if (hit.Rocks != null) result.Rocks = hit.Rocks;
+                if (hit.Size.HasValue) result.Size = hit.Size;
                 if (hit.Glob.HasValue) { result.Glob = hit.Glob; result.GlobSize = hit.GlobSize; result.GlobCoverage = hit.GlobCoverage; }
             }
             return result;

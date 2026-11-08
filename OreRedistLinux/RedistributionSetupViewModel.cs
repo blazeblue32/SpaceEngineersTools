@@ -96,14 +96,14 @@ namespace SpaceEngineersOreRedistribution
         public double RarityStrength { get => _rarityStrength; set => SetProp(ref _rarityStrength, Math.Clamp(value, 0, 1)); }
 
         /// <summary>What applying data packs did (for the message).</summary>
-        public class DataPackResult { public int RockOres, RarityOres, RegionOres; public List<string> NoRocks = new(), NoRarity = new(), NoRegion = new(); }
+        public class DataPackResult { public int RockOres, RarityOres, RegionOres, SizeOres; public List<string> NoRocks = new(), NoRarity = new(), NoRegion = new(), NoSize = new(); }
 
         /// <summary>
         /// Applies data packs to the ore list. Rocks: sets the rock weights of every ore a pack has rock data for. Rarity: sets the spawn weight from the
         /// abundance, relative to the other ores of the list: weight = (abundance / highest abundance) ^ strength, the most common ore gets 1000; ores without
         /// abundance data are scaled along so their share stays the same.
         /// </summary>
-        public DataPackResult ApplyDataPacks(IList<OrePack> packs, bool setRocks, bool setRarity, bool setRegions = false)
+        public DataPackResult ApplyDataPacks(IList<OrePack> packs, bool setRocks, bool setRarity, bool setRegions = false, bool setSizes = false)
         {
             var res = new DataPackResult();
             var data = OreInfos.Select(i => (info: i, d: OrePacks.Resolve(i.Name, packs))).ToList();
@@ -121,22 +121,35 @@ namespace SpaceEngineersOreRedistribution
                     info.Glob = d.Glob.Value; info.GlobSizeKm = d.GlobSize; info.GlobCoverage = d.GlobCoverage;
                     ++res.RegionOres;
                 }
+            if (setSizes)
+                foreach (var (info, d) in data)
+                {
+                    if (!d.Size.HasValue) { res.NoSize.Add(info.Name); continue; }
+                    info.TypicalSize = d.Size.Value;
+                    ++res.SizeOres;
+                }
             if (setRarity)
             {
+                // The Weight is the number of veins, the share of the ore (Ratio column) is weight x vein size. The share is what follows the abundance,
+                // so big veins get a smaller weight: weight = abundance^strength / size, the highest of the list becomes 1000.
+                static double Px(OreInfo i) => i.TypicalSize > 0 ? i.TypicalSize : 17;
                 var known = data.Where(x => x.d.Abundance.HasValue).ToList();
                 res.NoRarity.AddRange(data.Where(x => !x.d.Abundance.HasValue).Select(x => x.info.Name));
                 if (known.Count > 0)
                 {
-                    double max = known.Max(x => x.d.Abundance.Value);
-                    double oldSum = known.Sum(x => (double)x.info.SpawnWeight), newSum = 0;
+                    double maxA = known.Max(x => x.d.Abundance.Value);
+                    double Share(OreData d) => Math.Pow(d.Abundance.Value / maxA, RarityStrength);
+                    double maxW = known.Max(x => Share(x.d) / Px(x.info));
+                    double oldMass = known.Sum(x => (double)x.info.SpawnWeight * Px(x.info)), newMass = 0;
                     foreach (var (info, d) in known)
                     {
-                        int w = (int)Math.Max(1, Math.Round(1000 * Math.Pow(d.Abundance.Value / max, RarityStrength)));
-                        newSum += w; info.SpawnWeight = w; ++res.RarityOres;
+                        int w = (int)Math.Max(1, Math.Round(1000 * Share(d) / Px(info) / maxW));
+                        newMass += w * Px(info); info.SpawnWeight = w; ++res.RarityOres;
                     }
-                    if (oldSum > 0)
+                    // ores with unknown names keep their share compared to the others
+                    if (oldMass > 0)
                         foreach (var (info, d) in data.Where(x => !x.d.Abundance.HasValue))
-                            info.SpawnWeight = (int)Math.Max(1, Math.Round(info.SpawnWeight * newSum / oldSum));
+                            info.SpawnWeight = (int)Math.Max(1, Math.Round(info.SpawnWeight * newMass / oldMass));
                 }
             }
             return res;

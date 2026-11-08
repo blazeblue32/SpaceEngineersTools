@@ -8,6 +8,9 @@
   Rocks        Optional. Five numbers 0-1000 separated by ; = suitability for
                Sedimentary ; Metamorphic low grade ; Metamorphic high grade ; Igneous extrusive ; Igneous intrusive.
                0 = never forms in this rock, 100 = normal, higher = prefers it. Used by the geology placement mode.
+  Size         Optional. Size of a vein of this ore in pixels on the reference planet (EarthLike, 60 km radius; the tool scales it for other planet
+               sizes). Real deposits differ a lot: tiny silver veins and impact minerals (4-10) up to huge reefs, sedimentary basins and oil fields (60-75).
+               Built-in sizes: footprint of a typical deposit (km2) -> 15 x km2^0.35 pixels (1 km2 = 15, 100 km2 = 75), so the range is squeezed for the game.
   Glob         Optional. Regional strength 0-100: 0 = the ore is spread evenly, 100 = it only occurs in a few regions (like gold in greenstone belts,
                nickel at Sudbury). In geology mode the regions also lie where the ore's rocks are.
   GlobSize     Optional. Size of the regions in km (the planet default is 15). GlobCoverage: share of the planet in percent inside the regions (default 20).
@@ -20,15 +23,15 @@
 -->
 <OreDataPack Format="1" Tool="OreRedistLinux" Name="Vanilla" Author="OreRedistLinux" Order="0"
              Description="The nine vanilla ores and Ice: abundance in the Earth's crust and the rock types they form in.">
-  <Ore Name="Silicon"   Abundance="282000" Rocks="80;60;50;40;70" Glob="0"  />
-  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40" Glob="40" GlobSize="37.5" GlobCoverage="6"  />  <!-- ~6 regions of about 24 km; real: Hamersley, Carajas, Superior banded iron basins, 500 km -->
-  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" Glob="20" GlobSize="32.5" GlobCoverage="2" />  <!-- ~6 regions of about 14 km; real: magnesite and dolomite basins, 300 km -->
-  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" Glob="75" GlobSize="20" GlobCoverage="0.5" />  <!-- ~5 regions of about 8 km; real: Sudbury, Norilsk, Kambalda, 150 km -->
-  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70" Glob="70" GlobSize="32.5" GlobCoverage="0.5"  />  <!-- ~3 regions of about 10 km; real: Katanga copper-cobalt belt, Bou Azzer, 250 km -->
-  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60" Glob="70" GlobSize="32.5" GlobCoverage="1"  />  <!-- ~5 regions of about 11 km; real: Athabasca, Kazakhstan basins, Olympic Dam, 250 km -->
-  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60" Glob="55" GlobSize="27.5" GlobCoverage="1"  />  <!-- ~6 regions of about 10 km; real: Mexican silver belt, Andes, Nevada, 200 km -->
-  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="1.5"   />  <!-- ~3 regions of about 17 km; real: Bushveld complex, Norilsk, 350 km -->
-  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" Glob="75" GlobSize="32.5" GlobCoverage="2" />  <!-- ~6 regions of about 14 km; real: Witwatersrand, Yilgarn, Abitibi, 300 km -->
+  <Ore Name="Silicon"   Abundance="282000" Rocks="80;60;50;40;70" Glob="0" Size="59" />  <!-- size: quartz sand and quartzite beds about 50 km2 -> 59 px -->
+  <Ore Name="Iron"      Abundance="56300"  Rocks="80;60;50;15;40" Glob="40" GlobSize="37.5" GlobCoverage="6" Size="49" />  <!-- ~6 regions of about 24 km; real: Hamersley, Carajas, Superior banded iron basins, 500 km ; size: a banded iron deposit like Mt Whaleback about 30 km2 -> 49 px -->
+  <Ore Name="Magnesium" Abundance="23300"  Rocks="100;60;40;10;30" Glob="20" GlobSize="32.5" GlobCoverage="2" Size="31" />  <!-- ~6 regions of about 14 km; real: magnesite and dolomite basins, 300 km ; size: magnesite deposits about 8 km2 -> 31 px -->
+  <Ore Name="Nickel"    Abundance="84"     Rocks="10;10;30;60;100" Glob="75" GlobSize="20" GlobCoverage="0.5" Size="19" />  <!-- ~5 regions of about 8 km; real: Sudbury, Norilsk, Kambalda, 150 km ; size: a sulfide orebody like Sudbury mines about 2 km2 -> 19 px -->
+  <Ore Name="Cobalt"    Abundance="25"     Rocks="50;40;30;30;70" Glob="70" GlobSize="32.5" GlobCoverage="0.5" Size="22" />  <!-- ~3 regions of about 10 km; real: Katanga copper-cobalt belt, Bou Azzer, 250 km ; size: a Katanga copper-cobalt deposit about 3 km2 -> 22 px -->
+  <Ore Name="Uranium"   Abundance="2.7"    Rocks="80;30;30;20;60" Glob="70" GlobSize="32.5" GlobCoverage="1" Size="17" />  <!-- ~5 regions of about 11 km; real: Athabasca, Kazakhstan basins, Olympic Dam, 250 km ; size: a roll-front or unconformity deposit about 1.5 km2 -> 17 px -->
+  <Ore Name="Silver"    Abundance="0.075"  Rocks="20;40;20;90;60" Glob="55" GlobSize="27.5" GlobCoverage="1" Size="10" />  <!-- ~6 regions of about 10 km; real: Mexican silver belt, Andes, Nevada, 200 km ; size: a silver vein system about 0.3 km2 -> 10 px -->
+  <Ore Name="Platinum"  Abundance="0.005"  Rocks="5;5;20;20;100" Glob="90" GlobSize="50" GlobCoverage="1.5" Size="75" />  <!-- ~3 regions of about 17 km; real: Bushveld complex, Norilsk, 350 km ; size: a PGE reef like the Merensky Reef about 100 km2 -> 75 px -->
+  <Ore Name="Gold"      Abundance="0.004"  Rocks="25;100;50;40;50" Glob="75" GlobSize="32.5" GlobCoverage="2" Size="15" />  <!-- ~6 regions of about 14 km; real: Witwatersrand, Yilgarn, Abitibi, 300 km ; size: an orogenic gold deposit about 1 km2 -> 15 px -->
   <!-- Ice is not a crust ore: no abundance, no rock preference -->
   <Ore Name="Ice" Rocks="100;100;100;100;100" Glob="0" />
 </OreDataPack>
